@@ -17,7 +17,7 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="grid gap-6 lg:grid-cols-2 lg:items-start">
+  <div class="grid grid-cols-1 gap-6 lg:grid-cols-2 lg:items-start">
     <div id="lists-gjoremal" class="scroll-mt-36"><TodoPage /></div>
     <div id="lists-handle" class="scroll-mt-36"><ShoppingPage /></div>
     <div id="lists-forslag" class="scroll-mt-36 lg:col-span-2"><SuggestionsPage /></div>

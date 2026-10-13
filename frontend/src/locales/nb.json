@@ -22,7 +22,9 @@
     "namePlaceholder": "Ditt navn",
     "language": "Språk",
     "knownNames": "Velg navn",
-    "darkMode": "Mørk modus"
+    "darkMode": "Mørk modus",
+    "menu": "Meny",
+    "changeName": "Bytt navn"
   },
   "tabs": {
     "overview": "Oversikt",
@@ -152,7 +154,7 @@
     "titleLabel": "Tittel",
     "titlePlaceholder": "F.eks. Påskeferie 2026",
     "who": "Hvem var med?",
-    "addName": "Navn, skilt med mellomrom",
+    "addName": "Navn, skilt med komma",
     "when": "Når",
     "whenPlaceholder": "Velg datoer",
     "what": "Hva skjedde?",

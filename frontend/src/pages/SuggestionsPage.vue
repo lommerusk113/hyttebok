@@ -98,7 +98,7 @@ function remove(s) {
           <span :class="CATEGORIES[s.category].tint" class="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium">
             <i :class="CATEGORIES[s.category].icon" class="text-[10px]" />{{ t(CATEGORIES[s.category].label) }}
           </span>
-          <Button icon="pi pi-ellipsis-h" text rounded severity="secondary" size="small" :aria-label="t('common.edit')" @click="openForm(s)" />
+          <Button icon="pi pi-ellipsis-h" text rounded severity="secondary" size="small" class="max-sm:!size-10" :aria-label="t('common.edit')" @click="openForm(s)" />
         </div>
         <h3 class="font-semibold">{{ s.title }}</h3>
         <p v-if="s.description" class="mt-1 line-clamp-3 whitespace-pre-line text-sm text-zinc-600">{{ s.description }}</p>

@@ -62,7 +62,7 @@ async function clearBought() {
           </span>
         </label>
         <span v-if="i.quantity" class="rounded-full bg-zinc-100 px-2.5 py-0.5 text-sm text-zinc-600">{{ i.quantity }}</span>
-        <Button icon="pi pi-times" text rounded severity="secondary" size="small" :aria-label="t('shopping.remove')" class="sm:opacity-0 sm:group-hover:opacity-100" @click="remove(i)" />
+        <Button icon="pi pi-times" text rounded severity="secondary" size="small" :aria-label="t('shopping.remove')" class="max-sm:!size-10 sm:opacity-0 sm:group-hover:opacity-100" @click="remove(i)" />
       </li>
     </ul>
     <EmptyState v-else icon="pi pi-shopping-bag" :text="t('shopping.empty')" />

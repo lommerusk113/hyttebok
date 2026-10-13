@@ -41,6 +41,8 @@ const period = b => (!b.endDate || b.startDate === b.endDate ? day(b.startDate) 
 
 const staying = computed(() => bookings.value.filter(b => b.startDate <= today && b.endDate >= today))
 const upcoming = computed(() => bookings.value.filter(b => b.startDate > today).slice(0, 4))
+const recent = computed(() => bookings.value.filter(b => b.endDate < today).sort((a, b) => b.endDate.localeCompare(a.endDate)).slice(0, 3))
+const postCount = b => log.value.filter(e => e.bookingId === b.id).length
 const daysUntil = b => Math.round((parseIsoDate(b.startDate) - parseIsoDate(today)) / 864e5)
 
 const visibleShopping = computed(() => shopping.value.filter(i => !i.bought || tickedHere.value.has(i.id)))
@@ -154,8 +156,27 @@ function copy(text) {
           </ul>
           <div v-else class="flex flex-wrap items-center justify-between gap-2 py-1">
             <p class="text-sm text-zinc-500">{{ t('booking.noUpcoming') }}</p>
-            <RouterLink to="/booking?new=1" class="text-sm font-medium underline-offset-4 hover:underline">{{ t('booking.new') }}</RouterLink>
+            <RouterLink to="/booking?new=1" class="inline-flex min-h-11 items-center text-sm font-medium underline-offset-4 hover:underline">{{ t('booking.new') }}</RouterLink>
           </div>
+
+          <template v-if="recent.length">
+            <p class="mb-1 mt-3 border-t border-zinc-100 pt-3 text-xs font-medium uppercase tracking-wide text-zinc-500">{{ t('booking.recent') }}</p>
+            <ul class="-mx-2">
+              <li v-for="b in recent" :key="b.id">
+                <RouterLink :to="`/booking?id=${b.id}`" class="flex items-center gap-3 rounded-md px-2 py-1.5 transition hover:bg-zinc-50">
+                  <span :class="colorFor(b.guestName).bar" class="h-9 w-1 shrink-0 rounded-full opacity-40" />
+                  <span class="min-w-0 flex-1">
+                    <span class="block truncate text-sm font-medium">{{ b.guestName }}</span>
+                    <span class="block truncate text-sm text-zinc-500">{{ period(b) }}</span>
+                  </span>
+                  <span class="flex shrink-0 flex-col items-end gap-0.5 text-xs text-zinc-500">
+                    {{ timeAgo(parseIsoDate(b.endDate)) }}
+                    <span v-if="postCount(b)" class="flex items-center gap-1"><i class="pi pi-book text-[10px]" />{{ postCount(b) }}</span>
+                  </span>
+                </RouterLink>
+              </li>
+            </ul>
+          </template>
         </DashCard>
 
         <DashCard class="order-5" :title="t('overview.latest')" icon="pi pi-book" tint="bg-violet-50 text-violet-700" to="/hyttebok" add="/hyttebok?new=1">
@@ -177,7 +198,7 @@ function copy(text) {
           </ul>
           <div v-else class="flex flex-wrap items-center justify-between gap-2 py-1">
             <p class="text-sm text-zinc-500">{{ t('overview.noPosts') }}</p>
-            <RouterLink to="/hyttebok?new=1" class="text-sm font-medium underline-offset-4 hover:underline">{{ t('log.new') }}</RouterLink>
+            <RouterLink to="/hyttebok?new=1" class="inline-flex min-h-11 items-center text-sm font-medium underline-offset-4 hover:underline">{{ t('log.new') }}</RouterLink>
           </div>
         </DashCard>
       </div>

@@ -136,10 +136,10 @@ function addName(name = nameInput.value) {
   nameInput.value = ''
 }
 
-// Typed names: space or comma separates, so "Kari Ola Per" becomes three people. Suggested and
-// booking names go through addName() directly, so a full name like "Ola Nordmann" stays whole.
+// Typed names: a comma or a double space separates, so "Ola Nordmann, Kari" becomes two people
+// and full names with a single space stay whole.
 function onNameInput() {
-  const parts = nameInput.value.split(/[\s,]+/)
+  const parts = nameInput.value.split(/\s*,\s*|\s{2,}/)
   const partial = parts.pop()
   parts.forEach(n => addName(n))
   nameInput.value = partial
@@ -224,13 +224,13 @@ function remove(entry) {
             <h3 class="text-lg font-semibold leading-snug">{{ e.title || t('log.untitled') }}</h3>
             <div class="mt-1 flex flex-wrap gap-x-4 gap-y-1 text-sm text-zinc-500">
               <span v-if="e.startDate"><i class="pi pi-calendar mr-1.5 text-xs" />{{ dateRange(e) }}</span>
-              <RouterLink v-if="stayOf(e)" to="/booking" class="hover:text-zinc-900"><i class="pi pi-home mr-1.5 text-xs" />{{ t('log.stayOf', { name: stayOf(e).guestName }) }}</RouterLink>
+              <RouterLink v-if="stayOf(e)" :to="`/booking?id=${e.bookingId}`" class="-my-2 inline-flex min-h-9 items-center hover:text-zinc-900"><i class="pi pi-home mr-1.5 text-xs" />{{ t('log.stayOf', { name: stayOf(e).guestName }) }}</RouterLink>
               <span><i class="pi pi-pencil mr-1.5 text-xs" />{{ e.author }} · {{ timeAgo(e.createdAt) }}</span>
             </div>
           </div>
           <div class="flex shrink-0">
-            <Button v-if="canEdit(e)" icon="pi pi-pencil" text rounded severity="secondary" size="small" :aria-label="t('common.edit')" @click="compose(e)" />
-            <Button v-if="e.author === userName" icon="pi pi-trash" text rounded severity="secondary" size="small" :aria-label="t('common.delete')" @click="remove(e)" />
+            <Button v-if="canEdit(e)" icon="pi pi-pencil" text rounded severity="secondary" size="small" class="max-sm:!size-10" :aria-label="t('common.edit')" @click="compose(e)" />
+            <Button v-if="e.author === userName" icon="pi pi-trash" text rounded severity="secondary" size="small" class="max-sm:!size-10" :aria-label="t('common.delete')" @click="remove(e)" />
           </div>
         </div>
 

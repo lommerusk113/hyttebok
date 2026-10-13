@@ -22,7 +22,9 @@
     "namePlaceholder": "Your name",
     "language": "Language",
     "knownNames": "Pick your name",
-    "darkMode": "Dark mode"
+    "darkMode": "Dark mode",
+    "menu": "Menu",
+    "changeName": "Change name"
   },
   "tabs": {
     "overview": "Overview",
@@ -152,7 +154,7 @@
     "titleLabel": "Title",
     "titlePlaceholder": "E.g. Easter holiday 2026",
     "who": "Who was there?",
-    "addName": "Names, separated by spaces",
+    "addName": "Names, separated by commas",
     "when": "When",
     "whenPlaceholder": "Pick dates",
     "what": "What happened?",

@@ -8,14 +8,16 @@ import Dialog from 'primevue/dialog'
 import InputText from 'primevue/inputtext'
 import Button from 'primevue/button'
 import Avatar from 'primevue/avatar'
-import ToggleSwitch from 'primevue/toggleswitch'
+import Drawer from 'primevue/drawer'
+import LanguageToggle from './components/LanguageToggle.vue'
+import ThemeSwitch from './components/ThemeSwitch.vue'
 import { userName, askName } from './user'
 import { initials, colorFor } from './utils'
 import { api } from './api'
-import { LOCALES, locale, primeLocale, t } from './i18n'
-import { dark, setDark } from './theme'
+import { locale, primeLocale, t } from './i18n'
 
 const primevue = usePrimeVue()
+const menuOpen = ref(false)
 const confirm = useConfirm()
 
 // ConfirmDialog has no dismissableMask option, so close it on backdrop clicks ourselves.
@@ -45,37 +47,57 @@ function saveName(name = draftName.value) {
   <div class="min-h-screen">
     <header class="sticky top-0 z-30 border-b border-zinc-200 bg-surface/85 text-zinc-950 backdrop-blur">
       <div class="mx-auto flex h-14 max-w-6xl items-center justify-between gap-4 px-4 sm:h-16">
-        <div class="flex items-center gap-3 sm:gap-4">
-          <RouterLink to="/" class="flex items-center gap-2.5">
+        <div class="flex items-center gap-4">
+          <RouterLink to="/" class="flex min-h-11 items-center gap-2.5">
             <!-- Logo files are white; invert gives the black version for the light header -->
             <img src="/mark.png" alt="Ravnsmark" class="h-8 w-auto invert dark:invert-0">
-            <span class="hidden flex-col gap-1 min-[380px]:flex">
+            <span class="flex flex-col gap-1">
               <img src="/wordmark.png" alt="" class="h-3 w-auto invert dark:invert-0">
               <span class="text-[10px] font-medium uppercase tracking-[0.3em] text-zinc-500">{{ t('app.subtitle') }}</span>
             </span>
           </RouterLink>
-          <div class="flex rounded-full bg-zinc-100 p-0.5 text-xs font-semibold" role="group" :aria-label="t('app.language')">
-            <button v-for="(l, code) in LOCALES" :key="code" class="rounded-full px-2.5 py-1 transition"
-                    :class="locale === code ? 'bg-zinc-950 text-surface' : 'text-zinc-500 hover:text-zinc-950'" @click="locale = code">
-              {{ l.label }}
-            </button>
-          </div>
+          <LanguageToggle class="max-sm:!hidden" />
         </div>
 
-        <div class="flex items-center gap-3">
-          <ToggleSwitch :model-value="dark" :aria-label="t('app.darkMode')" v-tooltip.bottom="t('app.darkMode')" @update:model-value="setDark">
-            <template #handle="{ checked }">
-              <i class="pi !text-[10px]" :class="checked ? 'pi-moon' : 'pi-sun'" />
-            </template>
-          </ToggleSwitch>
-          <button class="flex items-center gap-2 rounded-full py-1 pl-1 transition hover:bg-zinc-100 sm:pr-3"
+        <!-- Wide screens: controls inline -->
+        <div class="hidden items-center gap-3 sm:flex">
+          <ThemeSwitch v-tooltip.bottom="t('app.darkMode')" />
+          <button class="flex items-center gap-2 rounded-full py-1 pl-1 pr-3 transition hover:bg-zinc-100"
                   :aria-label="userName || t('app.whoAreYou')" @click="askName = true">
             <Avatar :label="initials(userName)" shape="circle" :class="[colorFor(userName).bg, colorFor(userName).text]" class="!text-xs !font-semibold" />
-            <span class="hidden text-sm font-medium sm:inline">{{ userName || t('app.whoAreYou') }}</span>
+            <span class="text-sm font-medium">{{ userName || t('app.whoAreYou') }}</span>
           </button>
         </div>
+
+        <!-- Phones: everything behind a menu -->
+        <button class="-mr-2 grid size-11 place-items-center rounded-full transition hover:bg-zinc-100 sm:hidden"
+                :aria-label="t('app.menu')" :aria-expanded="menuOpen" @click="menuOpen = true">
+          <i class="pi pi-bars text-lg" />
+        </button>
       </div>
     </header>
+
+    <Drawer v-model:visible="menuOpen" position="right" :header="t('app.menu')" class="!w-[18rem]">
+      <div class="flex flex-col gap-2">
+        <button class="flex min-h-14 items-center gap-3 rounded-lg border border-zinc-200 p-2 text-left transition hover:bg-zinc-50"
+                @click="menuOpen = false; askName = true">
+          <Avatar :label="initials(userName)" shape="circle" :class="[colorFor(userName).bg, colorFor(userName).text]" class="!font-semibold" />
+          <span class="min-w-0 flex-1">
+            <span class="block truncate font-medium">{{ userName || t('app.whoAreYou') }}</span>
+            <span class="block text-xs text-zinc-500">{{ t('app.changeName') }}</span>
+          </span>
+          <i class="pi pi-chevron-right text-xs text-zinc-500" />
+        </button>
+        <div class="flex min-h-14 items-center justify-between gap-3 px-2">
+          <span class="text-sm font-medium">{{ t('app.language') }}</span>
+          <LanguageToggle />
+        </div>
+        <label class="flex min-h-14 cursor-pointer items-center justify-between gap-3 px-2">
+          <span class="text-sm font-medium">{{ t('app.darkMode') }}</span>
+          <ThemeSwitch />
+        </label>
+      </div>
+    </Drawer>
 
     <main class="mx-auto max-w-6xl px-4 pb-12 pt-4">
       <RouterView />

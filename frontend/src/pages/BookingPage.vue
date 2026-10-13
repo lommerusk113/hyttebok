@@ -220,11 +220,11 @@ function remove(b) {
         <li v-for="b in recent" :key="b.id">
           <button class="flex w-full items-center gap-3 rounded-md p-2 text-left transition hover:bg-zinc-100" @click="selected = b">
             <span :class="colorFor(b.guestName).bar" class="h-10 w-1.5 shrink-0 rounded-full opacity-40" />
-            <span class="min-w-0 flex-1">
-              <span class="block truncate font-medium">{{ b.guestName }}</span>
-              <span class="block text-sm text-zinc-500">{{ period(b) }}</span>
+            <span class="shrink-0">
+              <span class="block font-medium">{{ b.guestName }}</span>
+              <span class="block whitespace-nowrap text-sm text-zinc-500">{{ period(b) }}</span>
             </span>
-            <span class="flex shrink-0 flex-col items-end gap-1 text-xs text-zinc-500">
+            <span class="flex min-w-0 flex-1 flex-col items-end gap-1 text-right text-xs text-zinc-500">
               {{ timeAgo(parseIsoDate(b.endDate)) }}
               <span v-if="postCount(b)" class="flex items-center gap-1"><i class="pi pi-book text-[10px]" />{{ postCount(b) }}</span>
             </span>
