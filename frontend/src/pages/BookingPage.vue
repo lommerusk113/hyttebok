@@ -9,6 +9,7 @@ import Dialog from 'primevue/dialog'
 import DatePicker from 'primevue/datepicker'
 import InputText from 'primevue/inputtext'
 import Textarea from 'primevue/textarea'
+import InputNumber from 'primevue/inputnumber'
 import Message from 'primevue/message'
 import PageHeader from '../components/PageHeader.vue'
 import { api } from '../api'
@@ -113,7 +114,7 @@ function shiftMonth(delta) {
 
 function openNew(iso) {
   const start = iso ? parseIsoDate(iso) : null
-  form.value = { guestName: userName.value, note: '', range: start ? [start, null] : null }
+  form.value = { guestName: userName.value, guests: null, note: '', range: start ? [start, null] : null }
   formOpen.value = true
 }
 
@@ -206,7 +207,10 @@ function remove(b) {
               <span class="block truncate font-medium">{{ b.guestName }}</span>
               <span class="block text-sm text-zinc-500">{{ period(b) }}</span>
             </span>
-            <span class="shrink-0 rounded-full bg-zinc-100 px-2 py-0.5 text-xs text-zinc-600">{{ t('booking.nights', nights(b)) }}</span>
+            <span class="flex shrink-0 flex-col items-end gap-1 text-xs text-zinc-600">
+              <span class="rounded-full bg-zinc-100 px-2 py-0.5">{{ t('booking.nights', nights(b)) }}</span>
+              <span v-if="b.guests" class="flex items-center gap-1 text-zinc-500"><i class="pi pi-users text-[10px]" />{{ t('booking.people', b.guests) }}</span>
+            </span>
           </button>
         </li>
       </ul>
@@ -239,6 +243,7 @@ function remove(b) {
   <Dialog :visible="!!selected" modal dismissable-mask :header="selected?.guestName" class="w-[26rem] max-w-[calc(100vw-2rem)]" @update:visible="selected = null">
     <div v-if="selected" class="space-y-3">
       <p class="flex items-center gap-2 text-zinc-600"><i class="pi pi-calendar text-zinc-500" />{{ period(selected) }} · {{ t('booking.nights', nights(selected)) }}</p>
+      <p v-if="selected.guests" class="flex items-center gap-2 text-zinc-600"><i class="pi pi-users text-zinc-500" />{{ t('booking.people', selected.guests) }}</p>
       <div v-if="posts.some(p => p.bookingId === selected.id)">
         <p class="mb-1.5 text-xs font-medium uppercase tracking-wide text-zinc-500">{{ t('booking.posts') }}</p>
         <RouterLink v-for="p in posts.filter(p => p.bookingId === selected.id)" :key="p.id" to="/hyttebok"
@@ -276,6 +281,11 @@ function remove(b) {
         <span v-for="(c, i) in conflicts" :key="c.id"><b>{{ c.guestName }}</b> ({{ period(c) }}){{ i < conflicts.length - 1 ? ', ' : '' }}</span>.
         {{ t('booking.overlapHint') }}
       </Message>
+      <label class="flex flex-col gap-1.5 text-sm font-medium">
+        {{ t('booking.guests') }}
+        <InputNumber v-model="form.guests" show-buttons button-layout="horizontal" :min="1" :max="99" :placeholder="t('booking.guestsPlaceholder')"
+                     increment-button-icon="pi pi-plus" decrement-button-icon="pi pi-minus" input-class="!w-16 text-center" class="self-start" />
+      </label>
       <label class="flex flex-col gap-1.5 text-sm font-medium">{{ t('booking.note') }}<Textarea v-model="form.note" rows="2" auto-resize :placeholder="t('booking.notePlaceholder')" /></label>
     </form>
     <template #footer>

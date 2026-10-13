@@ -147,7 +147,7 @@ function copy(text) {
               <RouterLink :to="`/booking?id=${b.id}`" class="flex items-center gap-3 rounded-md px-2 py-2 transition hover:bg-zinc-50">
                 <span :class="colorFor(b.guestName).bar" class="h-9 w-1 shrink-0 rounded-full" />
                 <span class="min-w-0 flex-1">
-                  <span class="block truncate font-medium">{{ b.guestName }}</span>
+                  <span class="block truncate font-medium">{{ b.guestName }}<span v-if="b.guests" class="font-normal text-zinc-500"> · {{ t('booking.people', b.guests) }}</span></span>
                   <span class="block text-sm text-zinc-500">{{ period(b) }}</span>
                 </span>
                 <span class="shrink-0 text-xs text-zinc-500">{{ t('overview.inDays', daysUntil(b)) }}</span>

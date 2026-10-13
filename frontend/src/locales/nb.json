@@ -49,7 +49,6 @@
     "changePhoto": "Bytt bilde",
     "editInfo": "Rediger info",
     "coverCaption": "Forsidebilde",
-    "coverUpdated": "Forsidebildet er oppdatert",
     "editTitle": "Rediger hytteinfo",
     "name": "Navn",
     "tagline": "Slagord",
@@ -58,7 +57,8 @@
     "wifiNetwork": "Nettverk",
     "wifiPassword": "Passord",
     "bulletHint": "Start en linje med «-» for punktliste",
-    "addBullet": "Punkt"
+    "addBullet": "Punkt",
+    "coverPending": "Nytt bilde – lagres når du trykker Lagre"
   },
   "overview": {
     "latest": "Siste i hytteboka",
@@ -92,10 +92,13 @@
     "overlapHint": "Du kan fortsatt lagre, men avtal gjerne med dem.",
     "saveAnyway": "Lagre likevel",
     "note": "Notat",
-    "notePlaceholder": "F.eks. antall personer",
+    "notePlaceholder": "F.eks. ankomsttid eller hvem som kommer",
     "posts": "Innlegg fra oppholdet",
     "writePost": "Skriv i hytteboka",
-    "recent": "Nylige besøk"
+    "recent": "Nylige besøk",
+    "guests": "Antall personer",
+    "guestsPlaceholder": "–",
+    "people": "{n} person | {n} personer"
   },
   "todo": {
     "new": "Ny oppgave",

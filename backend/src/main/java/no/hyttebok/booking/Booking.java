@@ -7,6 +7,7 @@ import io.micronaut.data.annotation.MappedEntity;
 import io.micronaut.serde.annotation.Serdeable;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Positive;
 
 import java.time.LocalDate;
 
@@ -16,5 +17,6 @@ public record Booking(@Id @GeneratedValue @Nullable Long id,
                       @NotBlank String guestName,
                       @NotNull LocalDate startDate,
                       @NotNull LocalDate endDate,
+                      @Nullable @Positive Integer guests,
                       @Nullable String note) {
 }

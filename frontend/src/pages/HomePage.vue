@@ -28,6 +28,8 @@ const TABS = [
 const route = useRoute()
 const toast = useToast()
 const uploading = ref(false)
+// A newly picked cover photo waits here until Save, so Cancel leaves the cabin untouched.
+const pendingHero = ref(null)
 const heroInput = ref()
 const editing = ref(false)
 const form = ref({})
@@ -53,29 +55,35 @@ function toggleSection(key, on) {
   form.value.hiddenSections = on ? form.value.hiddenSections.filter(k => k !== key) : [...form.value.hiddenSections, key]
 }
 
-async function changeHero(e) {
+function pickHero(e) {
   const file = e.target.files[0]
-  if (!file) return
-  uploading.value = true
-  try {
-    const photo = await uploadPhoto(file, t('home.coverCaption'), userName.value)
-    await saveCabin({ heroPhotoId: photo.id })
-    toast.add({ severity: 'success', summary: t('home.coverUpdated'), life: 2500 })
-  } catch (err) {
-    toast.add({ severity: 'error', summary: t('common.uploadFailed'), detail: err.message, life: 4000 })
-  } finally {
-    uploading.value = false
-    e.target.value = ''
-  }
+  if (file) pendingHero.value = { file, url: URL.createObjectURL(file) }
+  e.target.value = ''
 }
 
 function startEdit() {
   form.value = { ...cabin.value, hiddenSections: [...cabin.value.hiddenSections] }
+  pendingHero.value = null
   editing.value = true
 }
 
 async function save() {
-  await saveCabin(form.value)
+
+  uploading.value = true
+  try {
+    if (pendingHero.value) {
+      const photo = await uploadPhoto(pendingHero.value.file, t('home.coverCaption'), userName.value)
+      form.value.heroPhotoId = photo.id
+    }
+    await saveCabin(form.value)
+  } catch (err) {
+    toast.add({ severity: 'error', summary: t('common.uploadFailed'), detail: err.message, life: 4000 })
+    return
+  } finally {
+    uploading.value = false
+  }
+
+  pendingHero.value = null
   editing.value = false
   toast.add({ severity: 'success', summary: t('common.saved'), life: 2000 })
 }
@@ -117,12 +125,15 @@ async function save() {
     <Drawer v-model:visible="editing" position="right" :header="t('home.editTitle')" class="!w-full sm:!w-[30rem]">
       <form class="flex flex-col gap-4" @submit.prevent="save">
         <div class="flex items-center gap-3 rounded-lg border border-zinc-200 p-3">
-          <img v-if="cabin.heroPhotoId" :src="photoUrl(cabin.heroPhotoId)" alt="" class="h-14 w-20 shrink-0 rounded-md object-cover">
+          <img v-if="pendingHero || form.heroPhotoId" :src="pendingHero?.url || photoUrl(form.heroPhotoId)" alt="" class="h-14 w-20 shrink-0 rounded-md object-cover">
           <span v-else class="grid h-14 w-20 shrink-0 place-items-center rounded-md bg-zinc-100 text-zinc-500"><i class="pi pi-image" /></span>
-          <span class="flex-1 text-sm font-medium">{{ t('home.coverCaption') }}</span>
-          <input ref="heroInput" type="file" accept="image/*" class="hidden" @change="changeHero">
-          <Button type="button" :label="cabin.heroPhotoId ? t('home.changePhoto') : t('home.addPhoto')" icon="pi pi-camera" size="small"
-                  outlined severity="secondary" :loading="uploading" @click="heroInput.click()" />
+          <span class="min-w-0 flex-1">
+            <span class="block text-sm font-medium">{{ t('home.coverCaption') }}</span>
+            <span v-if="pendingHero" class="block text-xs text-zinc-500">{{ t('home.coverPending') }}</span>
+          </span>
+          <input ref="heroInput" type="file" accept="image/*" class="hidden" @change="pickHero">
+          <Button type="button" :label="pendingHero || form.heroPhotoId ? t('home.changePhoto') : t('home.addPhoto')" icon="pi pi-camera" size="small"
+                  outlined severity="secondary" @click="heroInput.click()" />
         </div>
         <label class="flex flex-col gap-1.5 text-sm font-medium">{{ t('home.name') }}<InputText v-model="form.name" required /></label>
         <label class="flex flex-col gap-1.5 text-sm font-medium">{{ t('home.tagline') }}<InputText v-model="form.tagline" /></label>
@@ -152,7 +163,7 @@ async function save() {
 
         <div class="flex justify-end gap-2 pt-2">
           <Button :label="t('common.cancel')" text severity="secondary" @click="editing = false" />
-          <Button type="submit" :label="t('common.save')" icon="pi pi-check" />
+          <Button type="submit" :label="t('common.save')" icon="pi pi-check" :loading="uploading" />
         </div>
       </form>
     </Drawer>

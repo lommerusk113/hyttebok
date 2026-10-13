@@ -49,7 +49,6 @@
     "changePhoto": "Change photo",
     "editInfo": "Edit info",
     "coverCaption": "Cover photo",
-    "coverUpdated": "Cover photo updated",
     "editTitle": "Edit cabin info",
     "name": "Name",
     "tagline": "Tagline",
@@ -58,7 +57,8 @@
     "wifiNetwork": "Network",
     "wifiPassword": "Password",
     "bulletHint": "Start a line with “-” for a bullet list",
-    "addBullet": "Bullet"
+    "addBullet": "Bullet",
+    "coverPending": "New photo – applied when you press Save"
   },
   "overview": {
     "latest": "Latest in the cabin book",
@@ -92,10 +92,13 @@
     "overlapHint": "You can still save, but it's worth checking with them.",
     "saveAnyway": "Save anyway",
     "note": "Note",
-    "notePlaceholder": "E.g. number of people",
+    "notePlaceholder": "E.g. arrival time or who is coming",
     "posts": "Posts from this stay",
     "writePost": "Write in the cabin book",
-    "recent": "Recent visits"
+    "recent": "Recent visits",
+    "guests": "Number of people",
+    "guestsPlaceholder": "–",
+    "people": "{n} person | {n} people"
   },
   "todo": {
     "new": "New task",
