@@ -1,0 +1,37 @@
+services:
+  db:
+    image: postgres:18-alpine
+    environment:
+      POSTGRES_DB: hyttebok
+      POSTGRES_USER: hyttebok
+      POSTGRES_PASSWORD: hyttebok
+    volumes:
+      - db-data:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U hyttebok"]
+      interval: 3s
+      retries: 20
+
+  backend:
+    build: ./backend
+    environment:
+      DB_URL: jdbc:postgresql://db:5432/hyttebok
+      DB_USER: hyttebok
+      DB_PASSWORD: hyttebok
+      UPLOAD_DIR: /data/uploads
+    volumes:
+      - uploads:/data/uploads
+    depends_on:
+      db:
+        condition: service_healthy
+
+  frontend:
+    build: ./frontend
+    ports:
+      - "8113:80"
+    depends_on:
+      - backend
+
+volumes:
+  db-data:
+  uploads:

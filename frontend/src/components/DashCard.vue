@@ -1,0 +1,29 @@
+<script setup>
+import { t } from '../i18n'
+
+// `add` is a route that opens the section's create form (e.g. "/booking?new=1").
+defineProps({ title: String, icon: String, tint: String, to: String, add: String, count: Number })
+</script>
+
+<template>
+  <section class="card flex flex-col">
+    <header class="flex items-center gap-3 px-5 pb-2 pt-4">
+      <span :class="tint" class="grid size-8 shrink-0 place-items-center rounded-md"><i :class="icon" class="text-sm" /></span>
+      <h2 class="flex-1 font-semibold">
+        {{ title }}
+        <span v-if="count" class="ml-1 rounded-full bg-zinc-100 px-2 py-0.5 text-xs font-medium text-zinc-600">{{ count }}</span>
+      </h2>
+      <slot name="action" />
+      <RouterLink v-if="add" :to="add" :aria-label="t('overview.add', { what: title })"
+                  class="grid size-9 place-items-center rounded-full text-zinc-600 transition hover:bg-zinc-100 hover:text-zinc-950">
+        <i class="pi pi-plus text-sm" />
+      </RouterLink>
+      <RouterLink v-if="to" :to="to" class="-my-2 inline-flex min-h-11 items-center gap-1 px-1 text-sm font-medium text-zinc-500 hover:text-zinc-950">
+        {{ t('overview.seeAll') }} <i class="pi pi-arrow-right text-[10px]" />
+      </RouterLink>
+    </header>
+    <div class="flex-1 px-5 pb-4">
+      <slot />
+    </div>
+  </section>
+</template>

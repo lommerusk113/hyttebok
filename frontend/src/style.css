@@ -1,0 +1,141 @@
+@import "tailwindcss";
+@plugin "tailwindcss-primeui";
+
+@custom-variant dark (&:where(.app-dark, .app-dark *));
+
+@theme {
+  --color-surface: #fff;
+  --color-page: #f4f4f5;
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Michroma", "Inter", ui-sans-serif, sans-serif;
+}
+
+body {
+  background: var(--color-page);
+  color: var(--color-zinc-800);
+}
+
+.card {
+  @apply rounded-lg border border-zinc-200/80 bg-surface shadow-sm;
+}
+
+/* --- PrimeVue tweaks (unlayered, so they win over the primevue layer) --- */
+
+.p-button {
+  font-size: 0.875rem;
+}
+
+.p-button:disabled {
+  background: var(--color-zinc-200);
+  border-color: transparent;
+  color: var(--color-zinc-500);
+}
+
+/* Third-level filters (Åpne/Fullført, Alle/Gjøre/Kjøpe) look like the header's language toggle. */
+.p-selectbutton {
+  gap: 2px;
+  padding: 3px;
+  border-radius: 9999px;
+  background: var(--color-zinc-200);
+}
+
+.p-selectbutton .p-togglebutton {
+  padding: 0;
+  border: 0;
+  border-radius: 9999px !important;
+  background: transparent;
+  color: var(--color-zinc-600);
+  font-size: 0.8125rem;
+  font-weight: 600;
+}
+
+.p-selectbutton .p-togglebutton-content {
+  padding: 0.375rem 0.875rem;
+  border-radius: 9999px;
+}
+
+.p-selectbutton .p-togglebutton-checked {
+  color: var(--color-zinc-950);
+}
+
+.p-selectbutton .p-togglebutton-checked .p-togglebutton-content {
+  background: var(--color-surface);
+  box-shadow: 0 1px 2px rgb(0 0 0 / 0.1);
+}
+
+/* --- Accessibility --- */
+
+:focus-visible {
+  outline: 2px solid var(--color-zinc-950);
+  outline-offset: 2px;
+}
+
+/* iOS zooms into inputs smaller than 16px. */
+@media (max-width: 639px) {
+  input, textarea, select, .p-inputtext, .p-textarea {
+    font-size: 16px !important;
+  }
+}
+
+/* --- Dark mode ---
+   The zinc scale is mirrored (zinc-950 text becomes near-white, zinc-100 fills become dark),
+   and light tints become translucent, so existing classes adapt without dark: variants.
+   Things that must stay white/black regardless (photo captions, booking bars) use fixed colours. */
+.app-dark {
+  color-scheme: dark;
+  --color-surface: #18181b;
+  --color-page: #0c0c0e;
+  --color-zinc-50: #1f1f23;
+  --color-zinc-100: #27272a;
+  --color-zinc-200: #3f3f46;
+  --color-zinc-300: #52525b;
+  --color-zinc-400: #71717a;
+  --color-zinc-500: #a1a1aa;
+  --color-zinc-600: #c4c4cc;
+  --color-zinc-700: #d4d4d8;
+  --color-zinc-800: #e4e4e7;
+  --color-zinc-900: #f4f4f5;
+  --color-zinc-950: #fafafa;
+  --color-sky-50: color-mix(in oklab, var(--color-sky-500) 14%, transparent);
+  --color-sky-100: color-mix(in oklab, var(--color-sky-500) 24%, transparent);
+  --color-sky-200: color-mix(in oklab, var(--color-sky-500) 35%, transparent);
+  --color-sky-700: var(--color-sky-300);
+  --color-sky-800: var(--color-sky-300);
+  --color-sky-900: var(--color-sky-300);
+  --color-amber-50: color-mix(in oklab, var(--color-amber-500) 14%, transparent);
+  --color-amber-100: color-mix(in oklab, var(--color-amber-500) 24%, transparent);
+  --color-amber-200: color-mix(in oklab, var(--color-amber-500) 35%, transparent);
+  --color-amber-700: var(--color-amber-300);
+  --color-amber-800: var(--color-amber-300);
+  --color-amber-900: var(--color-amber-300);
+  --color-violet-50: color-mix(in oklab, var(--color-violet-500) 14%, transparent);
+  --color-violet-100: color-mix(in oklab, var(--color-violet-500) 24%, transparent);
+  --color-violet-200: color-mix(in oklab, var(--color-violet-500) 35%, transparent);
+  --color-violet-700: var(--color-violet-300);
+  --color-violet-800: var(--color-violet-300);
+  --color-violet-900: var(--color-violet-300);
+  --color-emerald-50: color-mix(in oklab, var(--color-emerald-500) 14%, transparent);
+  --color-emerald-100: color-mix(in oklab, var(--color-emerald-500) 24%, transparent);
+  --color-emerald-200: color-mix(in oklab, var(--color-emerald-500) 35%, transparent);
+  --color-emerald-700: var(--color-emerald-300);
+  --color-emerald-800: var(--color-emerald-300);
+  --color-emerald-900: var(--color-emerald-300);
+  --color-rose-50: color-mix(in oklab, var(--color-rose-500) 14%, transparent);
+  --color-rose-100: color-mix(in oklab, var(--color-rose-500) 24%, transparent);
+  --color-rose-200: color-mix(in oklab, var(--color-rose-500) 35%, transparent);
+  --color-rose-700: var(--color-rose-300);
+  --color-rose-800: var(--color-rose-300);
+  --color-rose-900: var(--color-rose-300);
+  --color-orange-50: color-mix(in oklab, var(--color-orange-500) 14%, transparent);
+  --color-orange-100: color-mix(in oklab, var(--color-orange-500) 24%, transparent);
+  --color-orange-200: color-mix(in oklab, var(--color-orange-500) 35%, transparent);
+  --color-orange-700: var(--color-orange-300);
+  --color-orange-800: var(--color-orange-300);
+  --color-orange-900: var(--color-orange-300);
+  --color-teal-50: color-mix(in oklab, var(--color-teal-500) 14%, transparent);
+  --color-teal-100: color-mix(in oklab, var(--color-teal-500) 24%, transparent);
+  --color-teal-200: color-mix(in oklab, var(--color-teal-500) 35%, transparent);
+  --color-teal-700: var(--color-teal-300);
+  --color-teal-800: var(--color-teal-300);
+  --color-teal-900: var(--color-teal-300);
+}
