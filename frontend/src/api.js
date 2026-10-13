@@ -1,19 +1,89 @@
-async function request(method, url, body) {
+import { applyPending, enqueue, hasQueue, localPhotoUrl, online, sync, tempId, watchConnection } from './offline'
+
+class ApiError extends Error {
+  constructor(message, status) {
+    super(message)
+    this.status = status
+  }
+}
+
+async function send(method, url, body, key) {
 
   const isForm = body instanceof FormData
   const res = await fetch('/api' + url, {
     method,
     body: isForm ? body : body && JSON.stringify(body),
-    headers: body && !isForm ? { 'Content-Type': 'application/json' } : {},
+    headers: {
+      ...(body && !isForm && { 'Content-Type': 'application/json' }),
+      ...(key && { 'Idempotency-Key': key }),
+    },
   })
   const text = await res.text()
   if (!res.ok) {
     let message = text || res.statusText
     try { message = JSON.parse(text)._embedded.errors[0].message } catch { message = `${res.status} ${res.statusText}` }
-    throw new Error(message)
+    throw new ApiError(message, res.status)
   }
 
   return text ? JSON.parse(text) : null
+}
+
+// What the UI gets back for a change that is queued instead of sent.
+function optimistic(method, body, id) {
+
+  const now = new Date().toISOString()
+  if (method === 'DELETE') {
+    return null
+  }
+  if (body instanceof FormData) {
+    const fields = Object.fromEntries(body.entries())
+    return { id, caption: fields.caption || null, uploadedBy: fields.uploadedBy || null, logEntryId: fields.logEntryId ? Number(fields.logEntryId) : null, createdAt: now }
+  }
+
+  return { createdAt: now, ...body, ...(id && { id }), updatedAt: now }
+}
+
+// IndexedDB can't store Vue's reactive proxies; JSON bodies are plain data anyway.
+const plain = value => (value === undefined ? undefined : JSON.parse(JSON.stringify(value)))
+
+// The key lets the server recognise a retry of a change it already got (see IdempotencyFilter).
+const newKey = () => crypto.randomUUID?.() ?? `${Date.now()}-${Math.random()}`
+
+async function queueChange(method, url, body, key) {
+
+  const id = method === 'POST' ? tempId() : undefined
+  const result = plain(optimistic(method, body, id))
+  await enqueue({
+    key,
+    method,
+    url,
+    tempId: id,
+    body: body instanceof FormData ? undefined : plain(body),
+    form: body instanceof FormData ? [...body.entries()] : undefined,
+    optimistic: result,
+  })
+
+  return result
+}
+
+async function request(method, url, body) {
+
+  if (method === 'GET') {
+    return applyPending(url, await send(method, url))
+  }
+
+  // Waiting changes go first, so a new change is queued behind them to keep the order.
+  const key = newKey()
+  if (online.value && !hasQueue()) {
+    try {
+      return await send(method, url, body, key)
+    } catch (err) {
+      if (err instanceof ApiError) throw err
+      // ponytail: no request timeout; a hanging connection just waits. Add one if cabin signal makes that annoying.
+    }
+  }
+
+  return queueChange(method, url, body, key)
 }
 
 export const api = {
@@ -23,7 +93,7 @@ export const api = {
   del: url => request('DELETE', url),
 }
 
-export const photoUrl = id => `/api/photos/${id}/file`
+export const photoUrl = id => localPhotoUrl(id) || `/api/photos/${id}/file`
 
 export function uploadPhoto(file, caption, uploadedBy, logEntryId) {
   const form = new FormData()
@@ -32,4 +102,12 @@ export function uploadPhoto(file, caption, uploadedBy, logEntryId) {
   if (uploadedBy) form.append('uploadedBy', uploadedBy)
   if (logEntryId) form.append('logEntryId', logEntryId)
   return api.post('/photos', form)
+}
+
+/** Starts background syncing; `onSynced({ sent, dropped })` runs after changes were sent. */
+export function startSync(onSynced) {
+  watchConnection(async () => {
+    const result = await sync(send)
+    if (result.sent || result.dropped) onSynced(result)
+  })
 }

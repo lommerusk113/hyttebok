@@ -24,7 +24,8 @@
     "knownNames": "Velg navn",
     "darkMode": "Mørk modus",
     "menu": "Meny",
-    "changeName": "Bytt navn"
+    "changeName": "Bytt navn",
+    "install": "Installer appen"
   },
   "tabs": {
     "overview": "Oversikt",
@@ -194,5 +195,26 @@
   },
   "time": {
     "justNow": "akkurat nå"
+  },
+  "offline": {
+    "offline": "Frakoblet",
+    "pending": "{n} venter | {n} venter",
+    "synced": "{n} endring synkronisert | {n} endringer synkronisert",
+    "dropped": "{n} endring kunne ikke lagres (slettet av noen andre?) | {n} endringer kunne ikke lagres (slettet av noen andre?)"
+  },
+  "install": {
+    "subtitle": "Hytteboka som app på telefonen",
+    "benefitHome": "Åpnes rett fra hjemskjermen, som en vanlig app",
+    "benefitOffline": "Fungerer på hytta uten dekning",
+    "benefitSync": "Endringer sendes automatisk når du får nett igjen",
+    "done": "Appen er installert",
+    "open": "Åpne hytteboka",
+    "iosTitle": "Slik installerer du på iPhone",
+    "iosStep1": "Trykk på Del-knappen nederst i Safari",
+    "iosStep2": "Bla ned og velg «Legg til på Hjem-skjerm»",
+    "iosStep3": "Trykk «Legg til» øverst til høyre",
+    "iosNote": "Apple lar ikke nettsider installere seg selv, derfor må det gjøres via Del-menyen.",
+    "otherTitle": "Installer fra nettleseren",
+    "otherText": "Åpne denne siden i Chrome på Android eller Safari på iPhone. På PC: se etter installer-ikonet i adressefeltet."
   }
 }

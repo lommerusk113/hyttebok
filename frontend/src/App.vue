@@ -1,5 +1,6 @@
 <script setup>
 import { ref, watch } from 'vue'
+import { useRoute } from 'vue-router'
 import { usePrimeVue } from 'primevue/config'
 import Toast from 'primevue/toast'
 import ConfirmDialog from 'primevue/confirmdialog'
@@ -15,8 +16,12 @@ import { userName, askName } from './user'
 import { initials, colorFor } from './utils'
 import { api } from './api'
 import { locale, primeLocale, t } from './i18n'
+import { online, pending } from './offline'
+import { install, installPrompt, installed } from './install'
 
 const primevue = usePrimeVue()
+// The install page (/app) is often someone's first visit; don't ask for a name there.
+const route = useRoute()
 const menuOpen = ref(false)
 const confirm = useConfirm()
 
@@ -61,6 +66,11 @@ function saveName(name = draftName.value) {
 
         <!-- Wide screens: controls inline -->
         <div class="hidden items-center gap-3 sm:flex">
+          <span v-if="!online || pending" class="flex items-center gap-1.5 rounded-full bg-amber-100 px-2.5 py-1 text-xs font-medium text-amber-800" role="status">
+            <i class="pi text-[10px]" :class="online ? 'pi-sync' : 'pi-wifi'" />
+            {{ !online ? t('offline.offline') : '' }}{{ !online && pending ? ' · ' : '' }}{{ pending ? t('offline.pending', pending) : '' }}
+          </span>
+          <Button v-if="installPrompt" icon="pi pi-download" :label="t('app.install')" size="small" outlined severity="secondary" @click="install" />
           <ThemeSwitch v-tooltip.bottom="t('app.darkMode')" />
           <button class="flex items-center gap-2 rounded-full py-1 pl-1 pr-3 transition hover:bg-zinc-100"
                   :aria-label="userName || t('app.whoAreYou')" @click="askName = true">
@@ -69,11 +79,17 @@ function saveName(name = draftName.value) {
           </button>
         </div>
 
-        <!-- Phones: everything behind a menu -->
+        <!-- Phones: everything behind a menu (the sync status stays visible) -->
+        <div class="flex items-center gap-1 sm:hidden">
+          <span v-if="!online || pending" class="flex items-center gap-1.5 rounded-full bg-amber-100 px-2.5 py-1 text-xs font-medium text-amber-800" role="status">
+            <i class="pi text-[10px]" :class="online ? 'pi-sync' : 'pi-wifi'" />
+            {{ !online ? t('offline.offline') : '' }}{{ !online && pending ? ' · ' : '' }}{{ pending ? t('offline.pending', pending) : '' }}
+          </span>
         <button class="-mr-2 grid size-11 place-items-center rounded-full transition hover:bg-zinc-100 sm:hidden"
                 :aria-label="t('app.menu')" :aria-expanded="menuOpen" @click="menuOpen = true">
           <i class="pi pi-bars text-lg" />
         </button>
+        </div>
       </div>
     </header>
 
@@ -96,6 +112,12 @@ function saveName(name = draftName.value) {
           <span class="text-sm font-medium">{{ t('app.darkMode') }}</span>
           <ThemeSwitch />
         </label>
+
+        <Button v-if="installPrompt" icon="pi pi-download" :label="t('app.install')" class="mt-2" @click="menuOpen = false; install()" />
+        <RouterLink v-else-if="!installed" to="/app" class="mt-2 flex min-h-11 items-center justify-center gap-2 rounded-lg bg-zinc-100 text-sm font-medium"
+                    @click="menuOpen = false">
+          <i class="pi pi-mobile" />{{ t('app.install') }}
+        </RouterLink>
       </div>
     </Drawer>
 
@@ -106,7 +128,7 @@ function saveName(name = draftName.value) {
     <Toast position="top-center" />
     <ConfirmDialog :pt="confirmPt" />
 
-    <Dialog dismissable-mask v-model:visible="askName" modal :header="t('app.whoAreYou')" class="w-[26rem] max-w-[calc(100vw-2rem)]">
+    <Dialog dismissable-mask :visible="askName && route.path !== '/app'" @update:visible="askName = $event" modal :header="t('app.whoAreYou')" class="w-[26rem] max-w-[calc(100vw-2rem)]">
       <p class="mb-4 text-sm text-zinc-500">{{ t('app.nameHint') }}</p>
       <div v-if="knownNames.length" class="mb-4">
         <p class="mb-2 text-xs font-medium uppercase tracking-wide text-zinc-500">{{ t('app.knownNames') }}</p>

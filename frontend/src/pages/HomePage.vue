@@ -1,5 +1,5 @@
 <script setup>
-import { computed, defineAsyncComponent, onMounted, ref } from 'vue'
+import { computed, defineAsyncComponent, onMounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { useToast } from 'primevue/usetoast'
 import Button from 'primevue/button'
@@ -10,6 +10,7 @@ import ToggleSwitch from 'primevue/toggleswitch'
 import { photoUrl, uploadPhoto } from '../api'
 import { cabin, INFO_TILES, loadCabin, saveCabin } from '../cabin'
 import { userName } from '../user'
+import { dataVersion } from '../offline'
 import { t } from '../i18n'
 
 // Each tab is its own chunk, loaded when first opened (keeps the first load small on cabin internet).
@@ -35,6 +36,14 @@ const editing = ref(false)
 const form = ref({})
 
 onMounted(loadCabin)
+
+// After offline changes are synced, reload the view, but never pull an open form away from someone.
+const viewKey = ref(0)
+watch(dataVersion, function refresh() {
+  if (document.querySelector('.p-dialog, .p-drawer')) return setTimeout(refresh, 2000)
+  viewKey.value++
+  loadCabin()
+})
 
 const tab = computed(() => TABS.find(tb => tb.key === (route.params.tab || '')))
 const view = computed(() => tab.value.component)
@@ -118,7 +127,7 @@ async function save() {
 
     <!-- min-h keeps the page from collapsing (and the scroll position from jumping) while a tab loads -->
     <div class="mt-4 min-h-screen">
-      <component :is="view" :key="tab.key" />
+      <component :is="view" :key="`${tab.key}-${viewKey}`" />
     </div>
 
     <!-- Edit drawer -->

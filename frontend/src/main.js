@@ -10,6 +10,9 @@ import 'primeicons/primeicons.css'
 import './style.css'
 import App from './App.vue'
 import { i18n, primeLocale, t } from './i18n'
+import { startSync } from './api'
+import { dataVersion } from './offline'
+import './install'
 
 // Ravnsmark: monochrome, black is the accent.
 const preset = definePreset(Aura, {
@@ -39,6 +42,7 @@ const preset = definePreset(Aura, {
 const router = createRouter({
   history: createWebHistory(),
   routes: [
+    { path: '/app', component: () => import('./pages/AppPage.vue') },
     { path: '/:tab(booking|lister|hyttebok)?/:sub?', component: () => import('./pages/HomePage.vue') },
     { path: '/:pathMatch(.*)*', redirect: '/' },
   ],
@@ -65,3 +69,10 @@ app.config.errorHandler = err => {
 }
 
 app.mount('#app')
+
+startSync(({ sent, dropped }) => {
+  const toast = app.config.globalProperties.$toast
+  if (sent) toast.add({ severity: 'success', summary: t('offline.synced', sent), life: 3000 })
+  if (dropped) toast.add({ severity: 'warn', summary: t('offline.dropped', dropped), life: 6000 })
+  dataVersion.value++
+})

@@ -24,7 +24,8 @@
     "knownNames": "Pick your name",
     "darkMode": "Dark mode",
     "menu": "Menu",
-    "changeName": "Change name"
+    "changeName": "Change name",
+    "install": "Install the app"
   },
   "tabs": {
     "overview": "Overview",
@@ -194,5 +195,26 @@
   },
   "time": {
     "justNow": "just now"
+  },
+  "offline": {
+    "offline": "Offline",
+    "pending": "{n} waiting | {n} waiting",
+    "synced": "{n} change synced | {n} changes synced",
+    "dropped": "{n} change couldn't be saved (deleted by someone else?) | {n} changes couldn't be saved (deleted by someone else?)"
+  },
+  "install": {
+    "subtitle": "The cabin book as an app on your phone",
+    "benefitHome": "Opens straight from your home screen, like a normal app",
+    "benefitOffline": "Works at the cabin without signal",
+    "benefitSync": "Changes are sent automatically when you are back online",
+    "done": "The app is installed",
+    "open": "Open the cabin book",
+    "iosTitle": "How to install on iPhone",
+    "iosStep1": "Tap the Share button at the bottom of Safari",
+    "iosStep2": "Scroll down and choose “Add to Home Screen”",
+    "iosStep3": "Tap “Add” in the top right",
+    "iosNote": "Apple doesn't let websites install themselves, so it has to go through the Share menu.",
+    "otherTitle": "Install from your browser",
+    "otherText": "Open this page in Chrome on Android or Safari on iPhone. On a computer, look for the install icon in the address bar."
   }
 }
