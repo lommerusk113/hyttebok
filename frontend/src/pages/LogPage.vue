@@ -17,6 +17,7 @@ import { api, photoUrl, uploadPhoto } from '../api'
 import { askName, userName } from '../user'
 import { colorFor, formatDay, initials, parseIsoDate, timeAgo, toIsoDate } from '../utils'
 import { t } from '../i18n'
+import { cabin, loadCabin } from '../cabin'
 
 const MAX_GRID = 6
 
@@ -176,6 +177,7 @@ async function post() {
       if (p.removed) {
         await api.del(`/photos/${p.photo.id}`)
         removedIds.add(p.photo.id)
+        if (p.photo.id === cabin.value?.heroPhotoId) await loadCabin()
       } else if (p.caption.trim() !== (p.photo.caption || '')) {
         Object.assign(p.photo, await api.put(`/photos/${p.photo.id}/caption`, { caption: p.caption.trim() || null }))
       }
@@ -313,11 +315,17 @@ function remove(entry) {
 
       <div class="flex flex-col gap-2 text-sm font-medium">
         {{ t('log.photos') }}
-        <div v-for="p in existingPhotos" :key="p.photo.id" class="flex items-center gap-3 rounded-md border border-zinc-200 p-2" :class="p.removed && 'opacity-50'">
-          <img :src="photoUrl(p.photo.id)" alt="" class="size-16 shrink-0 rounded object-cover" :class="p.removed && 'grayscale'">
-          <InputText v-model="p.caption" :disabled="p.removed" :placeholder="t('log.captionPlaceholder')" class="min-w-0 flex-1" />
-          <Button :icon="p.removed ? 'pi pi-undo' : 'pi pi-times'" text rounded severity="secondary" size="small"
-                  :aria-label="p.removed ? t('suggestions.undo') : t('log.removePhoto')" @click="p.removed = !p.removed" />
+        <div v-for="p in existingPhotos" :key="p.photo.id" class="rounded-md border p-2"
+             :class="p.removed && p.photo.id === cabin?.heroPhotoId ? 'border-amber-300' : 'border-zinc-200'">
+          <div class="flex items-center gap-3" :class="p.removed && 'opacity-50'">
+            <img :src="photoUrl(p.photo.id)" alt="" class="size-16 shrink-0 rounded object-cover" :class="p.removed && 'grayscale'">
+            <InputText v-model="p.caption" :disabled="p.removed" :placeholder="t('log.captionPlaceholder')" class="min-w-0 flex-1" />
+            <Button :icon="p.removed ? 'pi pi-undo' : 'pi pi-times'" text rounded severity="secondary" size="small"
+                    :aria-label="p.removed ? t('suggestions.undo') : t('log.removePhoto')" @click="p.removed = !p.removed" />
+          </div>
+          <p v-if="p.removed && p.photo.id === cabin?.heroPhotoId" class="mt-2 flex items-start gap-2 text-sm font-normal text-amber-700">
+            <i class="pi pi-exclamation-triangle mt-0.5 text-xs" />{{ t('log.removingCover') }}
+          </p>
         </div>
         <div v-for="(p, i) in newPhotos" :key="p.url" class="flex items-center gap-3 rounded-md border border-zinc-200 p-2">
           <img :src="p.url" alt="" class="size-16 shrink-0 rounded object-cover">

@@ -165,7 +165,8 @@
     "edit": "Edit post",
     "stay": "Stay",
     "stayPlaceholder": "Choose a stay (optional)",
-    "stayOf": "Stay: {name}"
+    "stayOf": "Stay: {name}",
+    "removingCover": "This is the cover photo. It will also be removed from the front page when you save."
   },
   "photos": {
     "upload": "Upload",
@@ -185,7 +186,8 @@
     "next": "Next",
     "noCaption": "No caption",
     "unknown": "Unknown",
-    "seeAll": "See all {n} photos"
+    "seeAll": "See all {n} photos",
+    "deleteCoverMessage": "This is the cover photo. If you delete it, the cabin has no cover photo until someone picks a new one."
   },
   "time": {
     "justNow": "just now"

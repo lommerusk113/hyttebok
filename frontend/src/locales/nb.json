@@ -165,7 +165,8 @@
     "edit": "Rediger innlegg",
     "stay": "Opphold",
     "stayPlaceholder": "Velg opphold (valgfritt)",
-    "stayOf": "Opphold: {name}"
+    "stayOf": "Opphold: {name}",
+    "removingCover": "Dette er forsidebildet. Det fjernes også fra forsiden når du lagrer."
   },
   "photos": {
     "upload": "Last opp",
@@ -185,7 +186,8 @@
     "next": "Neste",
     "noCaption": "Uten tekst",
     "unknown": "Ukjent",
-    "seeAll": "Se alle {n} bildene"
+    "seeAll": "Se alle {n} bildene",
+    "deleteCoverMessage": "Dette er forsidebildet. Sletter du det, står hytta uten forsidebilde til noen velger et nytt."
   },
   "time": {
     "justNow": "akkurat nå"

@@ -11,7 +11,7 @@ import EmptyState from '../components/EmptyState.vue'
 import PhotoLightbox from '../components/PhotoLightbox.vue'
 import { api, photoUrl, uploadPhoto } from '../api'
 import { userName } from '../user'
-import { saveCabin } from '../cabin'
+import { cabin, loadCabin, saveCabin } from '../cabin'
 import { t } from '../i18n'
 
 const toast = useToast()
@@ -52,15 +52,18 @@ async function useAsHero(photo) {
 }
 
 function remove(photo) {
+  const isCover = photo.id === cabin.value?.heroPhotoId
   confirm.require({
     header: t('photos.deleteTitle'),
-    message: t('photos.deleteMessage'),
+    message: isCover ? t('photos.deleteCoverMessage') : t('photos.deleteMessage'),
+    icon: isCover ? 'pi pi-exclamation-triangle' : undefined,
     acceptProps: { label: t('common.delete'), severity: 'danger' },
     rejectProps: { label: t('common.cancel'), severity: 'secondary', text: true },
     accept: async () => {
       await api.del(`/photos/${photo.id}`)
       photos.value = photos.value.filter(p => p.id !== photo.id)
       index.value = null
+      if (isCover) await loadCabin()
     },
   })
 }
