@@ -110,9 +110,9 @@
     "people": "{n} person | {n} personer",
     "fewer": "Færre",
     "more": "Flere",
-    "pickStart": "Trykk på første dag i kalenderen",
     "pickEnd": "Fra {date} – trykk på siste dag",
-    "changeDates": "Endre datoer"
+    "alreadyBooked": "allerede booket",
+    "dates": "Datoer"
   },
   "todo": {
     "new": "Ny oppgave",

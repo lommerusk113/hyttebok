@@ -110,9 +110,9 @@
     "people": "{n} person | {n} people",
     "fewer": "Fewer",
     "more": "More",
-    "pickStart": "Tap the first day in the calendar",
     "pickEnd": "From {date} – tap the last day",
-    "changeDates": "Change dates"
+    "alreadyBooked": "already booked",
+    "dates": "Dates"
   },
   "todo": {
     "new": "New task",
