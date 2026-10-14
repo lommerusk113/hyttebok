@@ -1,17 +1,16 @@
 <script setup>
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { useToast } from 'primevue/usetoast'
 import Avatar from 'primevue/avatar'
 import AvatarGroup from 'primevue/avatargroup'
 import Button from 'primevue/button'
 import Checkbox from 'primevue/checkbox'
-import InputText from 'primevue/inputtext'
 import DashCard from '../components/DashCard.vue'
 import RichText from '../components/RichText.vue'
 import WeatherIcon from '../components/WeatherIcon.vue'
-import { dayWeather, loadWeather } from '../weather'
+import { dayWeather, loadWeather, loadWeatherDays, stayWeather } from '../weather'
 import { api, photoUrl } from '../api'
-import { addShoppingItem, toggleShopping, toggleTodo, undoToast } from '../actions'
+import { toggleShopping, toggleTodo, undoToast } from '../actions'
 import { cabin, INFO_TILES } from '../cabin'
 import { status as maintenanceStatus } from '../maintenance'
 import { dueLabel, overdueBadge, STATUS_STYLE } from '../maintenanceLabels'
@@ -30,9 +29,6 @@ const bookings = ref([])
 const log = ref([])
 const photos = ref([])
 const suggestions = ref([])
-const newItem = ref('')
-const newQuantity = ref('')
-const newItemInput = ref()
 
 // Items ticked off here stay visible (struck through) until reload, so a mis-tap is easy to undo.
 const tickedHere = ref(new Set())
@@ -51,6 +47,8 @@ const period = b => (!b.endDate || b.startDate === b.endDate ? day(b.startDate) 
 
 const staying = computed(() => bookings.value.filter(b => b.startDate <= today && b.endDate >= today))
 const upcoming = computed(() => bookings.value.filter(b => b.startDate > today).slice(0, 4))
+// Weather for each upcoming stay as a whole (average high over its days), not just the arrival day.
+watch(upcoming, list => list.forEach(b => loadWeatherDays(b.startDate, b.endDate)), { immediate: true })
 const recent = computed(() => bookings.value.filter(b => b.endDate < today).sort((a, b) => b.endDate.localeCompare(a.endDate)).slice(0, 3))
 const postCount = b => log.value.filter(e => e.bookingId === b.id).length
 const daysUntil = b => Math.round((parseIsoDate(b.startDate) - parseIsoDate(today)) / 864e5)
@@ -102,14 +100,6 @@ async function tickTodo(todo) {
   tickedHere.value.add(todo.id)
   todos.value = todos.value.map(x => (x.id === updated.id ? updated : x))
   if (updated.done) undoToast(toast, t('todo.doneToast', { name: updated.title }), () => tickTodo(updated))
-}
-
-async function quickAdd() {
-  if (!newItem.value.trim()) return
-  shopping.value = [await addShoppingItem(newItem.value, newQuantity.value), ...shopping.value]
-  newItem.value = ''
-  newQuantity.value = ''
-  newItemInput.value.$el.focus() // ready for the next item
 }
 
 // One info section open at a time; `shownInfo` lags behind on close so the panel can slide shut with its content.
@@ -184,7 +174,7 @@ function copy(text) {
     <!-- Mobile: one column in `order`; desktop: main column + side column -->
     <div class="flex flex-col gap-6 lg:grid lg:grid-cols-3 lg:items-start">
       <div class="contents lg:col-span-2 lg:flex lg:flex-col lg:gap-6">
-        <DashCard class="order-1" :title="t('booking.upcoming')" icon="pi pi-calendar" tint="bg-sky-50 text-sky-700" to="/booking" add="/booking?new=1">
+        <DashCard class="order-1" :title="t('booking.upcoming')" icon="pi pi-calendar" tint="bg-sky-50 text-sky-700" to="/booking">
           <ul v-if="upcoming.length" class="-mx-2">
             <li v-for="b in upcoming" :key="b.id">
               <RouterLink :to="`/booking?id=${b.id}`" class="flex items-center gap-3 rounded-md px-2 py-2 transition hover:bg-zinc-50">
@@ -195,8 +185,10 @@ function copy(text) {
                 </span>
                 <span class="flex shrink-0 flex-col items-end gap-0.5 text-xs text-zinc-500">
                   {{ t('overview.inDays', daysUntil(b)) }}
-                  <span v-if="dayWeather(b.startDate)?.symbol" class="flex items-center gap-1 tabular-nums">
-                    <WeatherIcon :symbol="dayWeather(b.startDate).symbol" :uncertain="dayWeather(b.startDate).uncertain" size="size-5" />{{ Math.round(dayWeather(b.startDate).maxTemp) }}°
+                  <span v-if="stayWeather(b.startDate, b.endDate)" class="flex items-center gap-1 tabular-nums"
+                        :title="t('weather.stayAverage', { max: Math.round(stayWeather(b.startDate, b.endDate).maxTemp) })">
+                    <WeatherIcon v-if="stayWeather(b.startDate, b.endDate).symbol" :symbol="stayWeather(b.startDate, b.endDate).symbol" :uncertain="stayWeather(b.startDate, b.endDate).uncertain" size="size-5" />
+                    {{ stayWeather(b.startDate, b.endDate).symbol ? '' : '≈' }}{{ Math.round(stayWeather(b.startDate, b.endDate).maxTemp) }}°
                   </span>
                 </span>
               </RouterLink>
@@ -227,7 +219,7 @@ function copy(text) {
           </template>
         </DashCard>
 
-        <DashCard class="order-5" :title="t('overview.latest')" icon="pi pi-book" tint="bg-violet-50 text-violet-700" to="/hyttebok" add="/hyttebok?new=1">
+        <DashCard class="order-5" :title="t('overview.latest')" icon="pi pi-book" tint="bg-violet-50 text-violet-700" to="/hyttebok">
           <ul v-if="latestPosts.length" class="-mx-2">
             <li v-for="e in latestPosts" :key="e.id">
               <RouterLink :to="`/hyttebok?id=${e.id}`" class="flex items-center gap-3 rounded-md px-2 py-2 transition hover:bg-zinc-50">
@@ -253,11 +245,6 @@ function copy(text) {
 
       <div class="contents lg:flex lg:flex-col lg:gap-6">
         <DashCard class="order-3" :title="t('tabs.shopping')" icon="pi pi-shopping-cart" tint="bg-amber-50 text-amber-700" to="/lister/handle" :count="openShopping">
-<form class="mb-1 grid grid-cols-[1fr_3.5rem_auto] gap-2" @submit.prevent="quickAdd">
-            <InputText ref="newItemInput" v-model="newItem" :placeholder="t('shopping.placeholder')" :aria-label="t('shopping.item')" class="min-w-0" />
-            <InputText v-model="newQuantity" :placeholder="t('shopping.quantityShort')" :aria-label="t('shopping.quantity')" class="!px-2 text-center" />
-            <Button type="submit" :label="t('shopping.add')" :disabled="!newItem.trim()" />
-          </form>
           <ul class="-mx-1">
             <li v-for="i in visibleShopping.slice(0, SHOPPING_LIMIT)" :key="i.id">
               <label class="flex min-h-11 cursor-pointer items-center gap-3 rounded px-1">
@@ -273,7 +260,7 @@ function copy(text) {
           <p v-if="!visibleShopping.length" class="py-1 text-sm text-zinc-500">{{ t('shopping.empty') }}</p>
         </DashCard>
 
-        <DashCard class="order-4" :title="t('tabs.todos')" icon="pi pi-check-square" tint="bg-amber-50 text-amber-700" to="/lister/gjoremal" add="/lister/gjoremal?new=gjoremal" :count="openTodos">
+        <DashCard class="order-4" :title="t('tabs.todos')" icon="pi pi-check-square" tint="bg-amber-50 text-amber-700" to="/lister/gjoremal" :count="openTodos">
           <ul class="-mx-1">
             <li v-for="x in visibleTodos.slice(0, TODO_LIMIT)" :key="x.id">
               <label class="flex min-h-11 cursor-pointer items-center gap-3 rounded px-1">
@@ -288,8 +275,9 @@ function copy(text) {
           <p v-if="!visibleTodos.length" class="py-1 text-sm text-zinc-500">{{ t('todo.allDone') }}</p>
         </DashCard>
 
-        <DashCard class="order-4" :title="t('tabs.maintenance')" icon="pi pi-wrench" tint="bg-zinc-100 text-zinc-700" to="/vedlikehold" add="/vedlikehold?new=vedlikehold"
-                  :count-label="overdueBadge(dueMaintenance.filter(x => x.days < 0).length)" count-class="bg-rose-50 text-rose-700">
+        <DashCard class="order-4" :title="t('tabs.maintenance')" icon="pi pi-wrench" tint="bg-zinc-100 text-zinc-700" to="/vedlikehold"
+                  :count="dueMaintenance.filter(x => x.days < 0).length" count-class="bg-rose-50 text-rose-700"
+                  :count-title="overdueBadge(dueMaintenance.filter(x => x.days < 0).length)">
           <ul v-if="dueMaintenance.length" class="-mx-2">
             <li v-for="x in dueMaintenance" :key="x.m.id">
               <RouterLink :to="`/vedlikehold?id=${x.m.id}`" class="flex min-h-11 items-center gap-3 rounded-md px-2 transition hover:bg-zinc-50">
@@ -302,7 +290,7 @@ function copy(text) {
           <p v-else class="flex items-center gap-2 py-1 text-sm text-zinc-500"><i class="pi pi-check-circle text-emerald-600" />{{ t('maintenance.allGood') }}</p>
         </DashCard>
 
-        <DashCard class="order-6" :title="t('overview.topIdeas')" icon="pi pi-lightbulb" tint="bg-amber-50 text-amber-700" to="/lister/forslag" add="/lister/forslag?new=forslag">
+        <DashCard class="order-6" :title="t('overview.topIdeas')" icon="pi pi-lightbulb" tint="bg-amber-50 text-amber-700" to="/lister/forslag">
           <ul v-if="topIdeas.length" class="space-y-2">
             <li v-for="s in topIdeas" :key="s.id" class="flex items-center gap-2.5">
               <span class="flex w-9 shrink-0 items-center gap-1 text-sm text-rose-600"><i class="pi pi-heart-fill text-xs" />{{ s.voters.length }}</span>

@@ -28,15 +28,17 @@ public class CabinInfoController {
     @Put
     public CabinInfo update(@Body @Valid CabinInfo info) {
 
-        // A new address means a new place: forget the old coordinates (looked up again for the weather)
-        // unless coordinates were also typed in by hand.
+        // Coordinates found from the address belong to that address: a new address means they (and the height)
+        // are looked up again for the weather. Coordinates typed in by hand stay. A height typed in this save is
+        // kept either way: the address can be the nearest village while the height is the cabin's own.
         var current = repository.findById(CABIN_ID).orElseThrow();
-        var moved = !java.util.Objects.equals(current.address(), info.address())
-            && java.util.Objects.equals(current.latitude(), info.latitude()) && java.util.Objects.equals(current.longitude(), info.longitude());
+        var moved = !java.util.Objects.equals(current.address(), info.address()) && !info.locationTyped();
+        var heightTyped = !java.util.Objects.equals(current.elevation(), info.elevation());
 
         var singleton = new CabinInfo(CABIN_ID, info.name(), info.tagline(), info.description(), info.address(),
             info.wifiName(), info.wifiPassword(), info.arrivalInfo(), info.departureInfo(), info.heroPhotoId(), info.hiddenSections(),
-            moved ? null : info.latitude(), moved ? null : info.longitude());
+            moved ? null : info.latitude(), moved ? null : info.longitude(), moved && !heightTyped ? null : info.elevation(),
+            info.locationTyped() && info.latitude() != null);
 
         return repository.update(singleton);
     }

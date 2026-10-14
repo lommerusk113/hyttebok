@@ -63,7 +63,15 @@
     "wifiPassword": "Passord",
     "bulletHint": "Start en linje med «-» for punktliste",
     "addBullet": "Punkt",
-    "coverPending": "Nytt bilde – lagres når du trykker Lagre"
+    "coverPending": "Nytt bilde – lagres når du trykker Lagre",
+    "elevation": "Høyde over havet (for været)",
+    "elevationSuffix": " moh.",
+    "elevationPlaceholder": "Hentes automatisk",
+    "elevationHint": "Hentes automatisk fra kartpunktet eller adressen. Stemmer det ikke, skriv inn hyttas høyde – været justeres for det.",
+    "weatherLocation": "Kartpunkt for været (valgfritt)",
+    "weatherLocationPlaceholder": "F.eks. 62.0955, 5.8171 eller lenke fra Google Maps",
+    "weatherLocationHint": "Står det tomt, bruker vi adressen. I Google Maps: hold fingeren på hytta og kopier tallene som dukker opp.",
+    "weatherLocationInvalid": "Fant ingen koordinater. Lim inn tallene (f.eks. 62.0955, 5.8171) – korte «maps.app.goo.gl»-lenker inneholder dem ikke."
   },
   "overview": {
     "latest": "Siste i hytteboka",
@@ -75,7 +83,6 @@
     "inDays": "i dag | i morgen | om {n} dager",
     "more": "+ {n} til",
     "topIdeas": "Populære forslag",
-    "add": "Legg til: {what}",
     "now": "Akkurat nå",
     "allClear": "Alt er i rute",
     "nowOverdue": "{n} vedlikehold på overtid | {n} vedlikehold på overtid",
@@ -371,6 +378,8 @@
       "clearsky": "Klarvær",
       "cloudy": "Skyet"
     },
-    "normalDay": "Vanlig for datoen: {max}° / {min}° (snitt siste 20 år)"
+    "normalDay": "Vanlig for datoen: {max}° / {min}° (snitt siste 20 år)",
+    "creditFor": "Værdata for {place} ({m} moh.):",
+    "stayAverage": "Snitt for oppholdet: {max}°"
   }
 }

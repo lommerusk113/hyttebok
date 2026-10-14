@@ -4,11 +4,13 @@ import { useRoute } from 'vue-router'
 import { useToast } from 'primevue/usetoast'
 import Button from 'primevue/button'
 import Drawer from 'primevue/drawer'
+import InputNumber from 'primevue/inputnumber'
 import InputText from 'primevue/inputtext'
 import Textarea from 'primevue/textarea'
 import ToggleSwitch from 'primevue/toggleswitch'
 import { photoUrl, uploadPhoto } from '../api'
 import { cabin, INFO_TILES, loadCabin, saveCabin } from '../cabin'
+import { reloadWeather } from '../weather'
 import { userName } from '../user'
 import { dataVersion } from '../offline'
 import { t } from '../i18n'
@@ -79,21 +81,44 @@ function pickHero(e) {
   e.target.value = ''
 }
 
+// Optional exact spot for the weather: coordinates, or a Google Maps link containing them
+// (".../search/62.0955,+5.8171" or ".../@62.0955,5.8171,15z"). Empty = use the address.
+const parseLocation = text => {
+  const m = text.match(/(-?\d{1,2}\.\d+)\s*,\s*\+?\s*(-?\d{1,3}\.\d+)/)
+  return m && { latitude: Number(m[1]), longitude: Number(m[2]) }
+}
+// Coordinates found from the address aren't shown: the field is only for a spot typed in by hand.
+const locationText = c => (c.latitude != null && c.locationTyped ? `${c.latitude}, ${c.longitude}` : '')
+const locationError = computed(() => !!form.value.location?.trim() && !parseLocation(form.value.location))
+
 function startEdit() {
-  form.value = { ...cabin.value, hiddenSections: [...cabin.value.hiddenSections] }
+  form.value = { ...cabin.value, hiddenSections: [...cabin.value.hiddenSections], elevation: cabin.value.elevation == null ? null : Math.round(cabin.value.elevation), location: locationText(cabin.value) }
   pendingHero.value = null
   editing.value = true
 }
 
 async function save() {
 
+  if (locationError.value) return
+  const { location, ...changes } = form.value
+  // Unchanged (just rounded for the field) = keep the stored value, so it isn't mistaken for a typed height.
+  const heightTyped = changes.elevation !== (cabin.value.elevation == null ? null : Math.round(cabin.value.elevation))
+  if (!heightTyped) changes.elevation = cabin.value.elevation
+  const spotChanged = location.trim() !== locationText(cabin.value)
+  if (spotChanged) {
+    // A new spot (or none: back to the address) gets its height looked up, unless one was typed too.
+    Object.assign(changes, parseLocation(location) || { latitude: null, longitude: null }, { locationTyped: !!location.trim() })
+    if (!heightTyped) changes.elevation = null
+  }
+  const moved = spotChanged || changes.address !== cabin.value.address || heightTyped
+
   uploading.value = true
   try {
     if (pendingHero.value) {
       const photo = await uploadPhoto(pendingHero.value.file, t('home.coverCaption'), userName.value)
-      form.value.heroPhotoId = photo.id
+      changes.heroPhotoId = photo.id
     }
-    await saveCabin(form.value)
+    await saveCabin(changes)
   } catch (err) {
     toast.add({ severity: 'error', summary: t('common.uploadFailed'), detail: err.message, life: 4000 })
     return
@@ -103,6 +128,7 @@ async function save() {
 
   pendingHero.value = null
   editing.value = false
+  if (moved) reloadWeather()
   toast.add({ severity: 'success', summary: t('common.saved'), life: 2000 })
 }
 </script>
@@ -178,6 +204,20 @@ async function save() {
             </template>
           </div>
         </div>
+
+        <!-- Weather comes from the exact spot if given, else the address; the height corrects the temperature -->
+        <label class="flex flex-col gap-1.5 pt-2 text-sm font-medium">
+          {{ t('home.weatherLocation') }}
+          <InputText v-model="form.location" :invalid="locationError" :placeholder="t('home.weatherLocationPlaceholder')" />
+          <span class="text-xs font-normal" :class="locationError ? 'text-rose-700' : 'text-zinc-500'">
+            {{ locationError ? t('home.weatherLocationInvalid') : t('home.weatherLocationHint') }}
+          </span>
+        </label>
+        <label class="flex flex-col gap-1.5 text-sm font-medium">
+          {{ t('home.elevation') }}
+          <InputNumber v-model="form.elevation" :min="0" :max="2500" :use-grouping="false" :suffix="t('home.elevationSuffix')" :placeholder="t('home.elevationPlaceholder')" />
+          <span class="text-xs font-normal text-zinc-500">{{ t('home.elevationHint') }}</span>
+        </label>
 
         <div class="flex justify-end gap-2 pt-2">
           <Button :label="t('common.cancel')" text severity="secondary" @click="editing = false" />

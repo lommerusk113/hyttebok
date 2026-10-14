@@ -4,7 +4,7 @@ import { useRouter } from 'vue-router'
 import { useDeepLink } from '../deepLink'
 import WeatherIcon from '../components/WeatherIcon.vue'
 import StayWeather from '../components/StayWeather.vue'
-import { dayWeather, loadWeatherDays } from '../weather'
+import { dayWeather, loadWeatherDays, weather, weatherVersion } from '../weather'
 import { useToast } from 'primevue/usetoast'
 import { useConfirm } from 'primevue/useconfirm'
 import Button from 'primevue/button'
@@ -86,7 +86,7 @@ const weeks = computed(() => {
   })
 })
 
-watch(() => [weeks.value[0][0].iso, weeks.value.at(-1)[6].iso], ([from, to]) => loadWeatherDays(from, to), { immediate: true })
+watch(() => [weeks.value[0][0].iso, weeks.value.at(-1)[6].iso, weatherVersion.value], ([from, to]) => loadWeatherDays(from, to), { immediate: true })
 
 const upcoming = computed(() => bookings.value.filter(b => b.endDate >= today))
 const RECENT_LIMIT = 5
@@ -264,7 +264,8 @@ function remove(b) {
         </div>
       </div>
       <p class="border-t border-zinc-100 px-4 py-2 text-xs text-zinc-500">
-        {{ t('weather.credit') }}
+        <!-- Says where the weather is for, so a wrong address is easy to spot -->
+        {{ weather?.place ? t('weather.creditFor', { place: weather.place, m: weather.elevation ?? '?' }) : t('weather.credit') }}
         <a href="https://www.met.no" target="_blank" rel="noopener" class="underline underline-offset-2">MET Norway</a> ·
         <a href="https://open-meteo.com" target="_blank" rel="noopener" class="underline underline-offset-2">Open-Meteo</a>.
         {{ t('weather.uncertainHint') }}

@@ -22,7 +22,7 @@ public record DayWeather(LocalDate date, @Nullable String symbol, double maxTemp
     }
 
     @Serdeable
-    public record Report(@Nullable Double latitude, @Nullable Double longitude, @Nullable String place,
+    public record Report(@Nullable Double latitude, @Nullable Double longitude, @Nullable Integer elevation, @Nullable String place,
                          java.util.List<DayWeather> days, java.util.List<MonthClimate> climate, boolean stale) {
     }
 }

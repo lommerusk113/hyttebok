@@ -63,7 +63,15 @@
     "wifiPassword": "Password",
     "bulletHint": "Start a line with “-” for a bullet list",
     "addBullet": "Bullet",
-    "coverPending": "New photo – applied when you press Save"
+    "coverPending": "New photo – applied when you press Save",
+    "elevation": "Height above sea level (for the weather)",
+    "elevationSuffix": " m",
+    "elevationPlaceholder": "Filled in automatically",
+    "elevationHint": "Filled in from the map point or the address. If it's wrong, enter the cabin's height – the weather is adjusted for it.",
+    "weatherLocation": "Map point for the weather (optional)",
+    "weatherLocationPlaceholder": "E.g. 62.0955, 5.8171 or a Google Maps link",
+    "weatherLocationHint": "Leave empty to use the address. In Google Maps: press and hold on the cabin and copy the numbers that appear.",
+    "weatherLocationInvalid": "No coordinates found. Paste the numbers (e.g. 62.0955, 5.8171) – short \"maps.app.goo.gl\" links don't contain them."
   },
   "overview": {
     "latest": "Latest in the cabin book",
@@ -75,7 +83,6 @@
     "inDays": "today | tomorrow | in {n} days",
     "more": "+ {n} more",
     "topIdeas": "Popular ideas",
-    "add": "Add: {what}",
     "now": "Right now",
     "allClear": "All on track",
     "nowOverdue": "{n} maintenance overdue | {n} maintenance overdue",
@@ -371,6 +378,8 @@
       "clearsky": "Clear sky",
       "cloudy": "Cloudy"
     },
-    "normalDay": "Usual for the date: {max}° / {min}° (20-year average)"
+    "normalDay": "Usual for the date: {max}° / {min}° (20-year average)",
+    "creditFor": "Weather for {place} ({m} m above sea level):",
+    "stayAverage": "Average for the stay: {max}°"
   }
 }

@@ -25,5 +25,7 @@ public record CabinInfo(@Id Long id,
                         @Nullable Long heroPhotoId,
                         @NotNull @TypeDef(type = DataType.STRING_ARRAY) List<String> hiddenSections,
                         @Nullable Double latitude,
-                        @Nullable Double longitude) {
+                        @Nullable Double longitude,
+                        @Nullable Double elevation,
+                        boolean locationTyped) {
 }

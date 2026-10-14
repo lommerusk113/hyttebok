@@ -7,7 +7,7 @@ import { localeTag, t } from './i18n'
 export function dueLabel(m, today) {
   const { days } = status(m, today)
   if (days < 0) return t('maintenance.overdue', -days)
-  if (byMonth(m)) return nextDue(m) <= today ? t('maintenance.dueThisMonth') : t('maintenance.nextOn', { date: dueText(m, nextDue(m)) })
+  if (byMonth(m)) return nextDue(m).slice(0, 7) <= today.slice(0, 7) ? t('maintenance.dueThisMonth') : t('maintenance.nextOn', { date: dueText(m, nextDue(m)) })
   if (days === 0) return t('maintenance.dueToday')
   if (days <= 30) return t('maintenance.dueIn', days)
   return t('maintenance.nextOn', { date: dueText(m, nextDue(m)) })

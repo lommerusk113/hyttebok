@@ -55,6 +55,7 @@ public class WeatherService {
 
     private @Nullable Forecast forecast;
     private @Nullable Climate climate;
+    private @Nullable String heightTriedFor;
     // ponytail: in memory, so a restart refetches; bounded by the months people browse (archive starts 1940).
     private final Map<String, ArchiveMonth> archive = new HashMap<>();
 
@@ -67,6 +68,25 @@ public class WeatherService {
     private record ArchiveMonth(LocalDate fetchedOn, List<DayWeather> days) {
     }
 
+    /**
+     * Where to get weather for. The height matters: both MET and Open-Meteo adjust temperatures for it
+     * (about 0.6° colder per 100 m), and their own terrain models are coarse along fjords and mountains.
+     */
+    private record Spot(double lat, double lon, @Nullable Integer elevation) {
+
+        String key() {
+            return lat + "," + lon + "," + elevation;
+        }
+
+        String met() {
+            return "lat=" + lat + "&lon=" + lon + (elevation == null ? "" : "&altitude=" + elevation);
+        }
+
+        String openMeteo() {
+            return "latitude=" + lat + "&longitude=" + lon + (elevation == null ? "" : "&elevation=" + elevation);
+        }
+    }
+
     public WeatherService(CabinInfoRepository cabins, JsonMapper json) {
         this.cabins = cabins;
         this.json = json;
@@ -76,19 +96,21 @@ public class WeatherService {
 
         var cabin = locate(cabins.findById(CABIN_ID).orElseThrow());
         if (cabin.latitude() == null || cabin.longitude() == null) {
-            return new DayWeather.Report(null, null, null, List.of(), List.of(), false);
+            return new DayWeather.Report(null, null, null, null, List.of(), List.of(), false);
         }
 
-        var lat = round4(cabin.latitude());
-        var lon = round4(cabin.longitude());
-        var key = lat + "," + lon;
-        var stale = refreshForecast(key, lat, lon);
-        refreshClimate(key, lat, lon);
+        var place = place(cabin);
+        var stale = refreshForecast(place);
+        refreshClimate(place);
 
         var today = LocalDate.now(ZONE);
         var days = forecast == null ? List.<DayWeather>of() : forecast.days().stream().filter(d -> !d.date().isBefore(today)).toList();
 
-        return new DayWeather.Report(lat, lon, null, days, climate == null ? List.of() : climate.months(), stale);
+        return new DayWeather.Report(place.lat(), place.lon(), place.elevation(), cabin.address(), days, climate == null ? List.of() : climate.months(), stale);
+    }
+
+    private static Spot place(CabinInfo cabin) {
+        return new Spot(round4(cabin.latitude()), round4(cabin.longitude()), cabin.elevation() == null ? null : (int) Math.round(cabin.elevation()));
     }
 
     /**
@@ -102,14 +124,12 @@ public class WeatherService {
             return List.of();
         }
 
-        var lat = report.latitude();
-        var lon = report.longitude();
-        var key = lat + "," + lon;
+        var place = new Spot(report.latitude(), report.longitude(), report.elevation());
         var today = LocalDate.now(ZONE);
         var result = new ArrayList<DayWeather>();
 
         for (var month = YearMonth.from(from); !month.atDay(1).isAfter(to) && month.atDay(1).isBefore(today); month = month.plusMonths(1)) {
-            for (var day : archiveMonth(key, lat, lon, month, today)) {
+            for (var day : archiveMonth(place, month, today)) {
                 if (!day.date().isBefore(from) && !day.date().isAfter(to)) {
                     result.add(day);
                 }
@@ -133,9 +153,9 @@ public class WeatherService {
     }
 
     /** Measured weather for the month's days before today. Finished months are kept; the current one is refetched daily. */
-    private List<DayWeather> archiveMonth(String key, double lat, double lon, YearMonth month, LocalDate today) {
+    private List<DayWeather> archiveMonth(Spot place, YearMonth month, LocalDate today) {
 
-        var cacheKey = key + "/" + month;
+        var cacheKey = place.key() + "/" + month;
         var cached = archive.get(cacheKey);
         if (cached != null && (cached.fetchedOn().equals(today) || month.atEndOfMonth().isBefore(cached.fetchedOn().minusDays(ARCHIVE_DELAY_DAYS)))) {
             return cached.days();
@@ -143,7 +163,7 @@ public class WeatherService {
 
         var end = month.atEndOfMonth().isBefore(today) ? month.atEndOfMonth() : today.minusDays(1);
         try {
-            var days = OpenMeteo.days(get("https://archive-api.open-meteo.com/v1/archive?latitude=" + lat + "&longitude=" + lon
+            var days = OpenMeteo.days(get("https://archive-api.open-meteo.com/v1/archive?" + place.openMeteo()
                 + "&start_date=" + month.atDay(1) + "&end_date=" + end
                 + "&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_sum&timezone=Europe%2FOslo", OpenMeteo.Response.class))
                 .stream().map(d -> d.withSource("ARCHIVE", false)).toList();
@@ -156,21 +176,21 @@ public class WeatherService {
     }
 
     /** @return true if serving an older forecast because both sources failed */
-    private boolean refreshForecast(String key, double lat, double lon) {
+    private boolean refreshForecast(Spot place) {
 
-        if (forecast != null && forecast.key().equals(key) && forecast.fetchedAt().plus(FORECAST_TTL).isAfter(Instant.now())) {
+        if (forecast != null && forecast.key().equals(place.key()) && forecast.fetchedAt().plus(FORECAST_TTL).isAfter(Instant.now())) {
             return false;
         }
 
         List<DayWeather> met = null;
         List<DayWeather> openMeteo = null;
         try {
-            met = MetForecast.days(get("https://api.met.no/weatherapi/locationforecast/2.0/compact?lat=" + lat + "&lon=" + lon, MetForecast.Response.class), ZONE);
+            met = MetForecast.days(get("https://api.met.no/weatherapi/locationforecast/2.0/compact?" + place.met(), MetForecast.Response.class), ZONE);
         } catch (Exception e) {
             LOG.warn("MET forecast failed: {}", e.toString());
         }
         try {
-            openMeteo = OpenMeteo.days(get("https://api.open-meteo.com/v1/forecast?latitude=" + lat + "&longitude=" + lon
+            openMeteo = OpenMeteo.days(get("https://api.open-meteo.com/v1/forecast?" + place.openMeteo()
                 + "&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_sum&timezone=Europe%2FOslo&forecast_days=16", OpenMeteo.Response.class));
         } catch (Exception e) {
             LOG.warn("Open-Meteo forecast failed: {}", e.toString());
@@ -180,7 +200,7 @@ public class WeatherService {
             return forecast != null;
         }
 
-        forecast = new Forecast(key, Instant.now(), merge(met, openMeteo));
+        forecast = new Forecast(place.key(), Instant.now(), merge(met, openMeteo));
         return false;
     }
 
@@ -199,17 +219,17 @@ public class WeatherService {
         return new ArrayList<>(byDate.values());
     }
 
-    private void refreshClimate(String key, double lat, double lon) {
+    private void refreshClimate(Spot place) {
 
         var year = LocalDate.now(ZONE).getYear();
-        if (climate != null && climate.key().equals(key) && climate.year() == year) {
+        if (climate != null && climate.key().equals(place.key()) && climate.year() == year) {
             return;
         }
         try {
-            var archive = get("https://archive-api.open-meteo.com/v1/archive?latitude=" + lat + "&longitude=" + lon
+            var archive = get("https://archive-api.open-meteo.com/v1/archive?" + place.openMeteo()
                 + "&start_date=" + (year - CLIMATE_YEARS) + "-01-01&end_date=" + (year - 1) + "-12-31"
                 + "&daily=temperature_2m_max,temperature_2m_min,precipitation_sum&timezone=Europe%2FOslo", OpenMeteo.Response.class);
-            climate = new Climate(key, year, OpenMeteo.climate(archive), OpenMeteo.normals(archive));
+            climate = new Climate(place.key(), year, OpenMeteo.climate(archive), OpenMeteo.normals(archive));
         } catch (Exception e) {
             LOG.warn("Open-Meteo archive failed: {}", e.toString()); // keep the previous averages, if any
         }
@@ -242,25 +262,66 @@ public class WeatherService {
     record NorthEast(double nord, double øst) {
     }
 
-    /** Fills in coordinates from the address the first time (Kartverket: exact address, else place name). */
+    @Serdeable
+    record HeightSearch(List<Height> punkter) {
+    }
+
+    @Serdeable
+    record Height(@Nullable Double z) {
+    }
+
+    /**
+     * Fills in coordinates from the address the first time (Kartverket: exact address, else place name),
+     * and the ground height there (Kartverket's terrain model).
+     */
     private CabinInfo locate(CabinInfo cabin) {
 
-        if (cabin.latitude() != null || cabin.address() == null || cabin.address().isBlank()) {
-            return cabin;
+        var lat = cabin.latitude();
+        var lon = cabin.longitude();
+        if (lat == null || lon == null) {
+            if (cabin.address() == null || cabin.address().isBlank()) {
+                return cabin;
+            }
+            try {
+                var point = geocode(cabin.address());
+                if (point != null) {
+                    lat = point[0];
+                    lon = point[1];
+                }
+            } catch (Exception e) {
+                LOG.warn("Geocoding '{}' failed: {}", cabin.address(), e.toString());
+            }
+            if (lat == null || lon == null) {
+                return cabin;
+            }
         }
 
-        double[] point = null;
-        try {
-            point = geocode(cabin.address());
-        } catch (Exception e) {
-            LOG.warn("Geocoding '{}' failed: {}", cabin.address(), e.toString());
+        var elevation = cabin.elevation();
+        var point = lat + "," + lon;
+        if (elevation == null && !point.equals(heightTriedFor)) {
+            heightTriedFor = point; // once per place, so an outage (or a spot outside Norway) doesn't mean a lookup per request
+            try {
+                elevation = height(lat, lon);
+            } catch (Exception e) {
+                LOG.warn("Height lookup failed: {}", e.toString());
+            }
         }
-        if (point == null) {
+        if (lat.equals(cabin.latitude()) && lon.equals(cabin.longitude()) && java.util.Objects.equals(elevation, cabin.elevation())) {
             return cabin;
         }
 
         return cabins.update(new CabinInfo(cabin.id(), cabin.name(), cabin.tagline(), cabin.description(), cabin.address(), cabin.wifiName(),
-            cabin.wifiPassword(), cabin.arrivalInfo(), cabin.departureInfo(), cabin.heroPhotoId(), cabin.hiddenSections(), point[0], point[1]));
+            cabin.wifiPassword(), cabin.arrivalInfo(), cabin.departureInfo(), cabin.heroPhotoId(), cabin.hiddenSections(), lat, lon, elevation,
+            cabin.locationTyped()));
+    }
+
+    /** Metres above sea level, or null outside Kartverket's coverage. */
+    @Nullable
+    private Double height(double lat, double lon) throws IOException, InterruptedException {
+
+        var result = get("https://ws.geonorge.no/hoydedata/v1/punkt?koordsys=4258&geojson=false&nord=" + lat + "&ost=" + lon, HeightSearch.class);
+
+        return result.punkter() == null || result.punkter().isEmpty() ? null : result.punkter().get(0).z();
     }
 
     @Nullable
