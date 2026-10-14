@@ -41,11 +41,12 @@ const form = ref({})
 
 onMounted(loadCabin)
 
-// After offline changes are synced, reload the view, but never pull an open form away from someone.
+// After offline changes are synced (or the chatbot changed something), reload the view, but never pull an
+// open form away from someone. The chat drawer holds no form, so it doesn't count.
 const viewKey = ref(0)
 
 watch(dataVersion, function refresh() {
-  if (document.querySelector('.p-dialog, .p-drawer')) return setTimeout(refresh, 2000)
+  if (document.querySelector('.p-dialog, .p-drawer:not(.chat-drawer)')) return setTimeout(refresh, 2000)
   viewKey.value++
   loadCabin()
 })

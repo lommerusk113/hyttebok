@@ -385,5 +385,20 @@
     "normalDay": "Usual for the date: {max}° / {min}° (20-year average)",
     "creditFor": "Weather for {place} ({m} m above sea level):",
     "stayAverage": "Average for the stay: {max}°"
+  },
+  "chat": {
+    "title": "Ask the cabin",
+    "intro": "Ask about the cabin, bookings, the weather or the lists – or ask me to add something.",
+    "example1": "What do I need to remember when leaving?",
+    "example2": "What's the weather next weekend?",
+    "example3": "Add paper towels to the shopping list",
+    "placeholder": "Ask a question …",
+    "send": "Send",
+    "thinking": "Thinking …",
+    "notSetUp": "The chat isn't set up yet (GEMINI_API_KEY missing on the server).",
+    "quota": "Google's free quota is used up for now. Try again later.",
+    "failed": "Something went wrong. Try again.",
+    "offline": "You're offline. The chat needs a connection.",
+    "noAnswer": "I couldn't find an answer to that."
   }
 }

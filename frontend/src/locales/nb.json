@@ -385,5 +385,20 @@
     "normalDay": "Vanlig for datoen: {max}° / {min}° (snitt siste 20 år)",
     "creditFor": "Værdata for {place} ({m} moh.):",
     "stayAverage": "Snitt for oppholdet: {max}°"
+  },
+  "chat": {
+    "title": "Spør hytta",
+    "intro": "Spør om hytta, bookinger, været eller listene – eller be meg legge til noe.",
+    "example1": "Hva må jeg huske når jeg drar?",
+    "example2": "Hvordan blir været neste helg?",
+    "example3": "Legg til tørkepapir på handlelista",
+    "placeholder": "Skriv et spørsmål …",
+    "send": "Send",
+    "thinking": "Tenker …",
+    "notSetUp": "Chatten er ikke satt opp ennå (mangler GEMINI_API_KEY på serveren).",
+    "quota": "Gratiskvoten hos Google er brukt opp for nå. Prøv igjen senere.",
+    "failed": "Noe gikk galt. Prøv igjen.",
+    "offline": "Du er frakoblet. Chatten trenger nett.",
+    "noAnswer": "Jeg fant ikke noe svar på det."
   }
 }

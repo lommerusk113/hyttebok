@@ -1,5 +1,5 @@
 <script setup>
-import { ref, watch } from 'vue'
+import { defineAsyncComponent, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { usePrimeVue } from 'primevue/config'
 import Toast from 'primevue/toast'
@@ -22,6 +22,16 @@ import { locale, primeLocale, t } from './i18n'
 import { online, pending } from './offline'
 
 const primevue = usePrimeVue()
+
+// Feature toggle: ?chatbot=true turns the chat on for this device (remembered), ?chatbot=false turns it off.
+const ChatBot = defineAsyncComponent(() => import('./components/ChatBot.vue'))
+const CHAT_KEY = 'hyttebok.chatbot'
+const chatParam = new URLSearchParams(location.search).get('chatbot')
+try {
+  if (chatParam === 'true') localStorage.setItem(CHAT_KEY, '1')
+  if (chatParam === 'false') localStorage.removeItem(CHAT_KEY)
+} catch { /* private mode: the param still works for this visit */ }
+const chatEnabled = chatParam === 'true' || (() => { try { return localStorage.getItem(CHAT_KEY) === '1' } catch { return false } })()
 // The install page (/app) is often someone's first visit; don't ask for a name there.
 const route = useRoute()
 const menuOpen = ref(false)
@@ -139,6 +149,7 @@ function saveName(name = draftName.value) {
       </template>
     </Toast>
     <ConfirmDialog :pt="confirmPt" />
+    <ChatBot v-if="chatEnabled && route.path !== '/app'" />
 
     <Dialog dismissable-mask :visible="askName && route.path !== '/app'" @update:visible="askName = $event" modal :header="t('app.whoAreYou')" class="w-[26rem] max-w-[calc(100vw-2rem)]">
       <p class="mb-4 text-sm text-zinc-500">{{ t('app.nameHint') }}</p>

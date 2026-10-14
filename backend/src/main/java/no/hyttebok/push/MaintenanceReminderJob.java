@@ -58,12 +58,12 @@ public class MaintenanceReminderJob {
     }
 
     /** Monthly and yearly tasks are due in a month, not on a day (same rule as the app). */
-    static boolean byMonth(Maintenance m) {
+    public static boolean byMonth(Maintenance m) {
         return "MONTHS".equals(m.intervalUnit()) || "YEARS".equals(m.intervalUnit());
     }
 
     /** The last day the task is still on time: the end of its month for monthly and yearly tasks. */
-    static LocalDate dueBy(Maintenance m) {
+    public static LocalDate dueBy(Maintenance m) {
 
         var due = nextDue(m);
 
@@ -71,7 +71,7 @@ public class MaintenanceReminderJob {
     }
 
     /** Same rule as the app: (last completed, or the day it was added) + interval. */
-    static LocalDate nextDue(Maintenance m) {
+    public static LocalDate nextDue(Maintenance m) {
 
         var base = m.lastCompleted() != null ? m.lastCompleted() : LocalDate.ofInstant(m.createdAt(), OSLO);
         var n = m.intervalValue();

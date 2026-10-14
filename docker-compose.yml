@@ -19,6 +19,8 @@ services:
       DB_USER: hyttebok
       DB_PASSWORD: hyttebok
       UPLOAD_DIR: /data/uploads
+      # Put GEMINI_API_KEY=... in a .env file next to this one (not committed) to turn on the chatbot.
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
     volumes:
       - uploads:/data/uploads
     depends_on:
