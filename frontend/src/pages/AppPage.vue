@@ -1,16 +1,12 @@
 <script setup>
-import { ref } from 'vue'
 import Button from 'primevue/button'
-import { install, installPrompt, installed, isIos } from '../install'
+import { install, installPrompt, installed, installedBefore, isIos } from '../install'
 import { t } from '../i18n'
 
 // Shareable install page (/app). Android/desktop Chrome get a real install button;
 // iOS doesn't let websites install themselves, so iPhone users get step-by-step instructions.
-const justInstalled = ref(false)
-
 async function installNow() {
-  await install()
-  justInstalled.value = true
+  if (await install()) installedBefore.value = true
 }
 
 const IOS_STEPS = [
@@ -35,14 +31,21 @@ const IOS_STEPS = [
       </li>
     </ul>
 
-    <!-- Already running as an installed app -->
-    <div v-if="installed || justInstalled" class="card w-full p-5">
+    <!-- Running as the installed app -->
+    <div v-if="installed" class="card w-full p-5">
       <p class="font-semibold"><i class="pi pi-check-circle mr-2 text-emerald-600" />{{ t('install.done') }}</p>
       <RouterLink to="/" class="mt-3 inline-flex min-h-11 items-center font-medium underline underline-offset-4">{{ t('install.open') }}</RouterLink>
     </div>
 
     <!-- Android / desktop Chrome & Edge: one tap -->
     <Button v-else-if="installPrompt" :label="t('app.install')" icon="pi pi-download" size="large" class="w-full !py-4 !text-base" @click="installNow" />
+
+    <!-- Installed, but this visit is in the browser -->
+    <div v-else-if="installedBefore" class="card w-full p-5">
+      <p class="font-semibold"><i class="pi pi-check-circle mr-2 text-emerald-600" />{{ t('install.done') }}</p>
+      <p class="mt-1 text-sm text-zinc-600">{{ t('install.openFromHome') }}</p>
+      <RouterLink to="/" class="mt-3 inline-flex min-h-11 items-center text-sm font-medium underline underline-offset-4">{{ t('install.continueInBrowser') }}</RouterLink>
+    </div>
 
     <!-- iPhone / iPad: Apple only allows installing from the Share menu -->
     <div v-else-if="isIos" class="card w-full p-5 text-left">

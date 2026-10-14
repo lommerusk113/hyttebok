@@ -19,6 +19,8 @@ export default defineConfig({
         display: 'standalone',
         theme_color: '#ffffff',
         background_color: '#f4f4f5',
+        // Lets Android Chrome's getInstalledRelatedApps() tell the install page the app is already installed.
+        related_applications: [{ platform: 'webapp', url: '/manifest.webmanifest' }],
         icons: [
           { src: '/pwa-192.png', sizes: '192x192', type: 'image/png' },
           { src: '/pwa-512.png', sizes: '512x512', type: 'image/png' },

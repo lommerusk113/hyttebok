@@ -215,6 +215,8 @@
     "iosStep3": "Trykk «Legg til» øverst til høyre",
     "iosNote": "Apple lar ikke nettsider installere seg selv, derfor må det gjøres via Del-menyen.",
     "otherTitle": "Installer fra nettleseren",
-    "otherText": "Åpne denne siden i Chrome på Android eller Safari på iPhone. På PC: se etter installer-ikonet i adressefeltet."
+    "otherText": "Åpne denne siden i Chrome på Android eller Safari på iPhone. På PC: se etter installer-ikonet i adressefeltet.",
+    "openFromHome": "Åpne Hyttebok fra hjemskjermen eller app-listen på telefonen.",
+    "continueInBrowser": "Fortsett i nettleseren"
   }
 }

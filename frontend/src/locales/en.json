@@ -215,6 +215,8 @@
     "iosStep3": "Tap “Add” in the top right",
     "iosNote": "Apple doesn't let websites install themselves, so it has to go through the Share menu.",
     "otherTitle": "Install from your browser",
-    "otherText": "Open this page in Chrome on Android or Safari on iPhone. On a computer, look for the install icon in the address bar."
+    "otherText": "Open this page in Chrome on Android or Safari on iPhone. On a computer, look for the install icon in the address bar.",
+    "openFromHome": "Open Hyttebok from your home screen or app list.",
+    "continueInBrowser": "Continue in the browser"
   }
 }
