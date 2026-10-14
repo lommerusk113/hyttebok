@@ -34,9 +34,7 @@
   "tabs": {
     "overview": "Overview",
     "booking": "Booking",
-    "lists": "Lists",
     "logbook": "Cabin book",
-    "todos": "To-dos",
     "shopping": "Shopping list",
     "suggestions": "Ideas",
     "notes": "Notes",
@@ -83,14 +81,7 @@
     "until": "until {date}",
     "inDays": "today | tomorrow | in {n} days",
     "more": "+ {n} more",
-    "topIdeas": "Popular ideas",
-    "now": "Right now",
-    "allClear": "All on track",
-    "nowOverdue": "{n} maintenance overdue | {n} maintenance overdue",
-    "nowTodos": "{n} task | {n} tasks",
-    "nowShopping": "{n} to buy | {n} to buy",
-    "nowNext": "{name} arrives {when}",
-    "getApp": "Get the app on your phone"
+    "topIdeas": "Popular ideas"
   },
   "booking": {
     "subtitle": "Who's at the cabin when?",
@@ -313,7 +304,13 @@
     "lastYear": "Year",
     "pickMonth": "Pick month",
     "pickYear": "Year",
-    "dueThisMonth": "This month"
+    "dueThisMonth": "This month",
+    "active": "Active",
+    "completed": "Done",
+    "noneCompleted": "No finished one-off tasks yet.",
+    "once": "One-off task",
+    "repeats": "Repeats regularly",
+    "repeatsHint": "Turn on for routine jobs like sweeping the chimney. Off = a one-off job, e.g. \"Fix the gate\"."
   },
   "push": {
     "title": "Notifications",
@@ -342,7 +339,7 @@
       },
       "TODO": {
         "title": "New tasks",
-        "hint": "When something needs fixing"
+        "hint": "When someone adds something that needs doing"
       },
       "SHOPPING": {
         "title": "Shopping list",

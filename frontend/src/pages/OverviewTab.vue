@@ -8,18 +8,17 @@ import Checkbox from 'primevue/checkbox'
 import DashCard from '../components/DashCard.vue'
 import RichText from '../components/RichText.vue'
 import WeatherIcon from '../components/WeatherIcon.vue'
-import { dayWeather, loadWeather, loadWeatherDays, stayWeather } from '../weather'
+import { loadWeather, loadWeatherDays, stayWeather } from '../weather'
 import { api, photoUrl } from '../api'
 import { toggleShopping, toggleTodo, undoToast } from '../actions'
 import { cabin, INFO_TILES } from '../cabin'
 import { status as maintenanceStatus } from '../maintenance'
 import { dueLabel, overdueBadge, STATUS_STYLE } from '../maintenanceLabels'
-import { installed, installedBefore, installPageSeen } from '../install'
 import { colorFor, formatDay, initials, parseIsoDate, timeAgo, toIsoDate } from '../utils'
 import { t } from '../i18n'
 
 const SHOPPING_LIMIT = 6
-const TODO_LIMIT = 5
+const TASK_LIMIT = 6
 
 const toast = useToast()
 const todos = ref([])
@@ -55,32 +54,21 @@ const daysUntil = b => Math.round((parseIsoDate(b.startDate) - parseIsoDate(toda
 
 const visibleShopping = computed(() => shopping.value.filter(i => !i.bought || tickedHere.value.has(i.id)))
 const openShopping = computed(() => shopping.value.filter(i => !i.bought).length)
-const visibleTodos = computed(() => todos.value.filter(x => !x.done || tickedHere.value.has(x.id)))
-const openTodos = computed(() => todos.value.filter(x => !x.done).length)
 
 const latestPosts = computed(() => log.value.slice(0, 3))
 const firstPhoto = entry => photos.value.findLast(p => p.logEntryId === entry.id)
 
-// Maintenance that needs attention: overdue or due within the "soon" window.
+// Vedlikehold that needs attention: overdue recurring tasks first, then open one-off jobs, then recurring ones due soon.
 const dueMaintenance = computed(() => maintenance.value
   .map(m => ({ m, ...maintenanceStatus(m, today) }))
   .filter(x => x.kind !== 'later')
-  .sort((a, b) => a.days - b.days)
-  .slice(0, 4))
-
-const nowPills = computed(() => {
-  const overdue = dueMaintenance.value.filter(x => x.days < 0).length
-  const next = upcoming.value[0]
-  const now = dayWeather(today)?.symbol && dayWeather(today)
-  return [
-    now && { to: '/booking', symbol: now.symbol, label: t('weather.today', { max: Math.round(now.maxTemp), min: Math.round(now.minTemp) }), tone: 'border-zinc-200 bg-surface' },
-    overdue && { to: '/vedlikehold', icon: 'pi pi-wrench', label: t('overview.nowOverdue', overdue), tone: 'border-rose-200 bg-rose-50 text-rose-700' },
-    openTodos.value && { to: '/lister/gjoremal', icon: 'pi pi-check-square', label: t('overview.nowTodos', openTodos.value), tone: 'border-zinc-200 bg-surface' },
-    openShopping.value && { to: '/lister/handle', icon: 'pi pi-shopping-cart', label: t('overview.nowShopping', openShopping.value), tone: 'border-zinc-200 bg-surface' },
-    !installed && !installedBefore.value && !installPageSeen.value && { to: '/app', icon: 'pi pi-mobile', label: t('overview.getApp'), tone: 'border-zinc-200 bg-surface' },
-    next && { to: `/booking?id=${next.id}`, icon: 'pi pi-calendar', label: t('overview.nowNext', { name: next.guestName, when: t('overview.inDays', daysUntil(next)) }), tone: 'border-zinc-200 bg-surface' },
-  ].filter(Boolean)
-})
+  .sort((a, b) => a.days - b.days))
+const overdueCount = computed(() => dueMaintenance.value.filter(x => x.kind === 'overdue').length)
+const taskRows = computed(() => [
+  ...dueMaintenance.value.filter(x => x.kind === 'overdue').map(x => ({ key: `m-${x.m.id}`, ...x })),
+  ...todos.value.filter(x => !x.done || tickedHere.value.has(x.id)).map(x => ({ key: `t-${x.id}`, todo: x })),
+  ...dueMaintenance.value.filter(x => x.kind !== 'overdue').map(x => ({ key: `m-${x.m.id}`, ...x })),
+])
 
 const topIdeas = computed(() => suggestions.value.filter(s => !s.done).sort((a, b) => b.voters.length - a.voters.length).slice(0, 3))
 
@@ -119,14 +107,6 @@ function copy(text) {
 
 <template>
   <div class="space-y-6">
-    <!-- Right now: what needs attention, one tap from each place (first thing you see under the tabs) -->
-    <nav class="flex flex-wrap gap-2" :aria-label="t('overview.now')">
-      <RouterLink v-for="p in nowPills" :key="p.to" :to="p.to" class="flex min-h-11 items-center gap-2 rounded-full border px-3.5 text-sm font-medium transition hover:shadow-sm" :class="p.tone">
-        <WeatherIcon v-if="p.symbol" :symbol="p.symbol" size="size-6 -my-1" /><i v-else :class="p.icon" class="text-xs" />{{ p.label }}
-      </RouterLink>
-      <span v-if="!nowPills.length" class="flex min-h-11 items-center gap-2 text-sm text-zinc-500"><i class="pi pi-check-circle text-emerald-600" />{{ t('overview.allClear') }}</span>
-    </nav>
-
     <!-- Who's at the cabin right now -->
     <RouterLink v-for="b in staying" :key="b.id" to="/booking"
                 class="flex items-center gap-3 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-emerald-900 transition hover:border-emerald-300">
@@ -244,7 +224,7 @@ function copy(text) {
       </div>
 
       <div class="contents lg:flex lg:flex-col lg:gap-6">
-        <DashCard class="order-3" :title="t('tabs.shopping')" icon="pi pi-shopping-cart" tint="bg-amber-50 text-amber-700" to="/lister/handle" :count="openShopping">
+        <DashCard class="order-3" :title="t('tabs.shopping')" icon="pi pi-shopping-cart" tint="bg-amber-50 text-amber-700" to="/vedlikehold/handle" :count="openShopping">
           <ul class="-mx-1">
             <li v-for="i in visibleShopping.slice(0, SHOPPING_LIMIT)" :key="i.id">
               <label class="flex min-h-11 cursor-pointer items-center gap-3 rounded px-1">
@@ -254,43 +234,35 @@ function copy(text) {
               </label>
             </li>
           </ul>
-          <RouterLink v-if="visibleShopping.length > SHOPPING_LIMIT" to="/lister/handle" class="mt-1 inline-flex min-h-9 items-center text-sm text-zinc-500 hover:text-zinc-950">
+          <RouterLink v-if="visibleShopping.length > SHOPPING_LIMIT" to="/vedlikehold/handle" class="mt-1 inline-flex min-h-9 items-center text-sm text-zinc-500 hover:text-zinc-950">
             {{ t('overview.more', { n: visibleShopping.length - SHOPPING_LIMIT }) }}
           </RouterLink>
           <p v-if="!visibleShopping.length" class="py-1 text-sm text-zinc-500">{{ t('shopping.empty') }}</p>
         </DashCard>
 
-        <DashCard class="order-4" :title="t('tabs.todos')" icon="pi pi-check-square" tint="bg-amber-50 text-amber-700" to="/lister/gjoremal" :count="openTodos">
-          <ul class="-mx-1">
-            <li v-for="x in visibleTodos.slice(0, TODO_LIMIT)" :key="x.id">
-              <label class="flex min-h-11 cursor-pointer items-center gap-3 rounded px-1">
-                <Checkbox :model-value="x.done" binary @update:model-value="tickTodo(x)" />
-                <span class="min-w-0 flex-1 truncate" :class="x.done && 'text-zinc-500 line-through'">{{ x.title }}</span>
-              </label>
-            </li>
-          </ul>
-          <RouterLink v-if="visibleTodos.length > TODO_LIMIT" to="/lister/gjoremal" class="mt-1 inline-flex min-h-9 items-center text-sm text-zinc-500 hover:text-zinc-950">
-            {{ t('overview.more', { n: visibleTodos.length - TODO_LIMIT }) }}
-          </RouterLink>
-          <p v-if="!visibleTodos.length" class="py-1 text-sm text-zinc-500">{{ t('todo.allDone') }}</p>
-        </DashCard>
-
+        <!-- Recurring tasks and one-off jobs together, like on the Vedlikehold tab -->
         <DashCard class="order-4" :title="t('tabs.maintenance')" icon="pi pi-wrench" tint="bg-zinc-100 text-zinc-700" to="/vedlikehold"
-                  :count="dueMaintenance.filter(x => x.days < 0).length" count-class="bg-rose-50 text-rose-700"
-                  :count-title="overdueBadge(dueMaintenance.filter(x => x.days < 0).length)">
-          <ul v-if="dueMaintenance.length" class="-mx-2">
-            <li v-for="x in dueMaintenance" :key="x.m.id">
-              <RouterLink :to="`/vedlikehold?id=${x.m.id}`" class="flex min-h-11 items-center gap-3 rounded-md px-2 transition hover:bg-zinc-50">
-                <span class="h-7 w-1 shrink-0 rounded-full" :class="STATUS_STYLE[x.kind].bar" />
-                <span class="min-w-0 flex-1 truncate text-sm">{{ x.m.name }}</span>
-                <span class="shrink-0 text-xs font-medium" :class="STATUS_STYLE[x.kind].text">{{ dueLabel(x.m, today) }}</span>
+                  :count="overdueCount" count-class="bg-rose-50 text-rose-700" :count-title="overdueBadge(overdueCount)">
+          <ul v-if="taskRows.length" class="-mx-2">
+            <li v-for="r in taskRows.slice(0, TASK_LIMIT)" :key="r.key">
+              <label v-if="r.todo" class="flex min-h-11 cursor-pointer items-center gap-3 rounded-md px-2">
+                <Checkbox :model-value="r.todo.done" binary @update:model-value="tickTodo(r.todo)" />
+                <span class="min-w-0 flex-1 truncate text-sm" :class="r.todo.done && 'text-zinc-500 line-through'">{{ r.todo.title }}</span>
+              </label>
+              <RouterLink v-else :to="`/vedlikehold?id=${r.m.id}`" class="flex min-h-11 items-center gap-3 rounded-md px-2 transition hover:bg-zinc-50">
+                <span class="h-7 w-1 shrink-0 rounded-full" :class="STATUS_STYLE[r.kind].bar" />
+                <span class="min-w-0 flex-1 truncate text-sm">{{ r.m.name }}</span>
+                <span class="shrink-0 text-xs font-medium" :class="STATUS_STYLE[r.kind].text">{{ dueLabel(r.m, today) }}</span>
               </RouterLink>
             </li>
           </ul>
-          <p v-else class="flex items-center gap-2 py-1 text-sm text-zinc-500"><i class="pi pi-check-circle text-emerald-600" />{{ t('maintenance.allGood') }}</p>
+          <RouterLink v-if="taskRows.length > TASK_LIMIT" to="/vedlikehold" class="mt-1 inline-flex min-h-9 items-center text-sm text-zinc-500 hover:text-zinc-950">
+            {{ t('overview.more', { n: taskRows.length - TASK_LIMIT }) }}
+          </RouterLink>
+          <p v-if="!taskRows.length" class="flex items-center gap-2 py-1 text-sm text-zinc-500"><i class="pi pi-check-circle text-emerald-600" />{{ t('maintenance.allGood') }}</p>
         </DashCard>
 
-        <DashCard class="order-6" :title="t('overview.topIdeas')" icon="pi pi-lightbulb" tint="bg-amber-50 text-amber-700" to="/lister/forslag">
+        <DashCard class="order-6" :title="t('overview.topIdeas')" icon="pi pi-lightbulb" tint="bg-amber-50 text-amber-700" to="/vedlikehold/forslag">
           <ul v-if="topIdeas.length" class="space-y-2">
             <li v-for="s in topIdeas" :key="s.id" class="flex items-center gap-2.5">
               <span class="flex w-9 shrink-0 items-center gap-1 text-sm text-rose-600"><i class="pi pi-heart-fill text-xs" />{{ s.voters.length }}</span>

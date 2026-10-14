@@ -19,14 +19,14 @@ final class ChatTools {
         tool(ADD_SHOPPING, "Add one item to the shopping list.",
             Map.of("name", text("What to buy, e.g. 'Tørkepapir'"), "quantity", text("Optional amount, e.g. '2' or '5 l'")), List.of("name")),
         tool(MARK_BOUGHT, "Mark a shopping list item as bought.", Map.of("id", integer("The item's id")), List.of("id")),
-        tool(ADD_TODO, "Add a to-do (something that needs fixing or doing at the cabin).",
+        tool(ADD_TODO, "Add a one-off task to Vedlikehold (something that needs fixing or doing once, not recurring).",
             Map.of("title", text("Short title"), "description", text("Optional details")), List.of("title")),
-        tool(COMPLETE_TODO, "Mark a to-do as done.", Map.of("id", integer("The to-do's id")), List.of("id")),
+        tool(COMPLETE_TODO, "Mark a one-off task as done.", Map.of("id", integer("The task's id")), List.of("id")),
         tool(CREATE_BOOKING, "Book the cabin for someone. Both dates are included (arrival day to departure day).",
             Map.of("guestName", text("Who is coming (whose booking it is)"), "startDate", text("Arrival day, YYYY-MM-DD"),
                 "endDate", text("Departure day, YYYY-MM-DD"), "guests", integer("Optional number of people"), "note", text("Optional note")),
             List.of("guestName", "startDate", "endDate")),
-        tool(COMPLETE_MAINTENANCE, "Record that a maintenance task was done.",
+        tool(COMPLETE_MAINTENANCE, "Record that a recurring maintenance task was done.",
             Map.of("id", integer("The task's id"), "date", text("Optional day it was done, YYYY-MM-DD; default today")), List.of("id")));
 
     private ChatTools() {

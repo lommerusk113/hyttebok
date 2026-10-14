@@ -43,7 +43,7 @@ public class ShoppingDigestJob {
                 return null;
             }
             var en = Notifier.en(s);
-            return new Notifier.Message(en ? "Shopping list updated" : "Handlelisten er oppdatert", summary(fromOthers, en), "/lister/handle", "shopping");
+            return new Notifier.Message(en ? "Shopping list updated" : "Handlelisten er oppdatert", summary(fromOthers, en), "/vedlikehold/handle", "shopping");
         });
     }
 

@@ -211,11 +211,11 @@ public class ChatService {
         shopping.list().stream().filter(i -> !i.bought()).forEach(i -> out.append("\n- id ").append(i.id()).append(": ").append(i.name())
             .append(i.quantity() == null ? "" : " (" + i.quantity() + ")").append(i.addedBy() == null ? "" : ", added by " + i.addedBy()));
 
-        out.append("\n\nTO-DOS (open):");
+        out.append("\n\nONE-OFF TASKS (open; shown with the recurring ones under Vedlikehold):");
         todos.list().stream().filter(x -> !x.done()).forEach(x -> out.append("\n- id ").append(x.id()).append(": ").append(x.title())
             .append(x.description() == null ? "" : " – " + x.description()).append(x.createdBy() == null ? "" : ", added by " + x.createdBy()));
 
-        out.append("\n\nMAINTENANCE (recurring; monthly/yearly tasks are due within their month):");
+        out.append("\n\nRECURRING MAINTENANCE (monthly/yearly tasks are due within their month):");
         for (var m : maintenance.list()) {
             var dueBy = MaintenanceReminderJob.dueBy(m);
             out.append("\n- id ").append(m.id()).append(": ").append(m.name()).append(", every ").append(m.intervalValue()).append(' ')

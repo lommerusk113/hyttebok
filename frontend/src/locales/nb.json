@@ -34,9 +34,7 @@
   "tabs": {
     "overview": "Oversikt",
     "booking": "Booking",
-    "lists": "Lister",
     "logbook": "Hyttebok",
-    "todos": "Gjøremål",
     "shopping": "Handleliste",
     "suggestions": "Forslag",
     "notes": "Notater",
@@ -83,14 +81,7 @@
     "until": "til {date}",
     "inDays": "i dag | i morgen | om {n} dager",
     "more": "+ {n} til",
-    "topIdeas": "Populære forslag",
-    "now": "Akkurat nå",
-    "allClear": "Alt er i rute",
-    "nowOverdue": "{n} vedlikehold på overtid | {n} vedlikehold på overtid",
-    "nowTodos": "{n} gjøremål | {n} gjøremål",
-    "nowShopping": "{n} å kjøpe | {n} å kjøpe",
-    "nowNext": "{name} kommer {when}",
-    "getApp": "Få appen på telefonen"
+    "topIdeas": "Populære forslag"
   },
   "booking": {
     "subtitle": "Hvem er på hytta når?",
@@ -313,7 +304,13 @@
     "lastYear": "År",
     "pickMonth": "Velg måned",
     "pickYear": "År",
-    "dueThisMonth": "Denne måneden"
+    "dueThisMonth": "Denne måneden",
+    "active": "Aktive",
+    "completed": "Fullført",
+    "noneCompleted": "Ingen ferdige engangsoppgaver ennå.",
+    "once": "Engangsoppgave",
+    "repeats": "Gjentas jevnlig",
+    "repeatsHint": "Slå på for faste ting som å feie pipa. Av = en engangsjobb, f.eks. «Fikse porten»."
   },
   "push": {
     "title": "Varsler",
@@ -341,8 +338,8 @@
         "hint": "Når noen foreslår noe"
       },
       "TODO": {
-        "title": "Nye gjøremål",
-        "hint": "Når noe må fikses"
+        "title": "Nye oppgaver",
+        "hint": "Når noen legger til noe som må gjøres"
       },
       "SHOPPING": {
         "title": "Handlelisten",

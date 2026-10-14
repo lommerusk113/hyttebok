@@ -10,7 +10,9 @@ import Textarea from 'primevue/textarea'
 import ToggleSwitch from 'primevue/toggleswitch'
 import { photoUrl, uploadPhoto } from '../api'
 import { cabin, INFO_TILES, loadCabin, saveCabin } from '../cabin'
-import { reloadWeather } from '../weather'
+import { dayWeather, loadWeather, reloadWeather } from '../weather'
+import { toIsoDate } from '../dates'
+import WeatherIcon from '../components/WeatherIcon.vue'
 import { userName } from '../user'
 import { dataVersion } from '../offline'
 import { t } from '../i18n'
@@ -18,16 +20,14 @@ import { t } from '../i18n'
 // Each tab is its own chunk, loaded when first opened (keeps the first load small on cabin internet).
 const OverviewTab = defineAsyncComponent(() => import('./OverviewTab.vue'))
 const BookingPage = defineAsyncComponent(() => import('./BookingPage.vue'))
-const ListsTab = defineAsyncComponent(() => import('./ListsTab.vue'))
 const HyttebokTab = defineAsyncComponent(() => import('./HyttebokTab.vue'))
-const MaintenancePage = defineAsyncComponent(() => import('./MaintenancePage.vue'))
+const MaintenanceTab = defineAsyncComponent(() => import('./MaintenanceTab.vue'))
 
 const TABS = [
   { key: '', label: 'tabs.overview', icon: 'pi pi-home', component: OverviewTab },
   { key: 'booking', label: 'tabs.booking', icon: 'pi pi-calendar', component: BookingPage },
-  { key: 'lister', label: 'tabs.lists', icon: 'pi pi-list-check', component: ListsTab },
+  { key: 'vedlikehold', label: 'tabs.maintenance', icon: 'pi pi-wrench', component: MaintenanceTab },
   { key: 'hyttebok', label: 'tabs.logbook', icon: 'pi pi-book', component: HyttebokTab },
-  { key: 'vedlikehold', label: 'tabs.maintenance', icon: 'pi pi-wrench', component: MaintenancePage },
 ]
 
 const route = useRoute()
@@ -40,6 +40,10 @@ const editing = ref(false)
 const form = ref({})
 
 onMounted(loadCabin)
+onMounted(loadWeather)
+
+// Today's weather sits on the cover photo, so it's the same on every tab.
+const todayWeather = computed(() => dayWeather(toIsoDate(new Date()))?.symbol && dayWeather(toIsoDate(new Date())))
 
 // After offline changes are synced (or the chatbot changed something), reload the view, but never pull an
 // open form away from someone. The chat drawer holds no form, so it doesn't count.
@@ -142,6 +146,11 @@ async function save() {
       <div class="absolute inset-0 -z-10 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
       <img v-if="!cabin.heroPhotoId" src="/mark.png" alt="" class="absolute -right-8 -top-6 -z-10 w-72 opacity-[0.07] sm:right-10 sm:w-96">
 
+      <RouterLink v-if="todayWeather" to="/booking" :aria-label="t('weather.today', { max: Math.round(todayWeather.maxTemp), min: Math.round(todayWeather.minTemp) })"
+                  class="absolute left-3 top-3 flex items-center gap-1.5 rounded-full bg-black/30 py-1 pl-1.5 pr-3 text-sm font-medium text-white backdrop-blur-sm transition hover:bg-black/50">
+        <WeatherIcon :symbol="todayWeather.symbol" size="size-7" />
+        <span class="tabular-nums">{{ Math.round(todayWeather.maxTemp) }}° <span class="text-white/70">/ {{ Math.round(todayWeather.minTemp) }}°</span></span>
+      </RouterLink>
       <Button icon="pi pi-pencil" rounded text :aria-label="t('home.editInfo')" v-tooltip.left="t('home.editInfo')"
               class="!absolute right-3 top-3 !bg-black/30 !text-white hover:!bg-black/50" @click="startEdit" />
       <div class="flex min-h-[11rem] flex-col justify-end p-6 sm:min-h-[15rem] sm:p-8">
@@ -152,7 +161,7 @@ async function save() {
 
     <!-- Tabs -->
     <nav ref="tabsNav" class="sticky top-14 z-20 -mx-4 bg-page/90 px-4 py-2 backdrop-blur mt-4 sm:top-16">
-      <div class="grid grid-cols-5 gap-1 rounded-lg border border-zinc-200 bg-surface p-1 shadow-sm">
+      <div class="grid grid-cols-4 gap-1 rounded-lg border border-zinc-200 bg-surface p-1 shadow-sm">
         <RouterLink v-for="tb in TABS" :key="tb.key" :to="tabLink(tb)"
                     class="flex min-w-0 flex-col items-center gap-0.5 rounded-md px-1 py-1.5 text-[11px] sm:px-2 sm:text-xs font-medium text-zinc-500 transition hover:bg-zinc-100 hover:text-zinc-900 sm:flex-row sm:justify-center sm:gap-2 sm:text-sm"
                     :class="tab === tb && '!bg-zinc-950 !text-surface'">

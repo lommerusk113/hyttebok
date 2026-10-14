@@ -7,12 +7,15 @@ import Dialog from 'primevue/dialog'
 import InputNumber from 'primevue/inputnumber'
 import InputText from 'primevue/inputtext'
 import Select from 'primevue/select'
+import SelectButton from 'primevue/selectbutton'
 import Textarea from 'primevue/textarea'
+import ToggleSwitch from 'primevue/toggleswitch'
 import DashCard from '../components/DashCard.vue'
 import EmptyState from '../components/EmptyState.vue'
 import { api } from '../api'
 import { askName, userName } from '../user'
-import { parseIsoDate, toIsoDate } from '../utils'
+import { toggleTodo, undoToast } from '../actions'
+import { formatDate, parseIsoDate, toIsoDate } from '../utils'
 import { nextDue, status, UNITS, yearEntries } from '../maintenance'
 import { dueLabel, dueText, overdueBadge, STATUS_STYLE } from '../maintenanceLabels'
 import { localeTag, t } from '../i18n'
@@ -21,8 +24,12 @@ import { useDeepLink } from '../deepLink'
 const toast = useToast()
 const confirm = useConfirm()
 const takeQuery = useDeepLink()
+// Two kinds of task in one list: recurring ones (/maintenance, with interval and history) and one-off jobs
+// (/todos: done once, then they move to "Fullført").
 const tasks = ref([])
 const completions = ref([])
+const todos = ref([])
+const view = ref('active')
 const formOpen = ref(false)
 const form = ref({})
 const highlighted = ref(null)
@@ -36,26 +43,34 @@ onMounted(() => document.addEventListener('visibilitychange', refreshToday))
 onUnmounted(() => document.removeEventListener('visibilitychange', refreshToday))
 
 onMounted(async () => {
-  [tasks.value, completions.value] = await Promise.all([api.get('/maintenance'), api.get('/maintenance-completions')])
+  [tasks.value, completions.value, todos.value] = await Promise.all(['/maintenance', '/maintenance-completions', '/todos'].map(api.get))
   const query = takeQuery()
-  if (query.new === 'vedlikehold') openForm()
-  if (query.id) showTask(Number(query.id))
+  if (query.new === 'vedlikehold' || query.new === 'gjoremal') openForm()
+  if (query.id) showTask(`m-${query.id}`)
+  if (query.todo) showTask(`t-${query.todo}`)
 })
 
-// Most urgent first: overdue, then whatever is due soonest.
-// Sorted once per visit (and when tasks are added/removed); completing a task keeps it in place, outlined,
-// instead of making it jump to the bottom while you look at it.
+// Most urgent first: overdue recurring tasks, then one-off jobs, then recurring ones by due date.
+// Sorted once per visit (and when tasks are added); completing a task keeps it in place, outlined,
+// instead of making it jump while you look at it.
+const openTodos = computed(() => todos.value.filter(x => !x.done))
+const doneTodos = computed(() => todos.value.filter(x => x.done).sort((a, b) => (b.doneAt || '').localeCompare(a.doneAt || '')))
+const allRows = computed(() => [
+  ...tasks.value.map(m => ({ key: `m-${m.id}`, m, kind: status(m, today.value).kind, label: dueLabel(m, today.value) })),
+  ...openTodos.value.map(x => ({ key: `t-${x.id}`, x, kind: 'once' })),
+])
+const RANK = { overdue: 0, once: 1, soon: 2, later: 3 }
+const sortKey = r => (r.m ? nextDue(r.m) : r.x.createdAt || '')
 const order = ref([])
-const sortByDue = list => [...list].sort((a, b) => nextDue(a).localeCompare(nextDue(b))).map(m => m.id)
-watch(() => tasks.value.map(m => m.id).join(), () => {
+watch(() => allRows.value.map(r => r.key).join(), () => {
   const known = new Set(order.value)
-  order.value = order.value.length && tasks.value.every(m => known.has(m.id)) && tasks.value.length === known.size ? order.value : sortByDue(tasks.value)
+  order.value = allRows.value.every(r => known.has(r.key))
+    ? order.value.filter(k => allRows.value.some(r => r.key === k)) // something left: keep everyone else in place
+    : [...allRows.value].sort((a, b) => RANK[a.kind] - RANK[b.kind] || sortKey(a).localeCompare(sortKey(b))).map(r => r.key)
 })
-const rows = computed(() => order.value
-  .map(id => tasks.value.find(m => m.id === id))
-  .filter(Boolean)
-  .map(m => ({ m, kind: status(m, today.value).kind, label: dueLabel(m, today.value) })))
+const rows = computed(() => order.value.map(k => allRows.value.find(r => r.key === k)).filter(Boolean))
 const overdueCount = computed(() => rows.value.filter(r => r.kind === 'overdue').length)
+const ONCE_STYLE = { bar: 'bg-sky-400', text: 'text-sky-700' }
 
 const intervalText = m => t(`maintenance.every.${m.intervalUnit}`, m.intervalValue)
 const lastText = m => (m.lastCompleted ? t('maintenance.lastDone', { date: dueText(m, m.lastCompleted) }) : t('maintenance.neverDone'))
@@ -82,12 +97,12 @@ const ENTRY_STYLE = {
   planned: { icon: 'pi pi-circle', color: 'text-zinc-500' },
 }
 
-// Scroll to a task and outline it briefly, e.g. when coming from the dashboard or after it moved in the list.
-async function showTask(id) {
-  highlighted.value = id
+// Scroll to a task ("m-3" recurring, "t-5" one-off) and outline it briefly, e.g. when coming from the dashboard.
+async function showTask(key) {
+  highlighted.value = key
   await nextTick()
-  document.getElementById(`task-${id}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' })
-  setTimeout(() => { if (highlighted.value === id) highlighted.value = null }, 2500)
+  document.getElementById(`task-${key}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+  setTimeout(() => { if (highlighted.value === key) highlighted.value = null }, 2500)
 }
 
 // ---- actions ----
@@ -103,7 +118,7 @@ async function complete(m) {
   const saved = await api.post('/maintenance-completions', { maintenanceId: m.id, completedOn, completedBy: userName.value })
   completions.value = [saved, ...completions.value]
   tasks.value = tasks.value.map(x => (x.id === m.id ? { ...x, lastCompleted: completedOn } : x))
-  showTask(m.id)
+  showTask(`m-${m.id}`)
   toast.add({ group: 'action', summary: t('maintenance.markedDone', { name: m.name }), actionLabel: t('maintenance.undo'), action: () => undo(saved), life: 6000 })
 }
 
@@ -115,10 +130,24 @@ async function undo(completion) {
   tasks.value = tasks.value.map(x => (x.id === completion.maintenanceId ? { ...x, lastCompleted: latest } : x))
 }
 
-function openForm(m) {
-  form.value = m
-    ? { ...m, lastYear: m.lastCompleted?.slice(0, 4) ?? '', lastMon: m.lastCompleted?.slice(5, 7) ?? '' }
-    : { name: '', description: '', intervalValue: 1, intervalUnit: 'YEARS', lastYear: '', lastMon: '' }
+// One-off job done (or undone). Done ones move to "Fullført"; the toast can bring it straight back.
+async function toggleOnce(todo) {
+  const updated = await toggleTodo(todo)
+  if (!updated) return
+  todos.value = todos.value.map(x => (x.id === updated.id ? updated : x))
+  if (updated.done) undoToast(toast, t('todo.doneToast', { name: updated.title }), () => toggleOnce(updated))
+}
+
+// `item` is a recurring task or a one-off (todo); a new task starts as one-off, "Gjentas jevnlig" makes it recurring.
+function openForm(item) {
+  const recurringDefaults = { intervalValue: 1, intervalUnit: 'YEARS', lastYear: '', lastMon: '' }
+  if (!item) {
+    form.value = { recurring: false, name: '', description: '', ...recurringDefaults }
+  } else if (item.intervalUnit) {
+    form.value = { ...item, recurring: true, lastYear: item.lastCompleted?.slice(0, 4) ?? '', lastMon: item.lastCompleted?.slice(5, 7) ?? '' }
+  } else {
+    form.value = { recurring: false, todo: item, id: item.id, name: item.title, description: item.description }
+  }
   formOpen.value = true
 }
 
@@ -160,7 +189,18 @@ const preview = computed(() => {
 
 async function save() {
 
-  const { lastYear, lastMon, ...fields } = form.value
+  if (!form.value.recurring) {
+    const { todo, name, description } = form.value
+    const body = todo
+      ? { ...todo, title: name.trim(), description }
+      : { title: name.trim(), description, done: false, createdBy: userName.value }
+    const saved = await (todo ? api.put('/todos', body) : api.post('/todos', body))
+    todos.value = todo ? todos.value.map(x => (x.id === saved.id ? saved : x)) : [saved, ...todos.value]
+    formOpen.value = false
+    return
+  }
+
+  const { lastYear, lastMon, recurring, ...fields } = form.value
   const body = { ...fields, name: fields.name.trim(), lastCompleted: lastCompletedFromForm() }
   const saved = await (body.id ? api.put('/maintenance', body) : api.post('/maintenance', body))
 
@@ -170,16 +210,21 @@ async function save() {
   formOpen.value = false
 }
 
-function remove(m) {
+function remove(item) {
   confirm.require({
     header: t('maintenance.deleteTitle'),
-    message: t('maintenance.deleteMessage', { name: m.name }),
+    message: t('maintenance.deleteMessage', { name: item.name }),
     acceptProps: { label: t('common.delete'), severity: 'danger' },
     rejectProps: { label: t('common.cancel'), severity: 'secondary', text: true },
     accept: async () => {
-      await api.del(`/maintenance/${m.id}`)
-      tasks.value = tasks.value.filter(x => x.id !== m.id)
-      completions.value = completions.value.filter(c => c.maintenanceId !== m.id)
+      if (item.recurring) {
+        await api.del(`/maintenance/${item.id}`)
+        tasks.value = tasks.value.filter(x => x.id !== item.id)
+        completions.value = completions.value.filter(c => c.maintenanceId !== item.id)
+      } else {
+        await api.del(`/todos/${item.id}`)
+        todos.value = todos.value.filter(x => x.id !== item.id)
+      }
       formOpen.value = false
     },
   })
@@ -188,38 +233,67 @@ function remove(m) {
 
 <template>
   <div class="grid grid-cols-1 gap-6 lg:grid-cols-3 lg:items-start">
-    <!-- Tasks, most urgent first -->
-    <DashCard class="lg:col-span-2" :title="t('maintenance.tasks')" icon="pi pi-wrench" tint="bg-zinc-100 text-zinc-700"
-              :count-label="overdueBadge(overdueCount)" count-class="bg-rose-50 text-rose-700">
+    <!-- All tasks, recurring and one-off, most urgent first -->
+    <DashCard id="lists-gjoremal" class="scroll-mt-36 lg:col-span-2" :title="t('tabs.maintenance')" icon="pi pi-wrench" tint="bg-zinc-100 text-zinc-700"
+              :count="overdueCount" count-class="bg-rose-50 text-rose-700" :count-title="overdueBadge(overdueCount)">
       <template #action>
         <Button icon="pi pi-plus" :label="t('common.new')" size="small" @click="openForm()" />
       </template>
 
-      <ul v-if="rows.length" class="-mx-5 divide-y divide-zinc-100 border-t border-zinc-100">
-        <li v-for="{ m, kind, label } in rows" :id="`task-${m.id}`" :key="m.id" class="flex scroll-mt-40 items-center gap-3 py-2.5 pl-3 pr-4 transition-colors duration-700"
-            :class="highlighted === m.id && 'bg-amber-50'">
-          <span :class="STATUS_STYLE[kind].bar" class="w-1 self-stretch rounded-full" />
-          <!-- The whole name area opens the task; the chevron says so -->
-          <button class="group flex min-h-11 min-w-0 flex-1 items-center gap-2 text-left" @click="openForm(m)">
-            <span class="min-w-0 flex-1">
-              <span class="block font-medium group-hover:underline">{{ m.name }}</span>
-              <span v-if="kind !== 'later'" class="block text-sm font-medium" :class="STATUS_STYLE[kind].text">{{ label }}</span>
-              <span class="block text-xs text-zinc-500">
-                <template v-if="kind === 'later'">{{ label }} · </template>{{ intervalText(m) }} · {{ lastText(m) }}
+      <SelectButton v-model="view" :options="['active', 'completed']" :allow-empty="false" class="mb-3">
+        <template #option="{ option }">
+          {{ t(`maintenance.${option}`) }}
+          <span class="ml-1.5 rounded-full bg-zinc-200/70 px-1.5 text-xs">{{ option === 'active' ? rows.length : doneTodos.length }}</span>
+        </template>
+      </SelectButton>
+
+      <template v-if="view === 'active'">
+        <ul v-if="rows.length" class="-mx-5 divide-y divide-zinc-100 border-t border-zinc-100">
+          <li v-for="r in rows" :id="`task-${r.key}`" :key="r.key" class="flex scroll-mt-40 items-center gap-3 py-2.5 pl-3 pr-4 transition-colors duration-700"
+              :class="highlighted === r.key && 'bg-amber-50'">
+            <span :class="(r.m ? STATUS_STYLE[r.kind] : ONCE_STYLE).bar" class="w-1 self-stretch rounded-full" />
+            <!-- The whole name area opens the task; the chevron says so -->
+            <button class="group flex min-h-11 min-w-0 flex-1 items-center gap-2 text-left" @click="openForm(r.m || r.x)">
+              <span v-if="r.m" class="min-w-0 flex-1">
+                <span class="block font-medium group-hover:underline">{{ r.m.name }}</span>
+                <span v-if="r.kind !== 'later'" class="block text-sm font-medium" :class="STATUS_STYLE[r.kind].text">{{ r.label }}</span>
+                <span class="block text-xs text-zinc-500">
+                  <template v-if="r.kind === 'later'">{{ r.label }} · </template>{{ intervalText(r.m) }} · {{ lastText(r.m) }}
+                </span>
               </span>
-            </span>
-            <i class="pi pi-chevron-right shrink-0 text-xs text-zinc-400" />
-          </button>
-          <!-- Always outlined: testers read a borderless "Utført" as plain text -->
-          <Button :label="t('maintenance.done')" icon="pi pi-check" size="small" severity="secondary" class="max-sm:!min-h-11 shrink-0"
-                  outlined @click="complete(m)" />
-        </li>
-      </ul>
-      <EmptyState v-else icon="pi pi-wrench" :text="t('maintenance.empty')">
-        <Button :label="t('maintenance.new')" icon="pi pi-plus" size="small" @click="openForm()" />
-      </EmptyState>
+              <span v-else class="min-w-0 flex-1">
+                <span class="block font-medium group-hover:underline">{{ r.x.title }}</span>
+                <span v-if="r.x.description" class="block line-clamp-1 text-sm text-zinc-500">{{ r.x.description }}</span>
+                <span class="block text-xs text-zinc-500">{{ t('maintenance.once') }}<template v-if="r.x.createdBy"> · {{ t('todo.addedBy', { name: r.x.createdBy }) }}</template></span>
+              </span>
+              <i class="pi pi-chevron-right shrink-0 text-xs text-zinc-400" />
+            </button>
+            <!-- Always outlined: testers read a borderless "Utført" as plain text -->
+            <Button :label="t('maintenance.done')" icon="pi pi-check" size="small" severity="secondary" class="max-sm:!min-h-11 shrink-0"
+                    outlined @click="r.m ? complete(r.m) : toggleOnce(r.x)" />
+          </li>
+        </ul>
+        <EmptyState v-else icon="pi pi-wrench" :text="t('maintenance.empty')">
+          <Button :label="t('maintenance.new')" icon="pi pi-plus" size="small" @click="openForm()" />
+        </EmptyState>
+      </template>
+
+      <!-- Finished one-off jobs (recurring tasks keep their history in the year overview) -->
+      <template v-else>
+        <ul v-if="doneTodos.length" class="-mx-5 divide-y divide-zinc-100 border-t border-zinc-100">
+          <li v-for="x in doneTodos" :key="x.id" class="flex items-center gap-3 py-2.5 pl-5 pr-4">
+            <button class="min-w-0 flex-1 text-left" @click="openForm(x)">
+              <span class="block text-zinc-500 line-through">{{ x.title }}</span>
+              <span class="block text-xs text-zinc-500">{{ t('todo.doneBy', { name: x.doneBy, date: formatDate(x.doneAt) }) }}</span>
+            </button>
+            <Button :label="t('maintenance.undo')" text size="small" severity="secondary" class="!min-h-11 shrink-0" @click="toggleOnce(x)" />
+          </li>
+        </ul>
+        <EmptyState v-else icon="pi pi-inbox" :text="t('maintenance.noneCompleted')" />
+      </template>
     </DashCard>
 
+    <div class="flex flex-col gap-6">
     <!-- Year overview -->
     <DashCard :title="t('maintenance.year')" icon="pi pi-calendar" tint="bg-zinc-100 text-zinc-700">
       <template #action>
@@ -257,6 +331,9 @@ function remove(m) {
         </div>
       </div>
     </DashCard>
+    <!-- More cards for the right-hand column (the tab puts the shopping list here) -->
+    <slot name="aside" />
+    </div>
   </div>
 
   <Dialog dismissable-mask v-model:visible="formOpen" modal :header="form.id ? t('maintenance.edit') : t('maintenance.new')" class="w-[30rem] max-w-[calc(100vw-2rem)]">
@@ -266,6 +343,16 @@ function remove(m) {
         <InputText v-model="form.name" required autofocus :placeholder="t('maintenance.namePlaceholder')" />
       </label>
 
+      <!-- One-off by default; recurring adds how often and when it was last done. The kind is fixed once saved. -->
+      <label v-if="!form.id" class="flex cursor-pointer items-center justify-between gap-3 rounded-lg border border-zinc-200 px-3 py-2.5">
+        <span class="text-sm">
+          <span class="block font-medium">{{ t('maintenance.repeats') }}</span>
+          <span class="block text-xs text-zinc-500">{{ t('maintenance.repeatsHint') }}</span>
+        </span>
+        <ToggleSwitch v-model="form.recurring" />
+      </label>
+
+      <template v-if="form.recurring">
       <div class="flex flex-col gap-1.5 text-sm font-medium" role="group" aria-labelledby="interval-label">
         <span id="interval-label">{{ t('maintenance.interval') }}</span>
         <div class="flex gap-2">
@@ -292,16 +379,18 @@ function remove(m) {
         </span>
         <span v-if="!lastCompletedFromForm()" class="text-xs font-normal text-zinc-500">{{ form.id ? t('maintenance.lastCompletedHintEdit') : t('maintenance.lastCompletedHintNew') }}</span>
       </label>
+      </template>
 
       <label class="flex flex-col gap-1.5 text-sm font-medium">
         {{ t('maintenance.description') }}
         <Textarea v-model="form.description" rows="3" auto-resize :placeholder="t('maintenance.descriptionPlaceholder')" />
       </label>
+      <p v-if="form.todo?.done" class="text-sm text-emerald-600"><i class="pi pi-check-circle mr-1" />{{ t('todo.doneBy', { name: form.todo.doneBy, date: formatDate(form.todo.doneAt) }) }}</p>
     </form>
     <template #footer>
       <Button v-if="form.id" :label="t('common.delete')" icon="pi pi-trash" text severity="danger" class="mr-auto" @click="remove(form)" />
       <Button :label="t('common.cancel')" text severity="secondary" @click="formOpen = false" />
-      <Button type="submit" form="maintenance-form" :label="t('common.save')" icon="pi pi-check" :disabled="!form.name?.trim() || !form.intervalValue" />
+      <Button type="submit" form="maintenance-form" :label="t('common.save')" icon="pi pi-check" :disabled="!form.name?.trim() || (form.recurring && !form.intervalValue)" />
     </template>
   </Dialog>
 </template>

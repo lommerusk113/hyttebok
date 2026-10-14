@@ -83,12 +83,12 @@ public class Notifier {
 
     public void suggestionCreated(Suggestion suggestion) {
         notify(Topic.SUGGESTION, s -> s.isFrom(suggestion.author()) ? null : new Message(
-            en(s) ? "New idea" : "Nytt forslag", by(suggestion.author()) + suggestion.title(), "/lister/forslag", "suggestion-" + suggestion.id()));
+            en(s) ? "New idea" : "Nytt forslag", by(suggestion.author()) + suggestion.title(), "/vedlikehold/forslag", "suggestion-" + suggestion.id()));
     }
 
     public void todoCreated(Todo todo) {
         notify(Topic.TODO, s -> s.isFrom(todo.createdBy()) ? null : new Message(
-            en(s) ? "New task" : "Nytt gjøremål", by(todo.createdBy()) + todo.title(), "/lister/gjoremal", "todo-" + todo.id()));
+            en(s) ? "New task" : "Ny oppgave", by(todo.createdBy()) + todo.title(), "/vedlikehold?todo=" + todo.id(), "todo-" + todo.id()));
     }
 
     static boolean en(PushSubscription subscription) {

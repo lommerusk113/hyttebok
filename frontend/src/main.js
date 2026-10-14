@@ -43,7 +43,9 @@ const router = createRouter({
   history: createWebHistory(),
   routes: [
     { path: '/app', component: () => import('./pages/AppPage.vue') },
-    { path: '/:tab(booking|lister|hyttebok|vedlikehold)?/:sub?', component: () => import('./pages/HomePage.vue') },
+    // The old "Lister" tab now lives under Vedlikehold; links in old notifications still work.
+    { path: '/lister/:sub?', redirect: to => ({ path: `/vedlikehold/${to.params.sub || ''}`, query: to.query }) },
+    { path: '/:tab(booking|hyttebok|vedlikehold)?/:sub?', component: () => import('./pages/HomePage.vue') },
     { path: '/:pathMatch(.*)*', redirect: '/' },
   ],
 
