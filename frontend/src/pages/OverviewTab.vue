@@ -8,6 +8,8 @@ import Checkbox from 'primevue/checkbox'
 import InputText from 'primevue/inputtext'
 import DashCard from '../components/DashCard.vue'
 import RichText from '../components/RichText.vue'
+import WeatherIcon from '../components/WeatherIcon.vue'
+import { dayWeather, loadWeather } from '../weather'
 import { api, photoUrl } from '../api'
 import { addShoppingItem, toggleShopping, toggleTodo, undoToast } from '../actions'
 import { cabin, INFO_TILES } from '../cabin'
@@ -34,6 +36,8 @@ const newItemInput = ref()
 
 // Items ticked off here stay visible (struck through) until reload, so a mis-tap is easy to undo.
 const tickedHere = ref(new Set())
+
+onMounted(loadWeather)
 
 onMounted(async () => {
   [todos.value, shopping.value, bookings.value, log.value, photos.value, suggestions.value, maintenance.value] = await Promise.all(
@@ -69,7 +73,9 @@ const dueMaintenance = computed(() => maintenance.value
 const nowPills = computed(() => {
   const overdue = dueMaintenance.value.filter(x => x.days < 0).length
   const next = upcoming.value[0]
+  const now = dayWeather(today)
   return [
+    now && { to: '/booking', symbol: now.symbol, label: t('weather.today', { max: Math.round(now.maxTemp), min: Math.round(now.minTemp) }), tone: 'border-zinc-200 bg-surface' },
     overdue && { to: '/vedlikehold', icon: 'pi pi-wrench', label: t('overview.nowOverdue', overdue), tone: 'border-rose-200 bg-rose-50 text-rose-700' },
     openTodos.value && { to: '/lister/gjoremal', icon: 'pi pi-check-square', label: t('overview.nowTodos', openTodos.value), tone: 'border-zinc-200 bg-surface' },
     openShopping.value && { to: '/lister/handle', icon: 'pi pi-shopping-cart', label: t('overview.nowShopping', openShopping.value), tone: 'border-zinc-200 bg-surface' },
@@ -126,7 +132,7 @@ function copy(text) {
     <!-- Right now: what needs attention, one tap from each place (first thing you see under the tabs) -->
     <nav class="flex flex-wrap gap-2" :aria-label="t('overview.now')">
       <RouterLink v-for="p in nowPills" :key="p.to" :to="p.to" class="flex min-h-11 items-center gap-2 rounded-full border px-3.5 text-sm font-medium transition hover:shadow-sm" :class="p.tone">
-        <i :class="p.icon" class="text-xs" />{{ p.label }}
+        <WeatherIcon v-if="p.symbol" :symbol="p.symbol" size="size-6 -my-1" /><i v-else :class="p.icon" class="text-xs" />{{ p.label }}
       </RouterLink>
       <span v-if="!nowPills.length" class="flex min-h-11 items-center gap-2 text-sm text-zinc-500"><i class="pi pi-check-circle text-emerald-600" />{{ t('overview.allClear') }}</span>
     </nav>
@@ -187,7 +193,12 @@ function copy(text) {
                   <span class="block truncate font-medium">{{ b.guestName }}<span v-if="b.guests" class="font-normal text-zinc-500"> · {{ t('booking.people', b.guests) }}</span></span>
                   <span class="block text-sm text-zinc-500">{{ period(b) }}</span>
                 </span>
-                <span class="shrink-0 text-xs text-zinc-500">{{ t('overview.inDays', daysUntil(b)) }}</span>
+                <span class="flex shrink-0 flex-col items-end gap-0.5 text-xs text-zinc-500">
+                  {{ t('overview.inDays', daysUntil(b)) }}
+                  <span v-if="dayWeather(b.startDate)" class="flex items-center gap-1 tabular-nums">
+                    <WeatherIcon :symbol="dayWeather(b.startDate).symbol" :uncertain="dayWeather(b.startDate).uncertain" size="size-5" />{{ Math.round(dayWeather(b.startDate).maxTemp) }}°
+                  </span>
+                </span>
               </RouterLink>
             </li>
           </ul>

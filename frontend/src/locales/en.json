@@ -336,5 +336,26 @@
       }
     },
     "recheck": "Check again"
+  },
+  "weather": {
+    "today": "{max}° / {min}° today",
+    "uncertain": "uncertain",
+    "usual": "Usual weather in {month}: {max}° / {min}°, rain on {rain} % of days",
+    "credit": "Weather data:",
+    "uncertainHint": "Faded = uncertain, more than a week ahead.",
+    "kind": {
+      "thunder": "Thunder",
+      "sleet": "Sleet",
+      "snow": "Snow",
+      "showers": "Showers",
+      "heavyrain": "Heavy rain",
+      "lightrain": "Light rain",
+      "rain": "Rain",
+      "fog": "Fog",
+      "partlycloudy": "Partly cloudy",
+      "fair": "Fair",
+      "clearsky": "Clear sky",
+      "cloudy": "Cloudy"
+    }
   }
 }

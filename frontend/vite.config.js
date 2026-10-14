@@ -36,6 +36,12 @@ export default defineConfig({
         importScripts: ['/push-sw.js'],
         runtimeCaching: [
           {
+            // Weather icons: fetched the first time they're shown, then kept (they never change).
+            urlPattern: ({ url }) => url.pathname.startsWith('/weather/'),
+            handler: 'CacheFirst',
+            options: { cacheName: 'weather-icons', cacheableResponse: { statuses: [200] } },
+          },
+          {
             // Photo files never change (new upload = new id), so the cache can answer first.
             urlPattern: ({ url }) => /^\/api\/photos\/\d+\/file$/.test(url.pathname),
             handler: 'CacheFirst',

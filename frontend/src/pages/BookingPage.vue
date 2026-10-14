@@ -2,6 +2,9 @@
 import { computed, nextTick, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useDeepLink } from '../deepLink'
+import WeatherIcon from '../components/WeatherIcon.vue'
+import StayWeather from '../components/StayWeather.vue'
+import { dayWeather, loadWeather } from '../weather'
 import { useToast } from 'primevue/usetoast'
 import { useConfirm } from 'primevue/useconfirm'
 import Button from 'primevue/button'
@@ -31,6 +34,8 @@ const today = toIsoDate(new Date())
 
 const router = useRouter()
 const takeQuery = useDeepLink()
+
+onMounted(loadWeather)
 
 onMounted(async () => {
   await load()
@@ -200,8 +205,14 @@ function remove(b) {
         <div v-for="day in week" :key="day.iso"
              class="group min-h-20 cursor-pointer border-r border-zinc-100 pb-1.5 last:border-r-0 hover:bg-zinc-100 sm:min-h-24"
              :class="{ 'bg-zinc-50/60': !day.inMonth }" @click="openNew(day.iso)">
-          <div class="flex justify-end p-1.5">
-            <span class="grid size-7 place-items-center rounded-full text-sm"
+          <!-- Forecast (next ~2 weeks) on the left, day number on the right -->
+          <div class="flex items-start justify-between gap-0.5 p-1.5">
+            <span v-if="dayWeather(day.iso)" class="flex flex-col items-center leading-none sm:flex-row sm:gap-1">
+              <WeatherIcon :symbol="dayWeather(day.iso).symbol" :uncertain="dayWeather(day.iso).uncertain" size="size-5 sm:size-6" />
+              <span class="text-[10px] font-medium tabular-nums text-zinc-600 sm:text-xs" :class="dayWeather(day.iso).uncertain && 'opacity-60'">{{ Math.round(dayWeather(day.iso).maxTemp) }}°</span>
+            </span>
+            <span v-else />
+            <span class="grid size-7 shrink-0 place-items-center rounded-full text-sm"
                   :class="day.iso === today ? 'bg-zinc-950 font-semibold text-surface' : day.inMonth ? 'text-zinc-700' : 'text-zinc-300'">
               {{ day.day }}
             </span>
@@ -219,7 +230,14 @@ function remove(b) {
           </div>
         </div>
       </div>
+      <p class="border-t border-zinc-100 px-4 py-2 text-xs text-zinc-500">
+        {{ t('weather.credit') }}
+        <a href="https://www.met.no" target="_blank" rel="noopener" class="underline underline-offset-2">MET Norway</a> ·
+        <a href="https://open-meteo.com" target="_blank" rel="noopener" class="underline underline-offset-2">Open-Meteo</a>.
+        {{ t('weather.uncertainHint') }}
+      </p>
     </section>
+
 
     <div class="flex flex-col gap-6">
     <!-- Upcoming -->
@@ -277,6 +295,7 @@ function remove(b) {
           <i class="pi pi-book text-xs text-zinc-500" />{{ p.title || p.content }}
         </RouterLink>
       </div>
+      <StayWeather :start="selected.startDate" :end="selected.endDate" />
       <p v-if="selected.note" class="whitespace-pre-line rounded-md bg-zinc-50 p-3 text-sm text-zinc-600">{{ selected.note }}</p>
     </div>
     <template #footer>
@@ -306,6 +325,7 @@ function remove(b) {
           </template>
         </DatePicker>
         <p v-if="rangeSummary" class="rounded-md bg-zinc-100 px-3 py-2 text-sm font-semibold">{{ rangeSummary }}</p>
+        <StayWeather v-if="rangeSummary" :start="range.start" :end="range.end" />
         <span class="text-xs font-normal text-zinc-500"><span class="mr-1 inline-block size-1.5 rounded-full bg-amber-500 align-middle" />{{ t('booking.alreadyBooked') }}</span>
       </div>
       <Message v-if="conflicts.length" severity="warn" icon="pi pi-exclamation-triangle">

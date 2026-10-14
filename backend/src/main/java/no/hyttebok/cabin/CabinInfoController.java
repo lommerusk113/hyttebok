@@ -28,8 +28,15 @@ public class CabinInfoController {
     @Put
     public CabinInfo update(@Body @Valid CabinInfo info) {
 
+        // A new address means a new place: forget the old coordinates (looked up again for the weather)
+        // unless coordinates were also typed in by hand.
+        var current = repository.findById(CABIN_ID).orElseThrow();
+        var moved = !java.util.Objects.equals(current.address(), info.address())
+            && java.util.Objects.equals(current.latitude(), info.latitude()) && java.util.Objects.equals(current.longitude(), info.longitude());
+
         var singleton = new CabinInfo(CABIN_ID, info.name(), info.tagline(), info.description(), info.address(),
-            info.wifiName(), info.wifiPassword(), info.arrivalInfo(), info.departureInfo(), info.heroPhotoId(), info.hiddenSections());
+            info.wifiName(), info.wifiPassword(), info.arrivalInfo(), info.departureInfo(), info.heroPhotoId(), info.hiddenSections(),
+            moved ? null : info.latitude(), moved ? null : info.longitude());
 
         return repository.update(singleton);
     }

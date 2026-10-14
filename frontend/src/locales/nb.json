@@ -336,5 +336,26 @@
       }
     },
     "recheck": "Sjekk på nytt"
+  },
+  "weather": {
+    "today": "{max}° / {min}° i dag",
+    "uncertain": "usikker",
+    "usual": "Vanlig vær i {month}: {max}° / {min}°, nedbør {rain} % av dagene",
+    "credit": "Værdata:",
+    "uncertainHint": "Tonet ned = usikker, mer enn en uke frem.",
+    "kind": {
+      "thunder": "Torden",
+      "sleet": "Sludd",
+      "snow": "Snø",
+      "showers": "Byger",
+      "heavyrain": "Kraftig regn",
+      "lightrain": "Lett regn",
+      "rain": "Regn",
+      "fog": "Tåke",
+      "partlycloudy": "Delvis skyet",
+      "fair": "Lettskyet",
+      "clearsky": "Klarvær",
+      "cloudy": "Skyet"
+    }
   }
 }

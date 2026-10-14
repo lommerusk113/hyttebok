@@ -23,5 +23,7 @@ public record CabinInfo(@Id Long id,
                         @Nullable String arrivalInfo,
                         @Nullable String departureInfo,
                         @Nullable Long heroPhotoId,
-                        @NotNull @TypeDef(type = DataType.STRING_ARRAY) List<String> hiddenSections) {
+                        @NotNull @TypeDef(type = DataType.STRING_ARRAY) List<String> hiddenSections,
+                        @Nullable Double latitude,
+                        @Nullable Double longitude) {
 }
