@@ -28,11 +28,24 @@ export const nextDue = m => addInterval(baseDate(m), m.intervalValue, m.interval
 
 export const daysBetween = (fromIso, toIso) => Math.round((parseIsoDate(toIso) - parseIsoDate(fromIso)) / 864e5)
 
+// Monthly and yearly tasks are due in a month, not on a day: done in October, every year → due October
+// next year, overdue from 1 November. Daily and weekly tasks keep their exact day.
+export const byMonth = m => m.intervalUnit === 'MONTHS' || m.intervalUnit === 'YEARS'
+
+const endOfMonth = iso => {
+  const d = parseIsoDate(iso)
+  return toIsoDate(new Date(d.getFullYear(), d.getMonth() + 1, 0))
+}
+
+/** The last day the task is still on time. */
+export const dueBy = m => (byMonth(m) ? endOfMonth(nextDue(m)) : nextDue(m))
+
 export const SOON_DAYS = 30
 
+/** `days` until the last on-time day (negative = days overdue). */
 export function status(m, today) {
-  const days = daysBetween(today, nextDue(m))
-  return { days, kind: days < 0 ? 'overdue' : days <= SOON_DAYS ? 'soon' : 'later' }
+  const days = daysBetween(today, dueBy(m))
+  return { days, kind: days < 0 ? 'overdue' : daysBetween(today, nextDue(m)) <= SOON_DAYS ? 'soon' : 'later' }
 }
 
 /**
@@ -55,11 +68,11 @@ export function yearEntries(tasks, completions, year, today) {
       // Count from the base each time so month-end clamping doesn't drift (31 Jan, 28 Feb, 31 Mar…).
       for (let k = 1; ; k++) {
         const date = addInterval(base, k * m.intervalValue, m.intervalUnit)
-        const overdue = date < today
+        const overdue = (byMonth(m) ? endOfMonth(date) : date) < today
         if (overdue && k > 1) continue
         if (Number(date.slice(0, 4)) > year) break
         if (overdue ? year === thisYear : date.startsWith(`${year}-`)) {
-          entries.push({ key: `p${m.id}-${k}`, date, kind: overdue ? 'overdue' : 'planned', task: m })
+          entries.push({ key: `p${m.id}-${k}`, date, kind: overdue ? 'overdue' : 'planned', task: m, monthOnly: byMonth(m) })
         }
         if (onlyNext) break
       }
@@ -80,7 +93,7 @@ if (typeof process !== 'undefined' && import.meta.url === `file://${process.argv
   assert.equal(addInterval('2026-10-14', 2, 'WEEKS'), '2026-10-28')
   assert.equal(addInterval('2026-12-31', 1, 'DAYS'), '2027-01-01')
   const task = { id: 1, intervalValue: 3, intervalUnit: 'MONTHS', lastCompleted: '2026-04-01' }
-  assert.deepEqual(yearEntries([task], [], 2026, '2026-10-14').map(e => [e.date, e.kind]), [['2026-07-01', 'overdue']])
+  assert.deepEqual(yearEntries([task], [], 2026, '2026-10-14').map(e => [e.date, e.kind]), [['2026-07-01', 'overdue'], ['2026-10-01', 'planned']])
   assert.deepEqual(yearEntries([task], [], 2027, '2026-10-14').map(e => e.date), ['2027-01-01', '2027-04-01', '2027-07-01', '2027-10-01'])
   assert.deepEqual(yearEntries([task], [{ id: 9, maintenanceId: 1, completedOn: '2025-05-02' }], 2025, '2026-10-14').map(e => e.kind), ['done'])
   const daily = { id: 2, intervalValue: 1, intervalUnit: 'DAYS', lastCompleted: '2026-10-10' }
@@ -88,5 +101,10 @@ if (typeof process !== 'undefined' && import.meta.url === `file://${process.argv
   assert.deepEqual(yearEntries([daily], [], 2028, '2026-10-14'), [])
   const biweekly = { id: 3, intervalValue: 2, intervalUnit: 'WEEKS', lastCompleted: '2026-10-14' }
   assert.equal(yearEntries([biweekly], [], 2027, '2026-10-14').length, 26)
+  const yearly = { id: 4, intervalValue: 1, intervalUnit: 'YEARS', lastCompleted: '2026-10-01' }
+  assert.deepEqual(status(yearly, '2026-10-14'), { days: 382, kind: 'later' })
+  assert.equal(status(yearly, '2027-10-31').kind, 'soon')
+  assert.deepEqual(status(yearly, '2027-11-01'), { days: -1, kind: 'overdue' })
+  assert.deepEqual(yearEntries([yearly], [], 2027, '2027-10-20').map(e => e.kind), ['planned'])
   console.log('maintenance.js ok')
 }

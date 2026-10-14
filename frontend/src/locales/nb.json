@@ -295,7 +295,14 @@
     "lastCompletedHintEdit": "Står det tomt, regner vi fra da oppgaven ble lagt inn.",
     "intervalCount": "Antall",
     "intervalUnit": "Enhet",
-    "overdueGroup": "På overtid"
+    "overdueGroup": "På overtid",
+    "nextOn": "neste {date}",
+    "doneBy": "utført av {name}",
+    "lastMonth": "Måned",
+    "lastYear": "År",
+    "pickMonth": "Velg måned",
+    "pickYear": "År",
+    "dueThisMonth": "Denne måneden"
   },
   "push": {
     "title": "Varsler",
@@ -339,7 +346,10 @@
     "failed": {
       "pushService": "Nettleseren fikk ikke kontakt med varseltjenesten sin. Bruker du Brave: slå på «Bruk Google-tjenester for push-meldinger» under brave://settings/privacy og prøv igjen. Ellers: prøv igjen senere, eller bruk Chrome.",
       "generic": "Fikk ikke slått på varsler. Sjekk nettet og prøv igjen."
-    }
+    },
+    "lost": "Varslene dine ble slått av fordi appen ikke har vært brukt på en stund.",
+    "restore": "Slå på igjen",
+    "dismissLost": "Ikke spør meg igjen"
   },
   "weather": {
     "today": "{max}° / {min}° i dag",

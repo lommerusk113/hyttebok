@@ -295,7 +295,14 @@
     "lastCompletedHintEdit": "If left empty, we count from when the task was added.",
     "intervalCount": "Number",
     "intervalUnit": "Unit",
-    "overdueGroup": "Overdue"
+    "overdueGroup": "Overdue",
+    "nextOn": "next {date}",
+    "doneBy": "done by {name}",
+    "lastMonth": "Month",
+    "lastYear": "Year",
+    "pickMonth": "Pick month",
+    "pickYear": "Year",
+    "dueThisMonth": "This month"
   },
   "push": {
     "title": "Notifications",
@@ -339,7 +346,10 @@
     "failed": {
       "pushService": "The browser couldn't reach its push service. Using Brave? Turn on \"Use Google services for push messaging\" in brave://settings/privacy and try again. Otherwise try again later, or use Chrome.",
       "generic": "Couldn't turn on notifications. Check your connection and try again."
-    }
+    },
+    "lost": "Your notifications were switched off because the app hasn't been used for a while.",
+    "restore": "Turn back on",
+    "dismissLost": "Don't ask again"
   },
   "weather": {
     "today": "{max}° / {min}° today",

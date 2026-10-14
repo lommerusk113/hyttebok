@@ -12,9 +12,9 @@ import DashCard from '../components/DashCard.vue'
 import EmptyState from '../components/EmptyState.vue'
 import { api } from '../api'
 import { askName, userName } from '../user'
-import { formatDate, parseIsoDate, toIsoDate } from '../utils'
-import { addInterval, nextDue, status, UNITS, yearEntries } from '../maintenance'
-import { dueLabel, overdueBadge, STATUS_STYLE } from '../maintenanceLabels'
+import { parseIsoDate, toIsoDate } from '../utils'
+import { nextDue, status, UNITS, yearEntries } from '../maintenance'
+import { dueLabel, dueText, overdueBadge, STATUS_STYLE } from '../maintenanceLabels'
 import { localeTag, t } from '../i18n'
 import { useDeepLink } from '../deepLink'
 
@@ -58,7 +58,7 @@ const rows = computed(() => order.value
 const overdueCount = computed(() => rows.value.filter(r => r.kind === 'overdue').length)
 
 const intervalText = m => t(`maintenance.every.${m.intervalUnit}`, m.intervalValue)
-const lastText = m => (m.lastCompleted ? t('maintenance.lastDone', { date: formatDate(parseIsoDate(m.lastCompleted)) }) : t('maintenance.neverDone'))
+const lastText = m => (m.lastCompleted ? t('maintenance.lastDone', { date: dueText(m, m.lastCompleted) }) : t('maintenance.neverDone'))
 
 // Year overview: overdue items get their own group on top (they can be from last year), then month by month.
 const yearGroups = computed(() => {
@@ -74,6 +74,7 @@ const yearGroups = computed(() => {
   return [...groups]
 })
 const dayLabel = iso => parseIsoDate(iso).toLocaleDateString(localeTag(), { day: 'numeric', month: 'short' })
+const monthLabel = iso => parseIsoDate(iso).toLocaleDateString(localeTag(), { month: 'short' })
 
 const ENTRY_STYLE = {
   done: { icon: 'pi pi-check-circle', color: 'text-emerald-600' },
@@ -116,28 +117,31 @@ async function undo(completion) {
 
 function openForm(m) {
   form.value = m
-    ? { ...m, lastMonth: m.lastCompleted?.slice(0, 7) ?? '' }
-    : { name: '', description: '', intervalValue: 1, intervalUnit: 'YEARS', lastMonth: '' }
+    ? { ...m, lastYear: m.lastCompleted?.slice(0, 4) ?? '', lastMon: m.lastCompleted?.slice(5, 7) ?? '' }
+    : { name: '', description: '', intervalValue: 1, intervalUnit: 'YEARS', lastYear: '', lastMon: '' }
   formOpen.value = true
 }
 
-// "Sist utført" choices: this month and five years back, newest first (plus the task's own month if older).
-const MONTHS_BACK = 60
-const monthChoices = computed(() => {
-  const now = new Date()
-  const list = [...Array(MONTHS_BACK)].map((_, i) => {
-    const d = new Date(now.getFullYear(), now.getMonth() - i, 1)
-    return { value: toIsoDate(d).slice(0, 7), label: d.toLocaleDateString(localeTag(), { month: 'long', year: 'numeric' }) }
-  })
-  const current = form.value.lastMonth
-  if (current && !list.some(c => c.value === current)) list.push({ value: current, label: parseIsoDate(`${current}-01`).toLocaleDateString(localeTag(), { month: 'long', year: 'numeric' }) })
-  return list
+// "Sist utført": a month and a year (ten years back, plus the task's own year if older). No future months.
+const YEARS_BACK = 10
+const yearChoices = computed(() => {
+  const list = [...Array(YEARS_BACK + 1)].map((_, i) => String(thisYear.value - i))
+  const current = form.value.lastYear
+  return current && !list.includes(current) ? [...list, current] : list
+})
+const monthChoices = computed(() => [...Array(12)].map((_, i) => ({
+  value: String(i + 1).padStart(2, '0'),
+  label: new Date(2000, i, 1).toLocaleDateString(localeTag(), { month: 'long' }),
+  future: `${form.value.lastYear}-${String(i + 1).padStart(2, '0')}` > today.value.slice(0, 7),
+})))
+watch(() => form.value.lastYear, () => {
+  if (monthChoices.value.find(c => c.value === form.value.lastMon)?.future) form.value.lastMon = ''
 })
 
 // Unchanged month on an existing task keeps its exact date; a newly picked month counts from the 1st.
 const lastCompletedFromForm = () => {
-  const month = form.value.lastMonth
-  if (!month) return null
+  if (!form.value.lastYear || !form.value.lastMon) return null
+  const month = `${form.value.lastYear}-${form.value.lastMon}`
   return form.value.lastCompleted?.startsWith(month) ? form.value.lastCompleted : `${month}-01`
 }
 
@@ -147,14 +151,16 @@ const unitOptions = computed(() => UNITS.map(u => ({ value: u, label: t(`mainten
 const preview = computed(() => {
   if (!form.value.intervalValue) return null
   const base = lastCompletedFromForm() || (form.value.createdAt ? toIsoDate(new Date(form.value.createdAt)) : today.value)
-  const next = addInterval(base, form.value.intervalValue, form.value.intervalUnit)
-  const date = formatDate(parseIsoDate(next))
-  return next < today.value ? { text: t('maintenance.nextPreviewPast', { date }), past: true } : { text: t('maintenance.nextPreview', { date }), past: false }
+  const task = { intervalValue: form.value.intervalValue, intervalUnit: form.value.intervalUnit, lastCompleted: base }
+  const date = dueText(task, nextDue(task))
+  return status(task, today.value).kind === 'overdue'
+    ? { text: t('maintenance.nextPreviewPast', { date }), past: true }
+    : { text: t('maintenance.nextPreview', { date }), past: false }
 })
 
 async function save() {
 
-  const { lastMonth, ...fields } = form.value
+  const { lastYear, lastMon, ...fields } = form.value
   const body = { ...fields, name: fields.name.trim(), lastCompleted: lastCompletedFromForm() }
   const saved = await (body.id ? api.put('/maintenance', body) : api.post('/maintenance', body))
 
@@ -235,9 +241,9 @@ function remove(m) {
             <ul>
               <li v-for="e in group.entries" :key="e.key" class="flex min-h-9 items-center gap-2.5">
                 <i :class="[ENTRY_STYLE[e.kind].icon, ENTRY_STYLE[e.kind].color]" class="text-sm" />
-                <span class="w-16 shrink-0 whitespace-nowrap text-sm tabular-nums text-zinc-500">{{ dayLabel(e.date) }}</span>
+                <span class="w-16 shrink-0 whitespace-nowrap text-sm tabular-nums text-zinc-500">{{ e.monthOnly ? monthLabel(e.date) : dayLabel(e.date) }}</span>
                 <span class="min-w-0 flex-1 truncate text-sm" :class="{ 'font-medium text-rose-700': e.kind === 'overdue', 'text-zinc-500': e.kind === 'done' }">
-                  {{ e.task.name }}<template v-if="e.kind === 'done' && e.completion.completedBy"> · {{ e.completion.completedBy }}</template>
+                  {{ e.task.name }}<template v-if="e.kind === 'done'"> · {{ e.completion.completedBy ? t('maintenance.doneBy', { name: e.completion.completedBy }) : t('maintenance.kind.done').toLowerCase() }}</template>
                 </span>
                 <Button v-if="e.kind === 'done'" :label="t('maintenance.undo')" text size="small" severity="secondary" class="!min-h-11 !px-2" @click="undo(e.completion)" />
               </li>
@@ -271,12 +277,20 @@ function remove(m) {
 
       <label class="flex flex-col gap-1.5 text-sm font-medium">
         {{ t('maintenance.lastCompleted') }}
-        <!-- Month is enough (people remember "June", not the 15th). A native select opens the phone's own picker. -->
-        <select v-model="form.lastMonth" class="min-h-11 rounded-md border border-zinc-300 bg-surface px-3 text-base font-normal text-zinc-900 sm:text-sm">
-          <option value="">{{ t('maintenance.lastCompletedPlaceholder') }}</option>
-          <option v-for="c in monthChoices" :key="c.value" :value="c.value">{{ c.label }}</option>
-        </select>
-        <span v-if="!form.lastMonth" class="text-xs font-normal text-zinc-500">{{ form.id ? t('maintenance.lastCompletedHintEdit') : t('maintenance.lastCompletedHintNew') }}</span>
+        <!-- Month is enough (people remember "June", not the 15th). Native selects open the phone's own picker. -->
+        <span class="flex gap-2">
+          <select v-model="form.lastMon" :required="!!form.lastYear" :aria-label="t('maintenance.lastMonth')"
+                  class="min-h-11 flex-1 rounded-md border border-zinc-300 bg-surface px-3 text-base font-normal text-zinc-900 sm:text-sm">
+            <option value="">{{ form.lastYear ? t('maintenance.pickMonth') : t('maintenance.lastCompletedPlaceholder') }}</option>
+            <option v-for="c in monthChoices" :key="c.value" :value="c.value" :disabled="c.future">{{ c.label }}</option>
+          </select>
+          <select v-model="form.lastYear" :required="!!form.lastMon" :aria-label="t('maintenance.lastYear')"
+                  class="min-h-11 w-28 rounded-md border border-zinc-300 bg-surface px-3 text-base font-normal text-zinc-900 sm:text-sm">
+            <option value="">{{ t('maintenance.pickYear') }}</option>
+            <option v-for="y in yearChoices" :key="y" :value="y">{{ y }}</option>
+          </select>
+        </span>
+        <span v-if="!lastCompletedFromForm()" class="text-xs font-normal text-zinc-500">{{ form.id ? t('maintenance.lastCompletedHintEdit') : t('maintenance.lastCompletedHintNew') }}</span>
       </label>
 
       <label class="flex flex-col gap-1.5 text-sm font-medium">

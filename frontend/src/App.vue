@@ -11,24 +11,24 @@ import InputText from 'primevue/inputtext'
 import Button from 'primevue/button'
 import Avatar from 'primevue/avatar'
 import Drawer from 'primevue/drawer'
-import LanguageToggle from './components/LanguageToggle.vue'
-import ThemeSwitch from './components/ThemeSwitch.vue'
+import Popover from 'primevue/popover'
+import AppMenu from './components/AppMenu.vue'
 import NotificationSettings from './components/NotificationSettings.vue'
-import { loadPushState, syncProfile, topics as pushTopics } from './push'
+import { forgetLostTopics, loadPushState, lostTopics, restoreTopics, syncProfile } from './push'
 import { userName, askName } from './user'
 import { initials, colorFor } from './utils'
 import { api } from './api'
 import { locale, primeLocale, t } from './i18n'
 import { online, pending } from './offline'
-import { install, installPrompt, installed, isIos } from './install'
 
 const primevue = usePrimeVue()
 // The install page (/app) is often someone's first visit; don't ask for a name there.
 const route = useRoute()
 const menuOpen = ref(false)
+const menuPopover = ref()
 const notificationsOpen = ref(false)
 
-loadPushState()
+loadPushState({ name: userName.value, lang: locale.value })
 // The server uses the name to leave out your own changes, and the language for the texts.
 watch([userName, locale], ([name, lang]) => syncProfile({ name, lang }))
 const confirm = useConfirm()
@@ -50,9 +50,12 @@ watch(askName, async open => {
     .filter(Boolean))].sort((a, b) => a.localeCompare(b))
 }, { immediate: true })
 
-async function installFromMenu() {
-  menuOpen.value = false
-  if (await install()) toast.add({ severity: 'success', summary: t('install.done'), detail: t('install.openFromHome'), life: 5000 })
+async function restoreNotifications() {
+  try {
+    await restoreTopics({ name: userName.value, lang: locale.value })
+  } catch {
+    notificationsOpen.value = true // the settings panel explains what went wrong when they try there
+  }
 }
 
 function saveName(name = draftName.value) {
@@ -67,85 +70,54 @@ function saveName(name = draftName.value) {
   <div class="min-h-screen">
     <header class="sticky top-0 z-30 border-b border-zinc-200 bg-surface/85 text-zinc-950 backdrop-blur">
       <div class="mx-auto flex h-14 max-w-6xl items-center justify-between gap-4 px-4 sm:h-16">
-        <div class="flex items-center gap-4">
-          <RouterLink to="/" class="flex min-h-11 items-center gap-2.5">
-            <!-- Logo files are white; invert gives the black version for the light header -->
-            <img src="/mark.png" alt="" class="h-8 w-auto invert dark:invert-0">
-            <span class="flex flex-col gap-1">
-              <!-- Product name first; Ravnsmark is the company behind it -->
-              <span class="font-display text-base uppercase leading-none tracking-[0.18em]">Hyttebok</span>
-              <span class="flex items-center gap-1 text-[10px] text-zinc-500">{{ t('app.by') }} <img src="/wordmark.png" alt="Ravnsmark" class="h-2 w-auto opacity-70 invert dark:invert-0"></span>
-            </span>
-          </RouterLink>
-          <LanguageToggle class="max-sm:!hidden" />
-        </div>
+        <RouterLink to="/" class="flex min-h-11 items-center gap-2.5">
+          <!-- Logo files are white; invert gives the black version for the light header -->
+          <img src="/mark.png" alt="" class="h-8 w-auto invert dark:invert-0">
+          <span class="flex flex-col gap-1">
+            <!-- Product name first; Ravnsmark is the company behind it -->
+            <span class="font-display text-base uppercase leading-none tracking-[0.18em]">Hyttebok</span>
+            <span class="flex items-center gap-1 text-[10px] text-zinc-500">{{ t('app.by') }} <img src="/wordmark.png" alt="Ravnsmark" class="h-2 w-auto opacity-70 invert dark:invert-0"></span>
+          </span>
+        </RouterLink>
 
-        <!-- Wide screens: controls inline -->
-        <div class="hidden items-center gap-3 sm:flex">
+        <div class="flex items-center gap-2">
           <span v-if="!online || pending" class="flex items-center gap-1.5 rounded-full bg-amber-100 px-2.5 py-1 text-xs font-medium text-amber-800" role="status">
             <i class="pi text-[10px]" :class="online ? 'pi-sync' : 'pi-wifi'" />
             {{ !online ? t('offline.offline') : '' }}{{ !online && pending ? ' · ' : '' }}{{ pending ? t('offline.pending', pending) : '' }}
           </span>
-          <Button v-if="installPrompt" icon="pi pi-download" :label="t('app.install')" size="small" outlined severity="secondary" @click="install" />
-          <button class="relative grid size-10 place-items-center rounded-full text-zinc-600 transition hover:bg-zinc-100 hover:text-zinc-950"
-                  :aria-label="t('push.title')" v-tooltip.bottom="t('push.title')" @click="notificationsOpen = true">
-            <i class="pi pi-bell" />
-            <span v-if="pushTopics.length" class="absolute right-2 top-2 size-2 rounded-full bg-emerald-500" />
-          </button>
-          <ThemeSwitch v-tooltip.bottom="t('app.darkMode')" />
-          <button class="flex items-center gap-2 rounded-full py-1 pl-1 pr-3 transition hover:bg-zinc-100"
-                  :aria-label="userName || t('app.whoAreYou')" @click="askName = true">
+          <!-- Wide screens: your name opens a dropdown with the same menu as the phone drawer -->
+          <button class="hidden items-center gap-2 rounded-full py-1 pl-1 pr-3 transition hover:bg-zinc-100 sm:flex"
+                  :aria-label="t('app.menu')" aria-haspopup="true" @click="menuPopover.toggle($event)">
             <Avatar :label="initials(userName)" shape="circle" :class="[colorFor(userName).bg, colorFor(userName).text]" class="!text-xs !font-semibold" />
             <span class="text-sm font-medium">{{ userName || t('app.whoAreYou') }}</span>
+            <i class="pi pi-chevron-down text-xs text-zinc-500" />
           </button>
-        </div>
-
-        <!-- Phones: everything behind a menu (only the sync status stays visible) -->
-        <div class="flex items-center gap-1 sm:hidden">
-          <span v-if="!online || pending" class="flex items-center gap-1.5 rounded-full bg-amber-100 px-2.5 py-1 text-xs font-medium text-amber-800" role="status">
-            <i class="pi text-[10px]" :class="online ? 'pi-sync' : 'pi-wifi'" />
-            {{ !online ? t('offline.offline') : '' }}{{ !online && pending ? ' · ' : '' }}{{ pending ? t('offline.pending', pending) : '' }}
-          </span>
-        <button class="-mr-2 grid size-11 place-items-center rounded-full transition hover:bg-zinc-100 sm:hidden"
-                :aria-label="t('app.menu')" :aria-expanded="menuOpen" @click="menuOpen = true">
-          <i class="pi pi-bars text-lg" />
-        </button>
+          <button class="-mr-2 grid size-11 place-items-center rounded-full transition hover:bg-zinc-100 sm:hidden"
+                  :aria-label="t('app.menu')" :aria-expanded="menuOpen" @click="menuOpen = true">
+            <i class="pi pi-bars text-lg" />
+          </button>
         </div>
       </div>
     </header>
 
     <Drawer v-model:visible="menuOpen" position="right" :header="t('app.menu')" class="!w-[18rem]">
-      <div class="flex flex-col gap-2">
-        <button class="flex min-h-14 items-center gap-3 rounded-lg border border-zinc-200 p-2 text-left transition hover:bg-zinc-50"
-                @click="menuOpen = false; askName = true">
-          <Avatar :label="initials(userName)" shape="circle" :class="[colorFor(userName).bg, colorFor(userName).text]" class="!font-semibold" />
-          <span class="min-w-0 flex-1">
-            <span class="block truncate font-medium">{{ userName || t('app.whoAreYou') }}</span>
-            <span class="block text-xs text-zinc-500">{{ t('app.changeName') }}</span>
-          </span>
-          <i class="pi pi-chevron-right text-xs text-zinc-500" />
-        </button>
-        <button class="flex min-h-14 items-center justify-between gap-3 px-2 text-left" @click="menuOpen = false; notificationsOpen = true">
-          <span class="flex items-center gap-2 text-sm font-medium"><i class="pi pi-bell" />{{ t('push.title') }}</span>
-          <span class="flex items-center gap-2 text-sm text-zinc-500">{{ pushTopics.length ? t('push.on') : t('push.off') }}<i class="pi pi-chevron-right text-xs" /></span>
-        </button>
-        <div class="flex min-h-14 items-center justify-between gap-3 px-2">
-          <span class="text-sm font-medium">{{ t('app.language') }}</span>
-          <LanguageToggle />
-        </div>
-        <label class="flex min-h-14 cursor-pointer items-center justify-between gap-3 px-2">
-          <span class="text-sm font-medium">{{ t('app.darkMode') }}</span>
-          <ThemeSwitch />
-        </label>
-
-        <!-- iPhones always go to the instructions: only Safari's Share menu can install there -->
-        <Button v-if="installPrompt && !isIos" icon="pi pi-download" :label="t('app.install')" class="mt-2" @click="installFromMenu" />
-        <RouterLink v-else-if="!installed" to="/app" class="mt-2 flex min-h-11 items-center justify-center gap-2 rounded-lg bg-zinc-100 text-sm font-medium"
-                    @click="menuOpen = false">
-          <i class="pi pi-mobile" />{{ t('app.install') }}
-        </RouterLink>
-      </div>
+      <AppMenu @close="menuOpen = false" @notifications="notificationsOpen = true" />
     </Drawer>
+    <Popover ref="menuPopover" class="w-72">
+      <AppMenu @close="menuPopover.hide()" @notifications="notificationsOpen = true" />
+    </Popover>
+
+    <!-- The phone switched notifications off by itself (unused for a while): one tap to get them back -->
+    <div v-if="lostTopics.length" class="border-b border-amber-200 bg-amber-50 text-amber-900" role="status">
+      <div class="mx-auto flex max-w-6xl items-center gap-3 px-4 py-2 text-sm">
+        <i class="pi pi-bell-slash shrink-0" />
+        <span class="flex-1">{{ t('push.lost') }}</span>
+        <Button :label="t('push.restore')" size="small" @click="restoreNotifications" />
+        <button class="grid size-11 shrink-0 place-items-center rounded-full hover:bg-amber-100" :aria-label="t('push.dismissLost')" @click="forgetLostTopics">
+          <i class="pi pi-times text-xs" />
+        </button>
+      </div>
+    </div>
 
     <main class="mx-auto max-w-6xl px-4 pb-12 pt-4">
       <RouterView />

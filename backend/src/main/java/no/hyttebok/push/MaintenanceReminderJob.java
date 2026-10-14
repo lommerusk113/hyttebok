@@ -11,8 +11,9 @@ import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 
 /**
- * Every morning: one notification listing maintenance due today, plus overdue tasks once a week
- * (on the 7th, 14th, … day overdue) so it reminds without nagging.
+ * Every morning: one notification listing maintenance that falls due today (monthly and yearly tasks:
+ * on the 1st of their month), plus overdue tasks once a week (on the 7th, 14th, … day overdue) so it
+ * reminds without nagging.
  */
 @Singleton
 public class MaintenanceReminderJob {
@@ -35,8 +36,9 @@ public class MaintenanceReminderJob {
         var dueToday = new ArrayList<Maintenance>();
         var overdue = new ArrayList<Maintenance>();
         for (var m : maintenance.listOrderByName()) {
-            var days = ChronoUnit.DAYS.between(nextDue(m), today);
-            if (days == 0) {
+            var due = nextDue(m);
+            var days = ChronoUnit.DAYS.between(dueBy(m), today);
+            if (today.equals(byMonth(m) ? due.withDayOfMonth(1) : due)) {
                 dueToday.add(m);
             } else if (days > 0 && days % REMIND_EVERY_DAYS == 0) {
                 overdue.add(m);
@@ -49,10 +51,23 @@ public class MaintenanceReminderJob {
         notifier.notify(Topic.MAINTENANCE, s -> {
             var en = Notifier.en(s);
             var lines = new ArrayList<String>();
-            dueToday.forEach(m -> lines.add(m.name() + (en ? " – today" : " – i dag")));
-            overdue.forEach(m -> lines.add(m.name() + " – " + ChronoUnit.DAYS.between(nextDue(m), today) + (en ? " days overdue" : " dager på overtid")));
+            dueToday.forEach(m -> lines.add(m.name() + (byMonth(m) ? (en ? " – this month" : " – denne måneden") : (en ? " – today" : " – i dag"))));
+            overdue.forEach(m -> lines.add(m.name() + " – " + ChronoUnit.DAYS.between(dueBy(m), today) + (en ? " days overdue" : " dager på overtid")));
             return new Notifier.Message(en ? "Maintenance" : "Vedlikehold", String.join("\n", lines), "/vedlikehold", "maintenance");
         });
+    }
+
+    /** Monthly and yearly tasks are due in a month, not on a day (same rule as the app). */
+    static boolean byMonth(Maintenance m) {
+        return "MONTHS".equals(m.intervalUnit()) || "YEARS".equals(m.intervalUnit());
+    }
+
+    /** The last day the task is still on time: the end of its month for monthly and yearly tasks. */
+    static LocalDate dueBy(Maintenance m) {
+
+        var due = nextDue(m);
+
+        return byMonth(m) ? due.withDayOfMonth(due.lengthOfMonth()) : due;
     }
 
     /** Same rule as the app: (last completed, or the day it was added) + interval. */
