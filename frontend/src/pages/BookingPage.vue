@@ -9,10 +9,8 @@ import { useToast } from 'primevue/usetoast'
 import { useConfirm } from 'primevue/useconfirm'
 import Button from 'primevue/button'
 import Dialog from 'primevue/dialog'
-import DatePicker from 'primevue/datepicker'
 import InputText from 'primevue/inputtext'
 import Textarea from 'primevue/textarea'
-import Select from 'primevue/select'
 import Message from 'primevue/message'
 import PageHeader from '../components/PageHeader.vue'
 import { api } from '../api'
@@ -40,7 +38,7 @@ onMounted(async () => {
   await load()
   const query = takeQuery()
   if (query.id) selected.value = bookings.value.find(b => b.id === Number(query.id)) || null
-  if (query.new) openNew()
+  if (query.new) startPicking()
 })
 
 async function load() {
@@ -93,49 +91,24 @@ const upcoming = computed(() => bookings.value.filter(b => b.endDate >= today))
 const RECENT_LIMIT = 5
 const recent = computed(() => bookings.value.filter(b => b.endDate < today).sort((a, b) => b.endDate.localeCompare(a.endDate)).slice(0, RECENT_LIMIT))
 const postCount = b => posts.value.filter(p => p.bookingId === b.id).length
-const bookedDays = computed(() => {
-  const set = new Set()
-  for (const b of bookings.value) {
-    if (b.id === form.value.id) continue
-    for (let d = parseIsoDate(b.startDate); toIsoDate(d) <= b.endDate; d.setDate(d.getDate() + 1)) set.add(toIsoDate(d))
-  }
-  return set
-})
-
 const range = computed(() => {
   const [start, end] = form.value.range || []
   return start && { start: toIsoDate(start), end: toIsoDate(end || start) }
 })
 
-const slotIso = d => toIsoDate(new Date(d.year, d.month, d.day))
-const isBooked = d => bookedDays.value.has(slotIso(d))
-const isPicked = d => range.value && slotIso(d) >= range.value.start && slotIso(d) <= range.value.end
-
 const conflicts = computed(() => range.value
   ? bookings.value.filter(b => b.id !== form.value.id && b.startDate <= range.value.end && b.endDate >= range.value.start)
   : [])
 
-// "Go to month" for the booking calendar: the next two years, so far-off trips are two taps away.
-const pickerRef = ref()
-const monthOptions = computed(() => [...Array(24)].map((_, i) => {
-  const d = new Date(new Date().getFullYear(), new Date().getMonth() + i, 1)
-  return { value: `${d.getFullYear()}-${d.getMonth()}`, label: d.toLocaleDateString(localeTag(), { month: 'long', year: 'numeric' }) }
-}))
-// DatePicker has no "show this month" option, so this taps through its own year → month views.
-async function goToMonth(value) {
-  const [year, month] = value.split('-').map(Number)
-  const root = pickerRef.value.$el
-  root.querySelector('.p-datepicker-select-year')?.click()
-  await nextTick()
-  ;[...root.querySelectorAll('.p-datepicker-year')].find(y => y.textContent.trim() === String(year))?.click()
-  await nextTick()
-  root.querySelectorAll('.p-datepicker-month')[month]?.click()
-}
 
 // The chosen dates in words, so nobody has to decode circles in a calendar.
-const rangeSummary = computed(() => range.value && range.value.start !== range.value.end
-  ? `${period({ startDate: range.value.start, endDate: range.value.end })} · ${t('booking.nights', nights({ startDate: range.value.start, endDate: range.value.end }))}`
-  : null)
+const rangeSummary = computed(() => {
+  if (!range.value) return null
+  const stay = { startDate: range.value.start, endDate: range.value.end }
+  return stay.startDate === stay.endDate
+    ? { period: formatDay(parseIsoDate(stay.startDate)) }
+    : { period: period(stay), nights: t('booking.nights', nights(stay)) }
+})
 
 const nights = b => Math.round((parseIsoDate(b.endDate) - parseIsoDate(b.startDate)) / 864e5)
 const period = b => `${formatDay(parseIsoDate(b.startDate))} – ${formatDay(parseIsoDate(b.endDate))}`
@@ -144,10 +117,48 @@ function shiftMonth(delta) {
   cursor.value = new Date(cursor.value.getFullYear(), cursor.value.getMonth() + delta, 1)
 }
 
-function openNew(iso) {
-  const start = iso ? parseIsoDate(iso) : null
-  form.value = { guestName: userName.value, guests: 1, note: '', range: start ? [start, null] : null }
+// Dates are picked in the big calendar: tap the first day, then the last; the form opens with them filled in.
+// `picking` holds the form being filled in meanwhile (a new booking, or one whose dates are being changed).
+const picking = ref(null)
+const hoverIso = ref(null)
+// Only a real mouse previews the range; on touch screens "hover" just follows the last tap.
+const canHover = matchMedia('(hover: hover)').matches
+const calendarRef = ref()
+const newDraft = () => ({ guestName: userName.value, guests: 1, note: '' })
+
+function startPicking(draft = newDraft()) {
+  picking.value = { start: null, draft }
+  nextTick(() => calendarRef.value?.scrollIntoView({ behavior: 'smooth', block: 'start' }))
+}
+
+function pickDay(iso) {
+  if (!picking.value) picking.value = { start: null, draft: newDraft() }
+  const { start, draft } = picking.value
+  if (!start) {
+    picking.value.start = iso
+    hoverIso.value = iso
+    return
+  }
+  const [first, last] = iso < start ? [iso, start] : [start, iso]
+  form.value = { ...draft, range: [parseIsoDate(first), parseIsoDate(last)] }
+  picking.value = null
   formOpen.value = true
+}
+
+// The span shown while picking: from the first tap to the day under the pointer (desktop).
+function pickState(iso) {
+  const p = picking.value
+  if (!p?.start) return null
+  const other = hoverIso.value || p.start
+  const [a, b] = other < p.start ? [other, p.start] : [p.start, other]
+  if (iso === p.start) return 'end'
+  return iso >= a && iso <= b ? 'inside' : null
+}
+
+function changeDates() {
+  formOpen.value = false
+  const { range: _, ...draft } = form.value
+  startPicking(draft)
 }
 
 function openEdit(b) {
@@ -183,12 +194,21 @@ function remove(b) {
 
 <template>
   <PageHeader :subtitle="t('booking.subtitle')">
-    <Button :label="t('booking.new')" icon="pi pi-plus" @click="openNew()" />
+    <Button :label="t('booking.new')" icon="pi pi-plus" @click="startPicking()" />
   </PageHeader>
 
   <div class="grid gap-6 lg:grid-cols-3">
     <!-- Calendar -->
-    <section class="card overflow-hidden lg:col-span-2">
+    <!-- While picking dates: what to tap next, and a way out. Fixed at the bottom so it stays in view while scrolling. -->
+    <div v-if="picking" class="fixed inset-x-0 bottom-0 z-20 border-t border-emerald-200 bg-emerald-50 pb-[env(safe-area-inset-bottom)] text-emerald-900 shadow-lg" role="status">
+      <div class="mx-auto flex max-w-6xl items-center gap-3 px-4 py-2 text-sm">
+        <i class="pi pi-calendar-plus" />
+        <span class="flex-1 font-medium">{{ picking.start ? t('booking.pickEnd', { date: formatDay(parseIsoDate(picking.start)) }) : t('booking.pickStart') }}</span>
+        <Button :label="t('common.cancel')" size="small" outlined severity="secondary" class="!min-h-11" @click="picking = null" />
+      </div>
+    </div>
+
+    <section ref="calendarRef" class="card scroll-mt-20 overflow-hidden lg:col-span-2">
       <div class="flex items-center justify-between border-b border-zinc-100 px-4 py-3">
         <Button icon="pi pi-chevron-left" text rounded severity="secondary" :aria-label="t('booking.prevMonth')" @click="shiftMonth(-1)" />
         <div class="flex items-center gap-2">
@@ -205,11 +225,12 @@ function remove(b) {
       <div v-for="(week, w) in weeks" :key="w" class="grid grid-cols-7 border-b border-zinc-100 last:border-0">
         <div v-for="day in week" :key="day.iso"
              class="group flex min-h-20 cursor-pointer flex-col border-r border-zinc-100 pb-1 last:border-r-0 hover:bg-zinc-100 sm:min-h-24"
-             :class="{ 'bg-zinc-50/60': !day.inMonth }" @click="openNew(day.iso)">
+             :class="pickState(day.iso) ? 'bg-emerald-50' : !day.inMonth && 'bg-zinc-50/60'"
+             @click="pickDay(day.iso)" @mouseenter="canHover && (hoverIso = day.iso)">
           <!-- Day number alone at the top, so a temperature next to it isn't read as the date -->
           <div class="flex justify-end p-1.5">
             <span class="grid size-7 shrink-0 place-items-center rounded-full text-sm"
-                  :class="day.iso === today ? 'bg-zinc-950 font-semibold text-surface' : day.inMonth ? 'text-zinc-700' : 'text-zinc-300'">
+                  :class="pickState(day.iso) === 'end' ? 'bg-emerald-600 font-semibold text-white' : day.iso === today ? 'bg-zinc-950 font-semibold text-surface' : day.inMonth ? 'text-zinc-700' : 'text-zinc-300'">
               {{ day.day }}
             </span>
           </div>
@@ -218,7 +239,7 @@ function remove(b) {
               <div v-if="slot" role="button" tabindex="0" :aria-label="`${slot.booking.guestName}: ${period(slot.booking)}`"
                    class="h-6 truncate px-1 text-[10px] font-medium leading-6 text-white transition hover:brightness-110 sm:h-5 sm:px-1.5 sm:text-[11px] sm:leading-5"
                    :class="[colorFor(slot.booking.guestName).bar, slot.isStart && 'ml-1 rounded-l-md', slot.isEnd && 'mr-1 rounded-r-md']"
-                   :title="`${slot.booking.guestName}: ${period(slot.booking)}`" @click.stop="selected = slot.booking" @keydown.enter.stop="selected = slot.booking">
+                   :title="`${slot.booking.guestName}: ${period(slot.booking)}`" @click.stop="picking ? pickDay(day.iso) : (selected = slot.booking)" @keydown.enter.stop="selected = slot.booking">
                 <span v-if="slot.showName">{{ slot.booking.guestName }}</span>
               </div>
               <div v-else class="h-5" />
@@ -314,24 +335,16 @@ function remove(b) {
   <Dialog dismissable-mask v-model:visible="formOpen" modal :header="form.id ? t('booking.edit') : t('booking.new')" class="w-[30rem] max-w-[calc(100vw-2rem)]">
     <form id="booking-form" class="flex flex-col gap-4" @submit.prevent="save">
       <label class="flex flex-col gap-1.5 text-sm font-medium">{{ t('booking.who') }}<InputText v-model="form.guestName" required :placeholder="t('booking.namePlaceholder')" /></label>
-      <div class="flex flex-col gap-1.5 text-sm font-medium">
-        <span class="flex items-center justify-between gap-2">
-          {{ t('booking.period') }}
-          <Select :options="monthOptions" option-label="label" option-value="value" :placeholder="t('booking.goToMonth')" size="small" class="min-w-0"
-                  :aria-label="t('booking.goToMonth')" @update:model-value="goToMonth" />
-        </span>
-        <DatePicker ref="pickerRef" v-model="form.range" selection-mode="range" inline :manual-input="false" class="w-full">
-          <template #date="{ date }">
-            <!-- Already booked by someone else: amber number + dot, unless it's part of your selection -->
-            <span class="relative" :class="isBooked(date) && !isPicked(date) && 'font-semibold text-amber-700'">
-              {{ date.day }}
-              <span v-if="isBooked(date)" class="absolute -bottom-2 left-1/2 size-1.5 -translate-x-1/2 rounded-full bg-amber-500" />
-            </span>
-          </template>
-        </DatePicker>
-        <p v-if="rangeSummary" class="rounded-md bg-zinc-100 px-3 py-2 text-sm font-semibold">{{ rangeSummary }}</p>
-        <StayWeather v-if="rangeSummary" :start="range.start" :end="range.end" />
-        <span class="text-xs font-normal text-zinc-500"><span class="mr-1 inline-block size-1.5 rounded-full bg-amber-500 align-middle" />{{ t('booking.alreadyBooked') }}</span>
+      <!-- Dates come from the big calendar; change them there too -->
+      <div class="flex flex-col gap-2">
+        <div v-if="rangeSummary" class="flex items-center justify-between gap-2 rounded-md bg-zinc-100 py-1.5 pl-3 pr-1">
+          <span class="text-sm">
+            <span class="block font-semibold">{{ rangeSummary.period }}</span>
+            <span v-if="rangeSummary.nights" class="block text-zinc-600">{{ rangeSummary.nights }}</span>
+          </span>
+          <Button type="button" :label="t('booking.changeDates')" icon="pi pi-calendar" size="small" text class="shrink-0 whitespace-nowrap" @click="changeDates" />
+        </div>
+        <StayWeather v-if="range" :start="range.start" :end="range.end" />
       </div>
       <Message v-if="conflicts.length" severity="warn" icon="pi pi-exclamation-triangle">
         {{ t('booking.overlapWith') }}

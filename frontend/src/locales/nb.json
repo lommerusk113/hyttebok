@@ -98,8 +98,6 @@
     "created": "Booking lagret",
     "who": "Hvem",
     "namePlaceholder": "Navn",
-    "period": "Periode",
-    "alreadyBooked": "allerede booket",
     "overlapWith": "Overlapper med",
     "overlapHint": "Du kan fortsatt lagre, men avtal gjerne med dem.",
     "saveAnyway": "Lagre likevel",
@@ -110,9 +108,11 @@
     "recent": "Nylige besøk",
     "guests": "Antall personer",
     "people": "{n} person | {n} personer",
-    "goToMonth": "Gå til måned",
     "fewer": "Færre",
-    "more": "Flere"
+    "more": "Flere",
+    "pickStart": "Trykk på første dag i kalenderen",
+    "pickEnd": "Fra {date} – trykk på siste dag",
+    "changeDates": "Endre datoer"
   },
   "todo": {
     "new": "Ny oppgave",

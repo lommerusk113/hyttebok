@@ -98,8 +98,6 @@
     "created": "Booking saved",
     "who": "Who",
     "namePlaceholder": "Name",
-    "period": "Dates",
-    "alreadyBooked": "already booked",
     "overlapWith": "Overlaps with",
     "overlapHint": "You can still save, but it's worth checking with them.",
     "saveAnyway": "Save anyway",
@@ -110,9 +108,11 @@
     "recent": "Recent visits",
     "guests": "Number of people",
     "people": "{n} person | {n} people",
-    "goToMonth": "Go to month",
     "fewer": "Fewer",
-    "more": "More"
+    "more": "More",
+    "pickStart": "Tap the first day in the calendar",
+    "pickEnd": "From {date} – tap the last day",
+    "changeDates": "Change dates"
   },
   "todo": {
     "new": "New task",
