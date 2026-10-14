@@ -51,11 +51,21 @@ export function applyPending(url, data) {
   for (const item of queue) {
     const [base, id, sub] = item.url.slice(1).split('/')
     if (`/${base}` !== url) continue
-    if (item.method === 'POST' && Array.isArray(data)) data = [item.optimistic, ...data]
+    if (item.method === 'POST' && !id && Array.isArray(data)) data = [item.optimistic, ...data]
     else if (item.method === 'PUT' && !id) data = Array.isArray(data) ? data.map(x => (x.id === item.optimistic.id ? item.optimistic : x)) : item.optimistic
     else if (item.method === 'PUT' && sub && Array.isArray(data)) data = data.map(x => (x.id === Number(id) ? { ...x, ...item.optimistic } : x))
     else if (item.method === 'DELETE' && Array.isArray(data)) data = data.filter(x => x.id !== Number(id))
   }
+
+  // A queued "done" also moves the task's last-completed date (the server does that when it syncs).
+  if (url === '/maintenance' && Array.isArray(data)) {
+    for (const item of queue) {
+      if (item.method !== 'POST' || item.url !== '/maintenance-completions') continue
+      const { maintenanceId, completedOn } = item.body
+      data = data.map(m => (m.id === maintenanceId && !(m.lastCompleted >= completedOn) ? { ...m, lastCompleted: completedOn } : m))
+    }
+  }
+
   return data
 }
 

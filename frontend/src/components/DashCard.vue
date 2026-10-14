@@ -2,7 +2,8 @@
 import { t } from '../i18n'
 
 // `add` is a route that opens the section's create form (e.g. "/booking?new=1").
-defineProps({ title: String, icon: String, tint: String, to: String, add: String, count: Number })
+// `countLabel`/`countClass` replace the plain number when it means something specific (e.g. "2 på overtid").
+defineProps({ title: String, icon: String, tint: String, to: String, add: String, count: Number, countLabel: String, countClass: String })
 </script>
 
 <template>
@@ -11,7 +12,7 @@ defineProps({ title: String, icon: String, tint: String, to: String, add: String
       <span :class="tint" class="grid size-8 shrink-0 place-items-center rounded-md"><i :class="icon" class="text-sm" /></span>
       <h2 class="min-w-0 flex-1 truncate font-semibold">
         {{ title }}
-        <span v-if="count" class="ml-1 rounded-full bg-zinc-100 px-2 py-0.5 text-xs font-medium text-zinc-600">{{ count }}</span>
+        <span v-if="countLabel || count" class="ml-1 whitespace-nowrap rounded-full px-2 py-0.5 text-xs font-medium" :class="countClass || 'bg-zinc-100 text-zinc-600'">{{ countLabel || count }}</span>
       </h2>
       <slot name="action" />
       <RouterLink v-if="add" :to="add" :aria-label="t('overview.add', { what: title })"

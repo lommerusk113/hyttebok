@@ -43,7 +43,7 @@ const router = createRouter({
   history: createWebHistory(),
   routes: [
     { path: '/app', component: () => import('./pages/AppPage.vue') },
-    { path: '/:tab(booking|lister|hyttebok)?/:sub?', component: () => import('./pages/HomePage.vue') },
+    { path: '/:tab(booking|lister|hyttebok|vedlikehold)?/:sub?', component: () => import('./pages/HomePage.vue') },
     { path: '/:pathMatch(.*)*', redirect: '/' },
   ],
 

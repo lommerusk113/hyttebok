@@ -37,7 +37,8 @@
     "suggestions": "Ideas",
     "notes": "Notes",
     "posts": "Posts",
-    "photos": "Photos"
+    "photos": "Photos",
+    "maintenance": "Maintenance"
   },
   "info": {
     "arrivalInfo": "Arrival",
@@ -218,5 +219,59 @@
     "otherText": "Open this page in Chrome on Android or Safari on iPhone. On a computer, look for the install icon in the address bar.",
     "openFromHome": "Open Hyttebok from your home screen or app list.",
     "continueInBrowser": "Continue in the browser"
+  },
+  "maintenance": {
+    "tasks": "Tasks",
+    "new": "New task",
+    "edit": "Edit task",
+    "name": "What needs doing?",
+    "namePlaceholder": "E.g. Clean the gutters",
+    "interval": "How often?",
+    "nextPreview": "Next time: {date}",
+    "lastCompleted": "Last done (optional)",
+    "lastCompletedPlaceholder": "Never / not sure",
+    "description": "Description",
+    "descriptionPlaceholder": "How it is done, what is needed …",
+    "done": "Done",
+    "markedDone": "“{name}” is done",
+    "overdue": "{n} day overdue | {n} days overdue",
+    "dueToday": "Today",
+    "dueIn": "In {n} day | In {n} days",
+    "lastDone": "last {date}",
+    "neverDone": "never done",
+    "year": "Year overview",
+    "prevYear": "Previous year",
+    "nextYear": "Next year",
+    "backToThisYear": "Back to this year",
+    "yearEmpty": "Nothing done or planned in {year}.",
+    "undo": "Undo",
+    "deleteTitle": "Delete this maintenance task?",
+    "deleteMessage": "“{name}” and all its history will be deleted.",
+    "empty": "No maintenance added yet. Add what needs doing regularly, e.g. sweeping the chimney or changing smoke alarm batteries.",
+    "allGood": "All maintenance is on track",
+    "kind": {
+      "done": "Done",
+      "overdue": "Overdue",
+      "planned": "Planned"
+    },
+    "every": {
+      "DAYS": "Every day | Every {n} days",
+      "WEEKS": "Every week | Every {n} weeks",
+      "MONTHS": "Every month | Every {n} months",
+      "YEARS": "Every year | Every {n} years"
+    },
+    "units": {
+      "DAYS": "day | days",
+      "WEEKS": "week | weeks",
+      "MONTHS": "month | months",
+      "YEARS": "year | years"
+    },
+    "overdueCount": "{n} overdue | {n} overdue",
+    "nextPreviewPast": "Should have been done {date}",
+    "lastCompletedHintNew": "If left empty, we count from today.",
+    "lastCompletedHintEdit": "If left empty, we count from when the task was added.",
+    "intervalCount": "Number",
+    "intervalUnit": "Unit",
+    "overdueGroup": "Overdue"
   }
 }

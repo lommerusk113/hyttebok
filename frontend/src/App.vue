@@ -126,6 +126,16 @@ function saveName(name = draftName.value) {
     </main>
 
     <Toast position="top-center" />
+    <!-- Messages with an action (e.g. "Done · Undo"), shown where the thumb is -->
+    <Toast group="action" position="bottom-center">
+      <template #container="{ message, closeCallback }">
+        <div class="flex items-center gap-3 rounded-lg bg-zinc-950 py-1 pl-4 pr-1 text-surface shadow-lg">
+          <i class="pi pi-check-circle text-emerald-400" />
+          <span class="flex-1 py-2 text-sm">{{ message.summary }}</span>
+          <button class="min-h-11 rounded-md px-3 text-sm font-semibold hover:bg-white/10" @click="message.action(); closeCallback()">{{ message.actionLabel }}</button>
+        </div>
+      </template>
+    </Toast>
     <ConfirmDialog :pt="confirmPt" />
 
     <Dialog dismissable-mask :visible="askName && route.path !== '/app'" @update:visible="askName = $event" modal :header="t('app.whoAreYou')" class="w-[26rem] max-w-[calc(100vw-2rem)]">

@@ -37,7 +37,8 @@
     "suggestions": "Forslag",
     "notes": "Notater",
     "posts": "Innlegg",
-    "photos": "Bilder"
+    "photos": "Bilder",
+    "maintenance": "Vedlikehold"
   },
   "info": {
     "arrivalInfo": "Ankomst",
@@ -218,5 +219,59 @@
     "otherText": "Åpne denne siden i Chrome på Android eller Safari på iPhone. På PC: se etter installer-ikonet i adressefeltet.",
     "openFromHome": "Åpne Hyttebok fra hjemskjermen eller app-listen på telefonen.",
     "continueInBrowser": "Fortsett i nettleseren"
+  },
+  "maintenance": {
+    "tasks": "Oppgaver",
+    "new": "Ny oppgave",
+    "edit": "Endre oppgave",
+    "name": "Hva skal gjøres?",
+    "namePlaceholder": "F.eks. Rense takrennene",
+    "interval": "Hvor ofte?",
+    "nextPreview": "Neste gang: {date}",
+    "lastCompleted": "Sist utført (valgfritt)",
+    "lastCompletedPlaceholder": "Aldri / vet ikke",
+    "description": "Beskrivelse",
+    "descriptionPlaceholder": "Hvordan det gjøres, hva som trengs …",
+    "done": "Utført",
+    "markedDone": "«{name}» er utført",
+    "overdue": "{n} dag på overtid | {n} dager på overtid",
+    "dueToday": "I dag",
+    "dueIn": "Om {n} dag | Om {n} dager",
+    "lastDone": "sist {date}",
+    "neverDone": "aldri utført",
+    "year": "Årsoversikt",
+    "prevYear": "Forrige år",
+    "nextYear": "Neste år",
+    "backToThisYear": "Tilbake til i år",
+    "yearEmpty": "Ingenting utført eller planlagt i {year}.",
+    "undo": "Angre",
+    "deleteTitle": "Slette vedlikeholdsoppgaven?",
+    "deleteMessage": "«{name}» og all historikk for den slettes.",
+    "empty": "Ingen vedlikehold lagt inn ennå. Legg til det som må gjøres jevnlig, f.eks. feie pipa eller bytte batteri i røykvarslerne.",
+    "allGood": "Alt vedlikehold er i rute",
+    "kind": {
+      "done": "Utført",
+      "overdue": "På overtid",
+      "planned": "Planlagt"
+    },
+    "every": {
+      "DAYS": "Hver dag | Hver {n}. dag",
+      "WEEKS": "Hver uke | Hver {n}. uke",
+      "MONTHS": "Hver måned | Hver {n}. måned",
+      "YEARS": "Hvert år | Hvert {n}. år"
+    },
+    "units": {
+      "DAYS": "dag | dager",
+      "WEEKS": "uke | uker",
+      "MONTHS": "måned | måneder",
+      "YEARS": "år | år"
+    },
+    "overdueCount": "{n} på overtid | {n} på overtid",
+    "nextPreviewPast": "Skulle vært gjort {date}",
+    "lastCompletedHintNew": "Står det tomt, regner vi fra i dag.",
+    "lastCompletedHintEdit": "Står det tomt, regner vi fra da oppgaven ble lagt inn.",
+    "intervalCount": "Antall",
+    "intervalUnit": "Enhet",
+    "overdueGroup": "På overtid"
   }
 }

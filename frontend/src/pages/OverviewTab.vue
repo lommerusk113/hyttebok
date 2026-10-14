@@ -11,6 +11,8 @@ import RichText from '../components/RichText.vue'
 import { api, photoUrl } from '../api'
 import { addShoppingItem, toggleShopping, toggleTodo } from '../actions'
 import { cabin, INFO_TILES } from '../cabin'
+import { status as maintenanceStatus } from '../maintenance'
+import { dueLabel, overdueBadge, STATUS_STYLE } from '../maintenanceLabels'
 import { colorFor, formatDay, initials, parseIsoDate, timeAgo, toIsoDate } from '../utils'
 import { t } from '../i18n'
 
@@ -19,6 +21,7 @@ const TODO_LIMIT = 5
 
 const toast = useToast()
 const todos = ref([])
+const maintenance = ref([])
 const shopping = ref([])
 const bookings = ref([])
 const log = ref([])
@@ -30,8 +33,8 @@ const newItem = ref('')
 const tickedHere = ref(new Set())
 
 onMounted(async () => {
-  [todos.value, shopping.value, bookings.value, log.value, photos.value, suggestions.value] = await Promise.all(
-    ['/todos', '/shopping', '/bookings', '/log', '/photos', '/suggestions'].map(api.get),
+  [todos.value, shopping.value, bookings.value, log.value, photos.value, suggestions.value, maintenance.value] = await Promise.all(
+    ['/todos', '/shopping', '/bookings', '/log', '/photos', '/suggestions', '/maintenance'].map(api.get),
   )
 })
 
@@ -52,6 +55,13 @@ const openTodos = computed(() => todos.value.filter(x => !x.done).length)
 
 const latestPosts = computed(() => log.value.slice(0, 3))
 const firstPhoto = entry => photos.value.findLast(p => p.logEntryId === entry.id)
+
+// Maintenance that needs attention: overdue or due within the "soon" window.
+const dueMaintenance = computed(() => maintenance.value
+  .map(m => ({ m, ...maintenanceStatus(m, today) }))
+  .filter(x => x.kind !== 'later')
+  .sort((a, b) => a.days - b.days)
+  .slice(0, 4))
 
 const topIdeas = computed(() => suggestions.value.filter(s => !s.done).sort((a, b) => b.voters.length - a.voters.length).slice(0, 3))
 
@@ -237,6 +247,20 @@ function copy(text) {
             {{ t('overview.more', { n: visibleTodos.length - TODO_LIMIT }) }}
           </RouterLink>
           <p v-if="!visibleTodos.length" class="py-1 text-sm text-zinc-500">{{ t('todo.allDone') }}</p>
+        </DashCard>
+
+        <DashCard class="order-4" :title="t('tabs.maintenance')" icon="pi pi-wrench" tint="bg-zinc-100 text-zinc-700" to="/vedlikehold" add="/vedlikehold?new=vedlikehold"
+                  :count-label="overdueBadge(dueMaintenance.filter(x => x.days < 0).length)" count-class="bg-rose-50 text-rose-700">
+          <ul v-if="dueMaintenance.length" class="-mx-2">
+            <li v-for="x in dueMaintenance" :key="x.m.id">
+              <RouterLink to="/vedlikehold" class="flex min-h-11 items-center gap-3 rounded-md px-2 transition hover:bg-zinc-50">
+                <span class="h-7 w-1 shrink-0 rounded-full" :class="STATUS_STYLE[x.kind].bar" />
+                <span class="min-w-0 flex-1 truncate text-sm">{{ x.m.name }}</span>
+                <span class="shrink-0 text-xs font-medium" :class="STATUS_STYLE[x.kind].text">{{ dueLabel(x.m, today) }}</span>
+              </RouterLink>
+            </li>
+          </ul>
+          <p v-else class="flex items-center gap-2 py-1 text-sm text-zinc-500"><i class="pi pi-check-circle text-emerald-600" />{{ t('maintenance.allGood') }}</p>
         </DashCard>
 
         <DashCard class="order-6" :title="t('overview.topIdeas')" icon="pi pi-lightbulb" tint="bg-amber-50 text-amber-700" to="/lister/forslag" add="/lister/forslag?new=forslag">
