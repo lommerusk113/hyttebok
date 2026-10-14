@@ -273,5 +273,44 @@
     "intervalCount": "Antall",
     "intervalUnit": "Enhet",
     "overdueGroup": "På overtid"
+  },
+  "push": {
+    "title": "Varsler",
+    "on": "På",
+    "off": "Av",
+    "intro": "Velg hva du vil få beskjed om på denne enheten.",
+    "installFirstTitle": "Installer appen først",
+    "installFirst": "På iPhone kan bare den installerte appen få varsler. Legg Hyttebok til på hjemskjermen, åpne den derfra og slå på varsler her.",
+    "unsupported": "Denne nettleseren støtter ikke varsler. Prøv Chrome på Android eller appen på iPhone.",
+    "blocked": "Varsler er blokkert. Tillat varsler for Hyttebok i innstillingene på telefonen (eller i nettleseren), og prøv igjen.",
+    "notOwn": "Du får ikke varsel om det du gjør selv.",
+    "test": "Send testvarsel",
+    "testSent": "Sendt",
+    "topics": {
+      "BOOKING": {
+        "title": "Ny booking",
+        "hint": "Når noen booker hytta"
+      },
+      "POST": {
+        "title": "Nytt i hytteboka",
+        "hint": "Når noen skriver et innlegg"
+      },
+      "SUGGESTION": {
+        "title": "Nye forslag",
+        "hint": "Når noen foreslår noe"
+      },
+      "TODO": {
+        "title": "Nye gjøremål",
+        "hint": "Når noe må fikses"
+      },
+      "SHOPPING": {
+        "title": "Handlelisten",
+        "hint": "Samlet, høyst hvert 5. minutt"
+      },
+      "MAINTENANCE": {
+        "title": "Vedlikehold",
+        "hint": "Kl. 08 når noe skal gjøres"
+      }
+    }
   }
 }

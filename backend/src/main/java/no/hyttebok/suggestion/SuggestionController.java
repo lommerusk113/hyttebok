@@ -7,6 +7,7 @@ import io.micronaut.http.annotation.Get;
 import io.micronaut.http.annotation.Post;
 import io.micronaut.http.annotation.Put;
 import jakarta.validation.Valid;
+import no.hyttebok.push.Notifier;
 
 import java.util.List;
 
@@ -14,9 +15,11 @@ import java.util.List;
 public class SuggestionController {
 
     private final SuggestionRepository repository;
+    private final Notifier notifier;
 
-    public SuggestionController(SuggestionRepository repository) {
+    public SuggestionController(SuggestionRepository repository, Notifier notifier) {
         this.repository = repository;
+        this.notifier = notifier;
     }
 
     @Get
@@ -26,7 +29,11 @@ public class SuggestionController {
 
     @Post
     public Suggestion create(@Body @Valid Suggestion suggestion) {
-        return repository.save(suggestion);
+
+        var saved = repository.save(suggestion);
+        notifier.suggestionCreated(saved);
+
+        return saved;
     }
 
     @Put

@@ -32,6 +32,8 @@ export default defineConfig({
         globPatterns: ['**/*.{js,css,html,png,woff2}'],
         navigateFallback: '/index.html',
         navigateFallbackDenylist: [/^\/api\//],
+        // Push notifications: show them and open the right page on tap.
+        importScripts: ['/push-sw.js'],
         runtimeCaching: [
           {
             // Photo files never change (new upload = new id), so the cache can answer first.

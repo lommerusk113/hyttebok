@@ -7,6 +7,7 @@ import io.micronaut.http.annotation.Get;
 import io.micronaut.http.annotation.Post;
 import io.micronaut.http.annotation.Put;
 import jakarta.validation.Valid;
+import no.hyttebok.push.Notifier;
 
 import java.util.List;
 
@@ -14,9 +15,11 @@ import java.util.List;
 public class BookingController {
 
     private final BookingRepository repository;
+    private final Notifier notifier;
 
-    public BookingController(BookingRepository repository) {
+    public BookingController(BookingRepository repository, Notifier notifier) {
         this.repository = repository;
+        this.notifier = notifier;
     }
 
     @Get
@@ -26,7 +29,11 @@ public class BookingController {
 
     @Post
     public Booking create(@Body @Valid Booking booking) {
-        return repository.save(booking);
+
+        var saved = repository.save(booking);
+        notifier.bookingCreated(saved);
+
+        return saved;
     }
 
     @Put

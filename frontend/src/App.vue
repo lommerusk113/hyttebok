@@ -12,6 +12,8 @@ import Avatar from 'primevue/avatar'
 import Drawer from 'primevue/drawer'
 import LanguageToggle from './components/LanguageToggle.vue'
 import ThemeSwitch from './components/ThemeSwitch.vue'
+import NotificationSettings from './components/NotificationSettings.vue'
+import { loadPushState, syncProfile, topics as pushTopics } from './push'
 import { userName, askName } from './user'
 import { initials, colorFor } from './utils'
 import { api } from './api'
@@ -23,6 +25,11 @@ const primevue = usePrimeVue()
 // The install page (/app) is often someone's first visit; don't ask for a name there.
 const route = useRoute()
 const menuOpen = ref(false)
+const notificationsOpen = ref(false)
+
+loadPushState()
+// The server uses the name to leave out your own changes, and the language for the texts.
+watch([userName, locale], ([name, lang]) => syncProfile({ name, lang }))
 const confirm = useConfirm()
 
 // ConfirmDialog has no dismissableMask option, so close it on backdrop clicks ourselves.
@@ -71,6 +78,11 @@ function saveName(name = draftName.value) {
             {{ !online ? t('offline.offline') : '' }}{{ !online && pending ? ' · ' : '' }}{{ pending ? t('offline.pending', pending) : '' }}
           </span>
           <Button v-if="installPrompt" icon="pi pi-download" :label="t('app.install')" size="small" outlined severity="secondary" @click="install" />
+          <button class="relative grid size-10 place-items-center rounded-full text-zinc-600 transition hover:bg-zinc-100 hover:text-zinc-950"
+                  :aria-label="t('push.title')" v-tooltip.bottom="t('push.title')" @click="notificationsOpen = true">
+            <i class="pi pi-bell" />
+            <span v-if="pushTopics.length" class="absolute right-2 top-2 size-2 rounded-full bg-emerald-500" />
+          </button>
           <ThemeSwitch v-tooltip.bottom="t('app.darkMode')" />
           <button class="flex items-center gap-2 rounded-full py-1 pl-1 pr-3 transition hover:bg-zinc-100"
                   :aria-label="userName || t('app.whoAreYou')" @click="askName = true">
@@ -104,6 +116,10 @@ function saveName(name = draftName.value) {
           </span>
           <i class="pi pi-chevron-right text-xs text-zinc-500" />
         </button>
+        <button class="flex min-h-14 items-center justify-between gap-3 px-2 text-left" @click="menuOpen = false; notificationsOpen = true">
+          <span class="flex items-center gap-2 text-sm font-medium"><i class="pi pi-bell" />{{ t('push.title') }}</span>
+          <span class="flex items-center gap-2 text-sm text-zinc-500">{{ pushTopics.length ? t('push.on') : t('push.off') }}<i class="pi pi-chevron-right text-xs" /></span>
+        </button>
         <div class="flex min-h-14 items-center justify-between gap-3 px-2">
           <span class="text-sm font-medium">{{ t('app.language') }}</span>
           <LanguageToggle />
@@ -124,6 +140,10 @@ function saveName(name = draftName.value) {
     <main class="mx-auto max-w-6xl px-4 pb-12 pt-4">
       <RouterView />
     </main>
+
+    <Drawer v-model:visible="notificationsOpen" position="right" :header="t('push.title')" class="!w-full sm:!w-[26rem]">
+      <NotificationSettings />
+    </Drawer>
 
     <Toast position="top-center" />
     <!-- Messages with an action (e.g. "Done · Undo"), shown where the thumb is -->

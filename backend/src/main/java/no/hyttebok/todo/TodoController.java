@@ -7,6 +7,7 @@ import io.micronaut.http.annotation.Get;
 import io.micronaut.http.annotation.Post;
 import io.micronaut.http.annotation.Put;
 import jakarta.validation.Valid;
+import no.hyttebok.push.Notifier;
 
 import java.util.List;
 
@@ -14,9 +15,11 @@ import java.util.List;
 public class TodoController {
 
     private final TodoRepository repository;
+    private final Notifier notifier;
 
-    public TodoController(TodoRepository repository) {
+    public TodoController(TodoRepository repository, Notifier notifier) {
         this.repository = repository;
+        this.notifier = notifier;
     }
 
     @Get
@@ -26,7 +29,11 @@ public class TodoController {
 
     @Post
     public Todo create(@Body @Valid Todo todo) {
-        return repository.save(todo);
+
+        var saved = repository.save(todo);
+        notifier.todoCreated(saved);
+
+        return saved;
     }
 
     @Put

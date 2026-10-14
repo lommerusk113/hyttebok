@@ -7,6 +7,7 @@ import io.micronaut.http.annotation.Get;
 import io.micronaut.http.annotation.Post;
 import io.micronaut.http.annotation.Put;
 import jakarta.validation.Valid;
+import no.hyttebok.push.Notifier;
 
 import java.util.List;
 
@@ -14,9 +15,11 @@ import java.util.List;
 public class LogEntryController {
 
     private final LogEntryRepository repository;
+    private final Notifier notifier;
 
-    public LogEntryController(LogEntryRepository repository) {
+    public LogEntryController(LogEntryRepository repository, Notifier notifier) {
         this.repository = repository;
+        this.notifier = notifier;
     }
 
     @Get
@@ -26,7 +29,11 @@ public class LogEntryController {
 
     @Post
     public LogEntry create(@Body @Valid LogEntry logEntry) {
-        return repository.save(logEntry);
+
+        var saved = repository.save(logEntry);
+        notifier.postCreated(saved);
+
+        return saved;
     }
 
     @Put

@@ -273,5 +273,44 @@
     "intervalCount": "Number",
     "intervalUnit": "Unit",
     "overdueGroup": "Overdue"
+  },
+  "push": {
+    "title": "Notifications",
+    "on": "On",
+    "off": "Off",
+    "intro": "Choose what you want to hear about on this device.",
+    "installFirstTitle": "Install the app first",
+    "installFirst": "On iPhone only the installed app can get notifications. Add Hyttebok to your home screen, open it from there and turn notifications on here.",
+    "unsupported": "This browser doesn't support notifications. Try Chrome on Android or the app on iPhone.",
+    "blocked": "Notifications are blocked. Allow notifications for Hyttebok in your phone (or browser) settings and try again.",
+    "notOwn": "You won't be notified about your own changes.",
+    "test": "Send a test notification",
+    "testSent": "Sent",
+    "topics": {
+      "BOOKING": {
+        "title": "New booking",
+        "hint": "When someone books the cabin"
+      },
+      "POST": {
+        "title": "New in the cabin book",
+        "hint": "When someone writes a post"
+      },
+      "SUGGESTION": {
+        "title": "New ideas",
+        "hint": "When someone suggests something"
+      },
+      "TODO": {
+        "title": "New tasks",
+        "hint": "When something needs fixing"
+      },
+      "SHOPPING": {
+        "title": "Shopping list",
+        "hint": "Bundled, at most every 5 minutes"
+      },
+      "MAINTENANCE": {
+        "title": "Maintenance",
+        "hint": "At 8 am when something is due"
+      }
+    }
   }
 }
