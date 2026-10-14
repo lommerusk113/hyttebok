@@ -6,11 +6,12 @@ import io.micronaut.serde.annotation.Serdeable;
 import java.time.LocalDate;
 
 /**
- * One day's forecast, whichever source it came from. {@code symbol} uses MET's icon names
- * (e.g. "partlycloudy_day"); {@code uncertain} marks days far enough ahead to show faded.
+ * One day's weather, whichever source it came from: measured (ARCHIVE), forecast (MET, OPEN_METEO) or
+ * usual for the date (NORMAL, no symbol). {@code symbol} uses MET's icon names (e.g. "partlycloudy_day");
+ * {@code uncertain} marks days far enough ahead to show faded.
  */
 @Serdeable
-public record DayWeather(LocalDate date, String symbol, double maxTemp, double minTemp, double precipitation, String source, boolean uncertain) {
+public record DayWeather(LocalDate date, @Nullable String symbol, double maxTemp, double minTemp, double precipitation, String source, boolean uncertain) {
 
     public DayWeather withSource(String newSource, boolean isUncertain) {
         return new DayWeather(date, symbol, maxTemp, minTemp, precipitation, newSource, isUncertain);

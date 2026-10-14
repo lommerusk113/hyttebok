@@ -1,10 +1,10 @@
 <script setup>
-import { computed, nextTick, onMounted, ref } from 'vue'
+import { computed, nextTick, onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useDeepLink } from '../deepLink'
 import WeatherIcon from '../components/WeatherIcon.vue'
 import StayWeather from '../components/StayWeather.vue'
-import { dayWeather, loadWeather } from '../weather'
+import { dayWeather, loadWeatherDays } from '../weather'
 import { useToast } from 'primevue/usetoast'
 import { useConfirm } from 'primevue/useconfirm'
 import Button from 'primevue/button'
@@ -35,7 +35,6 @@ const today = toIsoDate(new Date())
 const router = useRouter()
 const takeQuery = useDeepLink()
 
-onMounted(loadWeather)
 
 onMounted(async () => {
   await load()
@@ -87,6 +86,8 @@ const weeks = computed(() => {
     }))
   })
 })
+
+watch(() => [weeks.value[0][0].iso, weeks.value.at(-1)[6].iso], ([from, to]) => loadWeatherDays(from, to), { immediate: true })
 
 const upcoming = computed(() => bookings.value.filter(b => b.endDate >= today))
 const RECENT_LIMIT = 5
@@ -205,12 +206,15 @@ function remove(b) {
         <div v-for="day in week" :key="day.iso"
              class="group min-h-20 cursor-pointer border-r border-zinc-100 pb-1.5 last:border-r-0 hover:bg-zinc-100 sm:min-h-24"
              :class="{ 'bg-zinc-50/60': !day.inMonth }" @click="openNew(day.iso)">
-          <!-- Forecast (next ~2 weeks) on the left, day number on the right -->
+          <!-- Weather on the left (measured, forecast or usual), day number on the right -->
           <div class="flex items-start justify-between gap-0.5 p-1.5">
-            <span v-if="dayWeather(day.iso)" class="flex flex-col items-center leading-none sm:flex-row sm:gap-1">
+            <span v-if="dayWeather(day.iso)?.symbol" class="flex flex-col items-center leading-none sm:flex-row sm:gap-1">
               <WeatherIcon :symbol="dayWeather(day.iso).symbol" :uncertain="dayWeather(day.iso).uncertain" size="size-5 sm:size-6" />
               <span class="text-[10px] font-medium tabular-nums text-zinc-600 sm:text-xs" :class="dayWeather(day.iso).uncertain && 'opacity-60'">{{ Math.round(dayWeather(day.iso).maxTemp) }}°</span>
             </span>
+            <!-- Too far ahead for a forecast: the usual temperature for the date -->
+            <span v-else-if="dayWeather(day.iso)" class="pl-0.5 pt-1 text-[10px] tabular-nums text-zinc-500 sm:text-xs"
+                  :title="t('weather.normalDay', { max: Math.round(dayWeather(day.iso).maxTemp), min: Math.round(dayWeather(day.iso).minTemp) })">≈{{ Math.round(dayWeather(day.iso).maxTemp) }}°</span>
             <span v-else />
             <span class="grid size-7 shrink-0 place-items-center rounded-full text-sm"
                   :class="day.iso === today ? 'bg-zinc-950 font-semibold text-surface' : day.inMonth ? 'text-zinc-700' : 'text-zinc-300'">

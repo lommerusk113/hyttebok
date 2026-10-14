@@ -12,6 +12,7 @@ import java.util.Map;
 final class OpenMeteo {
 
     private static final double RAIN_DAY_MM = 1.0;
+    private static final int NORMAL_WINDOW = 7;
 
     private OpenMeteo() {
     }
@@ -93,6 +94,51 @@ final class OpenMeteo {
         }
 
         return result;
+    }
+
+    /**
+     * Usual weather per calendar day: [day of year in a leap year][max, min, mm], averaged over the archive
+     * and smoothed over ±7 days, so a single warm 9 April in 2011 doesn't stand out.
+     */
+    static double[][] normals(Response archive) {
+
+        var daily = archive.daily();
+        var sums = new double[366][3];
+        var count = new int[366];
+        for (int i = 0; i < daily.time().size(); i++) {
+            var max = daily.temperature_2m_max().get(i);
+            var min = daily.temperature_2m_min().get(i);
+            if (max == null || min == null) {
+                continue;
+            }
+            var index = dayIndex(LocalDate.parse(daily.time().get(i)));
+            sums[index][0] += max;
+            sums[index][1] += min;
+            sums[index][2] += orZero(daily.precipitation_sum().get(i));
+            count[index]++;
+        }
+
+        var result = new double[366][3];
+        for (int day = 0; day < 366; day++) {
+            var n = 0;
+            for (int offset = -NORMAL_WINDOW; offset <= NORMAL_WINDOW; offset++) {
+                var j = Math.floorMod(day + offset, 366);
+                for (int k = 0; k < 3; k++) {
+                    result[day][k] += sums[j][k];
+                }
+                n += count[j];
+            }
+            for (int k = 0; k < 3; k++) {
+                result[day][k] = n == 0 ? Double.NaN : MetForecast.round(result[day][k] / n);
+            }
+        }
+
+        return result;
+    }
+
+    // Same index for a date in any year: its position in leap year 2000 (29 Feb gets its own slot).
+    static int dayIndex(LocalDate date) {
+        return LocalDate.of(2000, date.getMonth(), date.getDayOfMonth()).getDayOfYear() - 1;
     }
 
     private static double orZero(@Nullable Double value) {

@@ -1,19 +1,19 @@
 <script setup>
-import { computed, onMounted } from 'vue'
+import { computed, watch } from 'vue'
 import WeatherIcon from './WeatherIcon.vue'
-import { dayWeather, loadWeather, monthClimate } from '../weather'
+import { dayWeather, loadWeatherDays, monthClimate } from '../weather'
 import { parseIsoDate, toIsoDate } from '../utils'
 import { localeTag, t } from '../i18n'
 
-// Weather for a stay: the forecast for the days we have one, otherwise what's usual for that month.
+// Weather for a stay: measured for past days, the forecast where there is one, otherwise what's usual for that month.
 const props = defineProps({ start: String, end: String })
-onMounted(loadWeather)
+watch(() => [props.start, props.end], ([start, end]) => start && end && loadWeatherDays(start, end), { immediate: true })
 
 const days = computed(() => {
   const list = []
   for (let d = parseIsoDate(props.start); toIsoDate(d) <= props.end && list.length < 31; d.setDate(d.getDate() + 1)) {
     const iso = toIsoDate(d)
-    list.push({ iso, label: d.toLocaleDateString(localeTag(), { weekday: 'short', day: 'numeric' }), forecast: dayWeather(iso) })
+    list.push({ iso, label: d.toLocaleDateString(localeTag(), { weekday: 'short', day: 'numeric' }), forecast: dayWeather(iso)?.symbol && dayWeather(iso) })
   }
   return list
 })

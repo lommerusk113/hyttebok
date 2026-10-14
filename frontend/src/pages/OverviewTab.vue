@@ -73,7 +73,7 @@ const dueMaintenance = computed(() => maintenance.value
 const nowPills = computed(() => {
   const overdue = dueMaintenance.value.filter(x => x.days < 0).length
   const next = upcoming.value[0]
-  const now = dayWeather(today)
+  const now = dayWeather(today)?.symbol && dayWeather(today)
   return [
     now && { to: '/booking', symbol: now.symbol, label: t('weather.today', { max: Math.round(now.maxTemp), min: Math.round(now.minTemp) }), tone: 'border-zinc-200 bg-surface' },
     overdue && { to: '/vedlikehold', icon: 'pi pi-wrench', label: t('overview.nowOverdue', overdue), tone: 'border-rose-200 bg-rose-50 text-rose-700' },
@@ -195,7 +195,7 @@ function copy(text) {
                 </span>
                 <span class="flex shrink-0 flex-col items-end gap-0.5 text-xs text-zinc-500">
                   {{ t('overview.inDays', daysUntil(b)) }}
-                  <span v-if="dayWeather(b.startDate)" class="flex items-center gap-1 tabular-nums">
+                  <span v-if="dayWeather(b.startDate)?.symbol" class="flex items-center gap-1 tabular-nums">
                     <WeatherIcon :symbol="dayWeather(b.startDate).symbol" :uncertain="dayWeather(b.startDate).uncertain" size="size-5" />{{ Math.round(dayWeather(b.startDate).maxTemp) }}°
                   </span>
                 </span>

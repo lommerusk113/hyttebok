@@ -19,10 +19,13 @@ import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.YearMonth;
 import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Locale;
 import java.util.TreeMap;
 
@@ -43,6 +46,8 @@ public class WeatherService {
     private static final Duration FORECAST_TTL = Duration.ofMinutes(30);
     private static final int UNCERTAIN_FROM_DAYS_AHEAD = 9;
     private static final int CLIMATE_YEARS = 20;
+    // The archive can lag a few days; a month is only "finished" once it has had time to fill in.
+    private static final int ARCHIVE_DELAY_DAYS = 7;
 
     private final CabinInfoRepository cabins;
     private final JsonMapper json;
@@ -50,11 +55,16 @@ public class WeatherService {
 
     private @Nullable Forecast forecast;
     private @Nullable Climate climate;
+    // ponytail: in memory, so a restart refetches; bounded by the months people browse (archive starts 1940).
+    private final Map<String, ArchiveMonth> archive = new HashMap<>();
 
     private record Forecast(String key, Instant fetchedAt, List<DayWeather> days) {
     }
 
-    private record Climate(String key, int year, List<DayWeather.MonthClimate> months) {
+    private record Climate(String key, int year, List<DayWeather.MonthClimate> months, double[][] normals) {
+    }
+
+    private record ArchiveMonth(LocalDate fetchedOn, List<DayWeather> days) {
     }
 
     public WeatherService(CabinInfoRepository cabins, JsonMapper json) {
@@ -79,6 +89,70 @@ public class WeatherService {
         var days = forecast == null ? List.<DayWeather>of() : forecast.days().stream().filter(d -> !d.date().isBefore(today)).toList();
 
         return new DayWeather.Report(lat, lon, null, days, climate == null ? List.of() : climate.months(), stale);
+    }
+
+    /**
+     * Every day from {@code from} to {@code to}: measured weather for past days, the forecast where there is one,
+     * and the usual weather for that date (from the 20-year normals) further ahead. Days without data are left out.
+     */
+    public synchronized List<DayWeather> days(LocalDate from, LocalDate to) {
+
+        var report = report();
+        if (report.latitude() == null || report.longitude() == null) {
+            return List.of();
+        }
+
+        var lat = report.latitude();
+        var lon = report.longitude();
+        var key = lat + "," + lon;
+        var today = LocalDate.now(ZONE);
+        var result = new ArrayList<DayWeather>();
+
+        for (var month = YearMonth.from(from); !month.atDay(1).isAfter(to) && month.atDay(1).isBefore(today); month = month.plusMonths(1)) {
+            for (var day : archiveMonth(key, lat, lon, month, today)) {
+                if (!day.date().isBefore(from) && !day.date().isAfter(to)) {
+                    result.add(day);
+                }
+            }
+        }
+
+        var forecastByDate = new HashMap<LocalDate, DayWeather>();
+        report.days().forEach(d -> forecastByDate.put(d.date(), d));
+        for (var date = from.isBefore(today) ? today : from; !date.isAfter(to); date = date.plusDays(1)) {
+            var day = forecastByDate.get(date);
+            if (day == null && climate != null) {
+                var normal = climate.normals()[OpenMeteo.dayIndex(date)];
+                day = Double.isNaN(normal[0]) ? null : new DayWeather(date, null, normal[0], normal[1], normal[2], "NORMAL", true);
+            }
+            if (day != null) {
+                result.add(day);
+            }
+        }
+
+        return result;
+    }
+
+    /** Measured weather for the month's days before today. Finished months are kept; the current one is refetched daily. */
+    private List<DayWeather> archiveMonth(String key, double lat, double lon, YearMonth month, LocalDate today) {
+
+        var cacheKey = key + "/" + month;
+        var cached = archive.get(cacheKey);
+        if (cached != null && (cached.fetchedOn().equals(today) || month.atEndOfMonth().isBefore(cached.fetchedOn().minusDays(ARCHIVE_DELAY_DAYS)))) {
+            return cached.days();
+        }
+
+        var end = month.atEndOfMonth().isBefore(today) ? month.atEndOfMonth() : today.minusDays(1);
+        try {
+            var days = OpenMeteo.days(get("https://archive-api.open-meteo.com/v1/archive?latitude=" + lat + "&longitude=" + lon
+                + "&start_date=" + month.atDay(1) + "&end_date=" + end
+                + "&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_sum&timezone=Europe%2FOslo", OpenMeteo.Response.class))
+                .stream().map(d -> d.withSource("ARCHIVE", false)).toList();
+            archive.put(cacheKey, new ArchiveMonth(today, days));
+            return days;
+        } catch (Exception e) {
+            LOG.warn("Open-Meteo archive for {} failed: {}", month, e.toString());
+            return cached == null ? List.of() : cached.days();
+        }
     }
 
     /** @return true if serving an older forecast because both sources failed */
@@ -135,7 +209,7 @@ public class WeatherService {
             var archive = get("https://archive-api.open-meteo.com/v1/archive?latitude=" + lat + "&longitude=" + lon
                 + "&start_date=" + (year - CLIMATE_YEARS) + "-01-01&end_date=" + (year - 1) + "-12-31"
                 + "&daily=temperature_2m_max,temperature_2m_min,precipitation_sum&timezone=Europe%2FOslo", OpenMeteo.Response.class);
-            climate = new Climate(key, year, OpenMeteo.climate(archive));
+            climate = new Climate(key, year, OpenMeteo.climate(archive), OpenMeteo.normals(archive));
         } catch (Exception e) {
             LOG.warn("Open-Meteo archive failed: {}", e.toString()); // keep the previous averages, if any
         }

@@ -342,7 +342,7 @@
     "uncertain": "usikker",
     "usual": "Vanlig vær i {month}: {max}° / {min}°, nedbør {rain} % av dagene",
     "credit": "Værdata:",
-    "uncertainHint": "Tonet ned = usikker, mer enn en uke frem.",
+    "uncertainHint": "Tidligere dager viser målt vær. Tonet ned = usikker, mer enn en uke frem. ≈ = vanlig temperatur for datoen.",
     "kind": {
       "thunder": "Torden",
       "sleet": "Sludd",
@@ -356,6 +356,7 @@
       "fair": "Lettskyet",
       "clearsky": "Klarvær",
       "cloudy": "Skyet"
-    }
+    },
+    "normalDay": "Vanlig for datoen: {max}° / {min}° (snitt siste 20 år)"
   }
 }

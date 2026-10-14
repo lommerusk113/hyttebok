@@ -342,7 +342,7 @@
     "uncertain": "uncertain",
     "usual": "Usual weather in {month}: {max}° / {min}°, rain on {rain} % of days",
     "credit": "Weather data:",
-    "uncertainHint": "Faded = uncertain, more than a week ahead.",
+    "uncertainHint": "Past days show measured weather. Faded = uncertain, more than a week ahead. ≈ = usual temperature for the date.",
     "kind": {
       "thunder": "Thunder",
       "sleet": "Sleet",
@@ -356,6 +356,7 @@
       "fair": "Fair",
       "clearsky": "Clear sky",
       "cloudy": "Cloudy"
-    }
+    },
+    "normalDay": "Usual for the date: {max}° / {min}° (20-year average)"
   }
 }
