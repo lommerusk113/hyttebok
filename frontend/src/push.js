@@ -13,6 +13,11 @@ export const needsInstall = isIos && !installed
 export const permission = ref(supported ? Notification.permission : 'denied')
 export const topics = ref([])
 
+/** The user may have changed it in the phone's settings meanwhile; call when showing the settings. */
+export function refreshPermission() {
+  if (supported) permission.value = Notification.permission
+}
+
 const urlBase64ToBytes = s => Uint8Array.from(atob(s.replace(/-/g, '+').replace(/_/g, '/') + '='.repeat((4 - (s.length % 4)) % 4)), c => c.charCodeAt(0))
 const currentSubscription = async () => (await navigator.serviceWorker.ready).pushManager.getSubscription()
 const query = endpoint => `/push/subscription?endpoint=${encodeURIComponent(endpoint)}`

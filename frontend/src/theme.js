@@ -1,14 +1,14 @@
 import { ref, watch } from 'vue'
 
-// Follows the device setting until the user picks one; index.html applies it before first paint.
+// Light unless the user switched to dark; the choice is remembered. index.html applies it before first paint.
 const KEY = 'hyttebok.theme'
 const stored = (() => { try { return localStorage.getItem(KEY) } catch { return null } })()
 
-export const dark = ref(stored ? stored === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches)
+export const dark = ref(stored === 'dark')
 
 export function setDark(on) {
   dark.value = on
-  try { localStorage.setItem(KEY, dark.value ? 'dark' : 'light') } catch { /* private mode */ }
+  try { localStorage.setItem(KEY, on ? 'dark' : 'light') } catch { /* private mode */ }
 }
 
 watch(dark, on => {

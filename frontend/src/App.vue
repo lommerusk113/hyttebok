@@ -5,6 +5,7 @@ import { usePrimeVue } from 'primevue/config'
 import Toast from 'primevue/toast'
 import ConfirmDialog from 'primevue/confirmdialog'
 import { useConfirm } from 'primevue/useconfirm'
+import { useToast } from 'primevue/usetoast'
 import Dialog from 'primevue/dialog'
 import InputText from 'primevue/inputtext'
 import Button from 'primevue/button'
@@ -19,7 +20,7 @@ import { initials, colorFor } from './utils'
 import { api } from './api'
 import { locale, primeLocale, t } from './i18n'
 import { online, pending } from './offline'
-import { install, installPrompt, installed } from './install'
+import { install, installPrompt, installed, isIos } from './install'
 
 const primevue = usePrimeVue()
 // The install page (/app) is often someone's first visit; don't ask for a name there.
@@ -31,6 +32,7 @@ loadPushState()
 // The server uses the name to leave out your own changes, and the language for the texts.
 watch([userName, locale], ([name, lang]) => syncProfile({ name, lang }))
 const confirm = useConfirm()
+const toast = useToast()
 
 // ConfirmDialog has no dismissableMask option, so close it on backdrop clicks ourselves.
 const confirmPt = { mask: { onClick: e => e.target === e.currentTarget && confirm.close() } }
@@ -48,10 +50,16 @@ watch(askName, async open => {
     .filter(Boolean))].sort((a, b) => a.localeCompare(b))
 }, { immediate: true })
 
+async function installFromMenu() {
+  menuOpen.value = false
+  if (await install()) toast.add({ severity: 'success', summary: t('install.done'), detail: t('install.openFromHome'), life: 5000 })
+}
+
 function saveName(name = draftName.value) {
   if (!name.trim()) return
   userName.value = name.trim()
   askName.value = false
+  toast.add({ severity: 'success', summary: t('app.hello', { name: userName.value }), life: 2500 })
 }
 </script>
 
@@ -62,10 +70,11 @@ function saveName(name = draftName.value) {
         <div class="flex items-center gap-4">
           <RouterLink to="/" class="flex min-h-11 items-center gap-2.5">
             <!-- Logo files are white; invert gives the black version for the light header -->
-            <img src="/mark.png" alt="Ravnsmark" class="h-8 w-auto invert dark:invert-0">
+            <img src="/mark.png" alt="" class="h-8 w-auto invert dark:invert-0">
             <span class="flex flex-col gap-1">
-              <img src="/wordmark.png" alt="" class="h-3 w-auto invert dark:invert-0">
-              <span class="text-[10px] font-medium uppercase tracking-[0.3em] text-zinc-500">{{ t('app.subtitle') }}</span>
+              <!-- Product name first; Ravnsmark is the company behind it -->
+              <span class="font-display text-base uppercase leading-none tracking-[0.18em]">Hyttebok</span>
+              <span class="flex items-center gap-1 text-[10px] text-zinc-500">{{ t('app.by') }} <img src="/wordmark.png" alt="Ravnsmark" class="h-2 w-auto opacity-70 invert dark:invert-0"></span>
             </span>
           </RouterLink>
           <LanguageToggle class="max-sm:!hidden" />
@@ -91,7 +100,7 @@ function saveName(name = draftName.value) {
           </button>
         </div>
 
-        <!-- Phones: everything behind a menu (the sync status stays visible) -->
+        <!-- Phones: everything behind a menu (only the sync status stays visible) -->
         <div class="flex items-center gap-1 sm:hidden">
           <span v-if="!online || pending" class="flex items-center gap-1.5 rounded-full bg-amber-100 px-2.5 py-1 text-xs font-medium text-amber-800" role="status">
             <i class="pi text-[10px]" :class="online ? 'pi-sync' : 'pi-wifi'" />
@@ -129,7 +138,8 @@ function saveName(name = draftName.value) {
           <ThemeSwitch />
         </label>
 
-        <Button v-if="installPrompt" icon="pi pi-download" :label="t('app.install')" class="mt-2" @click="menuOpen = false; install()" />
+        <!-- iPhones always go to the instructions: only Safari's Share menu can install there -->
+        <Button v-if="installPrompt && !isIos" icon="pi pi-download" :label="t('app.install')" class="mt-2" @click="installFromMenu" />
         <RouterLink v-else-if="!installed" to="/app" class="mt-2 flex min-h-11 items-center justify-center gap-2 rounded-lg bg-zinc-100 text-sm font-medium"
                     @click="menuOpen = false">
           <i class="pi pi-mobile" />{{ t('app.install') }}
@@ -161,7 +171,7 @@ function saveName(name = draftName.value) {
     <Dialog dismissable-mask :visible="askName && route.path !== '/app'" @update:visible="askName = $event" modal :header="t('app.whoAreYou')" class="w-[26rem] max-w-[calc(100vw-2rem)]">
       <p class="mb-4 text-sm text-zinc-500">{{ t('app.nameHint') }}</p>
       <div v-if="knownNames.length" class="mb-4">
-        <p class="mb-2 text-xs font-medium uppercase tracking-wide text-zinc-500">{{ t('app.knownNames') }}</p>
+        <p class="mb-2 text-sm font-medium">{{ t('app.knownNames') }}</p>
         <div class="flex flex-wrap gap-2">
           <button v-for="n in knownNames" :key="n" type="button" class="flex min-h-9 items-center gap-2 rounded-full border py-1 pl-1 pr-3 text-sm transition hover:border-zinc-400"
                   :class="n === userName ? 'border-zinc-950' : 'border-zinc-200'" @click="saveName(n)">
@@ -170,8 +180,9 @@ function saveName(name = draftName.value) {
           </button>
         </div>
       </div>
+      <p v-if="knownNames.length" class="mb-2 text-sm font-medium">{{ t('app.orTypeName') }}</p>
       <form class="flex gap-2" @submit.prevent="saveName()">
-        <InputText v-model="draftName" :placeholder="t('app.namePlaceholder')" class="flex-1" autofocus />
+        <InputText v-model="draftName" :placeholder="t('app.namePlaceholder')" class="flex-1" :autofocus="!knownNames.length" />
         <Button type="submit" :label="t('common.save')" :disabled="!draftName?.trim()" />
       </form>
     </Dialog>

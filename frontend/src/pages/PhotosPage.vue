@@ -115,9 +115,13 @@ function remove(photo) {
   </Dialog>
 
   <PhotoLightbox v-model:index="index" :photos="photos">
+    <!-- Delete up top, away from the thumb; "set as cover" at the bottom -->
+    <template #top-actions="{ photo }">
+      <Button icon="pi pi-trash" rounded text severity="danger" class="!size-12" :aria-label="t('common.delete')" @click="remove(photo)" />
+    </template>
     <template #actions="{ photo }">
+      <span />
       <Button :label="t('photos.setCover')" icon="pi pi-star" size="small" text class="!text-white" @click="useAsHero(photo)" />
-      <Button icon="pi pi-trash" size="small" text severity="danger" :aria-label="t('common.delete')" @click="remove(photo)" />
     </template>
   </PhotoLightbox>
 </template>

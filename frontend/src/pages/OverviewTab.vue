@@ -9,10 +9,11 @@ import InputText from 'primevue/inputtext'
 import DashCard from '../components/DashCard.vue'
 import RichText from '../components/RichText.vue'
 import { api, photoUrl } from '../api'
-import { addShoppingItem, toggleShopping, toggleTodo } from '../actions'
+import { addShoppingItem, toggleShopping, toggleTodo, undoToast } from '../actions'
 import { cabin, INFO_TILES } from '../cabin'
 import { status as maintenanceStatus } from '../maintenance'
 import { dueLabel, overdueBadge, STATUS_STYLE } from '../maintenanceLabels'
+import { installed, installedBefore, installPageSeen } from '../install'
 import { colorFor, formatDay, initials, parseIsoDate, timeAgo, toIsoDate } from '../utils'
 import { t } from '../i18n'
 
@@ -28,6 +29,8 @@ const log = ref([])
 const photos = ref([])
 const suggestions = ref([])
 const newItem = ref('')
+const newQuantity = ref('')
+const newItemInput = ref()
 
 // Items ticked off here stay visible (struck through) until reload, so a mis-tap is easy to undo.
 const tickedHere = ref(new Set())
@@ -63,6 +66,18 @@ const dueMaintenance = computed(() => maintenance.value
   .sort((a, b) => a.days - b.days)
   .slice(0, 4))
 
+const nowPills = computed(() => {
+  const overdue = dueMaintenance.value.filter(x => x.days < 0).length
+  const next = upcoming.value[0]
+  return [
+    overdue && { to: '/vedlikehold', icon: 'pi pi-wrench', label: t('overview.nowOverdue', overdue), tone: 'border-rose-200 bg-rose-50 text-rose-700' },
+    openTodos.value && { to: '/lister/gjoremal', icon: 'pi pi-check-square', label: t('overview.nowTodos', openTodos.value), tone: 'border-zinc-200 bg-surface' },
+    openShopping.value && { to: '/lister/handle', icon: 'pi pi-shopping-cart', label: t('overview.nowShopping', openShopping.value), tone: 'border-zinc-200 bg-surface' },
+    !installed && !installedBefore.value && !installPageSeen.value && { to: '/app', icon: 'pi pi-mobile', label: t('overview.getApp'), tone: 'border-zinc-200 bg-surface' },
+    next && { to: `/booking?id=${next.id}`, icon: 'pi pi-calendar', label: t('overview.nowNext', { name: next.guestName, when: t('overview.inDays', daysUntil(next)) }), tone: 'border-zinc-200 bg-surface' },
+  ].filter(Boolean)
+})
+
 const topIdeas = computed(() => suggestions.value.filter(s => !s.done).sort((a, b) => b.voters.length - a.voters.length).slice(0, 3))
 
 const infoTiles = computed(() => INFO_TILES.filter(tile => !cabin.value.hiddenSections.includes(tile.key)))
@@ -72,6 +87,7 @@ async function tickShopping(item) {
   if (!updated) return
   tickedHere.value.add(item.id)
   shopping.value = shopping.value.map(i => (i.id === updated.id ? updated : i))
+  if (updated.bought) undoToast(toast, t('shopping.boughtToast', { name: updated.name }), () => tickShopping(updated))
 }
 
 async function tickTodo(todo) {
@@ -79,12 +95,15 @@ async function tickTodo(todo) {
   if (!updated) return
   tickedHere.value.add(todo.id)
   todos.value = todos.value.map(x => (x.id === updated.id ? updated : x))
+  if (updated.done) undoToast(toast, t('todo.doneToast', { name: updated.title }), () => tickTodo(updated))
 }
 
 async function quickAdd() {
   if (!newItem.value.trim()) return
-  shopping.value = [await addShoppingItem(newItem.value), ...shopping.value]
+  shopping.value = [await addShoppingItem(newItem.value, newQuantity.value), ...shopping.value]
   newItem.value = ''
+  newQuantity.value = ''
+  newItemInput.value.$el.focus() // ready for the next item
 }
 
 // One info section open at a time; `shownInfo` lags behind on close so the panel can slide shut with its content.
@@ -104,6 +123,14 @@ function copy(text) {
 
 <template>
   <div class="space-y-6">
+    <!-- Right now: what needs attention, one tap from each place (first thing you see under the tabs) -->
+    <nav class="flex flex-wrap gap-2" :aria-label="t('overview.now')">
+      <RouterLink v-for="p in nowPills" :key="p.to" :to="p.to" class="flex min-h-11 items-center gap-2 rounded-full border px-3.5 text-sm font-medium transition hover:shadow-sm" :class="p.tone">
+        <i :class="p.icon" class="text-xs" />{{ p.label }}
+      </RouterLink>
+      <span v-if="!nowPills.length" class="flex min-h-11 items-center gap-2 text-sm text-zinc-500"><i class="pi pi-check-circle text-emerald-600" />{{ t('overview.allClear') }}</span>
+    </nav>
+
     <!-- Who's at the cabin right now -->
     <RouterLink v-for="b in staying" :key="b.id" to="/booking"
                 class="flex items-center gap-3 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-emerald-900 transition hover:border-emerald-300">
@@ -215,9 +242,10 @@ function copy(text) {
 
       <div class="contents lg:flex lg:flex-col lg:gap-6">
         <DashCard class="order-3" :title="t('tabs.shopping')" icon="pi pi-shopping-cart" tint="bg-amber-50 text-amber-700" to="/lister/handle" :count="openShopping">
-          <form class="mb-1 flex gap-2" @submit.prevent="quickAdd">
-            <InputText v-model="newItem" :placeholder="t('shopping.placeholder')" :aria-label="t('shopping.add')" class="min-w-0 flex-1" />
-            <Button type="submit" icon="pi pi-plus" :aria-label="t('shopping.add')" :disabled="!newItem.trim()" />
+<form class="mb-1 grid grid-cols-[1fr_3.5rem_auto] gap-2" @submit.prevent="quickAdd">
+            <InputText ref="newItemInput" v-model="newItem" :placeholder="t('shopping.placeholder')" :aria-label="t('shopping.item')" class="min-w-0" />
+            <InputText v-model="newQuantity" :placeholder="t('shopping.quantityShort')" :aria-label="t('shopping.quantity')" class="!px-2 text-center" />
+            <Button type="submit" :label="t('shopping.add')" :disabled="!newItem.trim()" />
           </form>
           <ul class="-mx-1">
             <li v-for="i in visibleShopping.slice(0, SHOPPING_LIMIT)" :key="i.id">
@@ -253,7 +281,7 @@ function copy(text) {
                   :count-label="overdueBadge(dueMaintenance.filter(x => x.days < 0).length)" count-class="bg-rose-50 text-rose-700">
           <ul v-if="dueMaintenance.length" class="-mx-2">
             <li v-for="x in dueMaintenance" :key="x.m.id">
-              <RouterLink to="/vedlikehold" class="flex min-h-11 items-center gap-3 rounded-md px-2 transition hover:bg-zinc-50">
+              <RouterLink :to="`/vedlikehold?id=${x.m.id}`" class="flex min-h-11 items-center gap-3 rounded-md px-2 transition hover:bg-zinc-50">
                 <span class="h-7 w-1 shrink-0 rounded-full" :class="STATUS_STYLE[x.kind].bar" />
                 <span class="min-w-0 flex-1 truncate text-sm">{{ x.m.name }}</span>
                 <span class="shrink-0 text-xs font-medium" :class="STATUS_STYLE[x.kind].text">{{ dueLabel(x.m, today) }}</span>

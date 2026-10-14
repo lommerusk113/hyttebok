@@ -1,10 +1,13 @@
 <script setup>
 import Button from 'primevue/button'
-import { install, installPrompt, installed, installedBefore, isIos } from '../install'
+import { install, installPrompt, installed, installedBefore, isIos, markInstallPageSeen } from '../install'
+import { onMounted } from 'vue'
 import { t } from '../i18n'
 
 // Shareable install page (/app). Android/desktop Chrome get a real install button;
 // iOS doesn't let websites install themselves, so iPhone users get step-by-step instructions.
+onMounted(markInstallPageSeen)
+
 async function installNow() {
   if (await install()) installedBefore.value = true
 }
@@ -17,10 +20,14 @@ const IOS_STEPS = [
 </script>
 
 <template>
+  <div class="mx-auto max-w-md">
+    <RouterLink to="/" class="inline-flex min-h-11 items-center gap-2 text-sm font-medium"><i class="pi pi-arrow-left text-xs" />{{ t('install.back') }}</RouterLink>
+  </div>
   <div class="mx-auto flex max-w-md flex-col items-center gap-6 py-6 text-center">
     <img src="/pwa-192.png" alt="" class="size-24 rounded-[1.75rem] shadow-lg">
     <div>
-      <h1 class="font-display text-xl uppercase tracking-[0.12em]">Ravnsmark</h1>
+      <h1 class="font-display text-xl uppercase tracking-[0.12em]">Hyttebok</h1>
+      <p class="mt-1 text-xs text-zinc-500">{{ t('app.by') }} Ravnsmark</p>
       <p class="mt-1 text-zinc-500">{{ t('install.subtitle') }}</p>
     </div>
 
@@ -38,7 +45,7 @@ const IOS_STEPS = [
     </div>
 
     <!-- Android / desktop Chrome & Edge: one tap -->
-    <Button v-else-if="installPrompt" :label="t('app.install')" icon="pi pi-download" size="large" class="w-full !py-4 !text-base" @click="installNow" />
+    <Button v-else-if="installPrompt && !isIos" :label="t('app.install')" icon="pi pi-download" size="large" class="w-full !py-4 !text-base" @click="installNow" />
 
     <!-- Installed, but this visit is in the browser -->
     <div v-else-if="installedBefore" class="card w-full p-5">

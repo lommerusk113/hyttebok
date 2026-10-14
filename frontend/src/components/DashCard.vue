@@ -10,13 +10,12 @@ defineProps({ title: String, icon: String, tint: String, to: String, add: String
   <section class="card flex flex-col">
     <header class="flex items-center gap-3 px-5 pb-2 pt-4">
       <span :class="tint" class="grid size-8 shrink-0 place-items-center rounded-md"><i :class="icon" class="text-sm" /></span>
-      <h2 class="min-w-0 flex-1 truncate font-semibold">
-        {{ title }}
-        <span v-if="countLabel || count" class="ml-1 whitespace-nowrap rounded-full px-2 py-0.5 text-xs font-medium" :class="countClass || 'bg-zinc-100 text-zinc-600'">{{ countLabel || count }}</span>
-      </h2>
+      <h2 class="min-w-0 truncate font-semibold">{{ title }}</h2>
+      <span v-if="countLabel || count" class="shrink-0 whitespace-nowrap rounded-full px-2 py-0.5 text-xs font-medium" :class="countClass || 'bg-zinc-100 text-zinc-600'">{{ countLabel || count }}</span>
+      <span class="flex-1" />
       <slot name="action" />
       <RouterLink v-if="add" :to="add" :aria-label="t('overview.add', { what: title })"
-                  class="grid size-9 place-items-center rounded-full text-zinc-600 transition hover:bg-zinc-100 hover:text-zinc-950">
+                  class="grid size-9 shrink-0 place-items-center rounded-full text-zinc-600 transition hover:bg-zinc-100 hover:text-zinc-950">
         <i class="pi pi-plus text-sm" />
       </RouterLink>
       <!-- Phones get just the arrow so the title keeps its line -->

@@ -18,11 +18,11 @@ const CATEGORIES = {
   DO: { label: 'suggestions.do', icon: 'pi pi-sun', tint: 'bg-sky-50 text-sky-700' },
   BUY: { label: 'suggestions.buy', icon: 'pi pi-tag', tint: 'bg-amber-50 text-amber-700' },
 }
-const FILTERS = computed(() => [{ label: t('suggestions.all'), value: null }, { label: t('suggestions.do'), value: 'DO' }, { label: t('suggestions.buy'), value: 'BUY' }])
+const FILTERS = computed(() => [{ label: t('suggestions.all'), value: 'ALL' }, { label: t('suggestions.do'), value: 'DO' }, { label: t('suggestions.buy'), value: 'BUY' }])
 
 const confirm = useConfirm()
 const suggestions = ref([])
-const filter = ref(null)
+const filter = ref('ALL')
 const showDone = ref(false)
 const formOpen = ref(false)
 const form = ref({})
@@ -34,7 +34,7 @@ onMounted(async () => {
   if (takeQuery().new === 'forslag') openForm()
 })
 
-const filtered = computed(() => suggestions.value.filter(s => !filter.value || s.category === filter.value))
+const filtered = computed(() => suggestions.value.filter(s => filter.value === 'ALL' || s.category === filter.value))
 const active = computed(() => filtered.value.filter(s => !s.done).sort((a, b) => b.voters.length - a.voters.length))
 const done = computed(() => filtered.value.filter(s => s.done))
 
@@ -45,7 +45,7 @@ function requireName() {
 
 function openForm(s) {
   if (!requireName()) return
-  form.value = s ? { ...s } : { title: '', description: '', category: filter.value || 'DO', author: userName.value, voters: [userName.value], done: false }
+  form.value = s ? { ...s } : { title: '', description: '', category: filter.value === 'ALL' ? null : filter.value, author: userName.value, voters: [userName.value], done: false }
   formOpen.value = true
 }
 
@@ -131,7 +131,10 @@ function remove(s) {
 
   <Dialog dismissable-mask v-model:visible="formOpen" modal :header="form.id ? t('suggestions.suggestion') : t('suggestions.new')" class="w-[30rem] max-w-[calc(100vw-2rem)]">
     <form id="suggestion-form" class="flex flex-col gap-4" @submit.prevent="save">
-      <SelectButton v-model="form.category" :options="FILTERS.slice(1)" option-label="label" option-value="value" :allow-empty="false" />
+      <div class="flex flex-col gap-1.5 text-sm font-medium">
+        {{ t('suggestions.kind') }}
+        <SelectButton v-model="form.category" :options="FILTERS.slice(1)" option-label="label" option-value="value" :allow-empty="false" />
+      </div>
       <label class="flex flex-col gap-1.5 text-sm font-medium">{{ t('suggestions.suggestion') }}<InputText v-model="form.title" required autofocus :placeholder="t('suggestions.placeholder')" /></label>
       <label class="flex flex-col gap-1.5 text-sm font-medium">{{ t('suggestions.why') }}<Textarea v-model="form.description" rows="3" auto-resize /></label>
     </form>
@@ -141,7 +144,7 @@ function remove(s) {
         <Button :label="t('suggestions.completed')" icon="pi pi-check" text class="mr-auto" @click="form.done = true; save()" />
       </template>
       <Button :label="t('common.cancel')" text severity="secondary" @click="formOpen = false" />
-      <Button type="submit" form="suggestion-form" :label="t('common.save')" icon="pi pi-check" />
+      <Button type="submit" form="suggestion-form" :label="t('common.save')" icon="pi pi-check" :disabled="!form.category || !form.title?.trim()" />
     </template>
   </Dialog>
 </template>

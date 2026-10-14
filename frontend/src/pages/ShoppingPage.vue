@@ -6,7 +6,8 @@ import InputText from 'primevue/inputtext'
 import DashCard from '../components/DashCard.vue'
 import EmptyState from '../components/EmptyState.vue'
 import { api } from '../api'
-import { addShoppingItem, toggleShopping } from '../actions'
+import { addShoppingItem, toggleShopping, undoToast } from '../actions'
+import { useToast } from 'primevue/usetoast'
 import { timeAgo } from '../utils'
 import { t } from '../i18n'
 
@@ -26,11 +27,17 @@ async function add() {
   items.value = [saved, ...items.value]
   name.value = ''
   quantity.value = ''
+  nameInput.value.$el.focus() // ready for the next item
 }
+
+const toast = useToast()
+const nameInput = ref()
 
 async function toggle(item) {
   const updated = await toggleShopping(item)
-  if (updated) items.value = items.value.map(i => (i.id === updated.id ? updated : i))
+  if (!updated) return
+  items.value = items.value.map(i => (i.id === updated.id ? updated : i))
+  if (updated.bought) undoToast(toast, t('shopping.boughtToast', { name: updated.name }), () => toggle(updated))
 }
 
 async function remove(item) {
@@ -46,11 +53,11 @@ async function clearBought() {
 
 <template>
   <DashCard :title="t('tabs.shopping')" icon="pi pi-shopping-cart" tint="bg-amber-50 text-amber-700" :count="toBuy.length">
-    <form class="mb-3 flex gap-2" @submit.prevent="add">
-      <InputText v-model="name" :placeholder="t('shopping.placeholder')" :aria-label="t('shopping.add')" class="min-w-0 flex-1" />
-      <InputText v-model="quantity" :placeholder="t('shopping.quantity')" :aria-label="t('shopping.quantity')" class="!w-20" />
-      <Button type="submit" icon="pi pi-plus" :aria-label="t('shopping.add')" :disabled="!name.trim()" />
-    </form>
+    <form class="mb-3 grid grid-cols-[1fr_3.5rem_auto] gap-2" @submit.prevent="add">
+        <InputText ref="nameInput" v-model="name" :placeholder="t('shopping.placeholder')" :aria-label="t('shopping.item')" class="min-w-0" />
+        <InputText v-model="quantity" :placeholder="t('shopping.quantityShort')" :aria-label="t('shopping.quantity')" class="!px-2 text-center" />
+        <Button type="submit" :label="t('shopping.add')" :disabled="!name.trim()" />
+      </form>
 
     <ul v-if="toBuy.length" class="-mx-5 divide-y divide-zinc-100 border-t border-zinc-100">
       <li v-for="i in toBuy" :key="i.id" class="group flex items-center gap-3 px-5 py-1">

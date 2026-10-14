@@ -13,7 +13,8 @@ import DashCard from '../components/DashCard.vue'
 import EmptyState from '../components/EmptyState.vue'
 import { api } from '../api'
 import { userName } from '../user'
-import { toggleTodo } from '../actions'
+import { toggleTodo, undoToast } from '../actions'
+import { useToast } from 'primevue/usetoast'
 import { colorFor, formatDate, initials } from '../utils'
 import { t } from '../i18n'
 
@@ -45,9 +46,13 @@ async function save() {
   formOpen.value = false
 }
 
+const toast = useToast()
+
 async function toggle(todo) {
   const updated = await toggleTodo(todo)
-  if (updated) todos.value = todos.value.map(x => (x.id === updated.id ? updated : x))
+  if (!updated) return
+  todos.value = todos.value.map(x => (x.id === updated.id ? updated : x))
+  if (updated.done) undoToast(toast, t('todo.doneToast', { name: updated.title }), () => toggle(updated))
 }
 
 function remove(todo) {

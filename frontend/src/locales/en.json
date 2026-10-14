@@ -13,19 +13,22 @@
     "error": "Something went wrong",
     "uploadFailed": "Upload failed",
     "copy": "Copy",
-    "new": "New"
+    "new": "New",
+    "tryAgain": "Try again, or check your connection."
   },
   "app": {
-    "subtitle": "Cabin book",
     "whoAreYou": "Who are you?",
     "nameHint": "Your name is shown when you complete tasks, buy things or write in the cabin book.",
     "namePlaceholder": "Your name",
     "language": "Language",
-    "knownNames": "Pick your name",
+    "knownNames": "Tap your name",
     "darkMode": "Dark mode",
     "menu": "Menu",
     "changeName": "Change name",
-    "install": "Install the app"
+    "install": "Install the app",
+    "hello": "Hi, {name}!",
+    "by": "by",
+    "orTypeName": "Or type it:"
   },
   "tabs": {
     "overview": "Overview",
@@ -72,7 +75,14 @@
     "inDays": "today | tomorrow | in {n} days",
     "more": "+ {n} more",
     "topIdeas": "Popular ideas",
-    "add": "Add: {what}"
+    "add": "Add: {what}",
+    "now": "Right now",
+    "allClear": "All on track",
+    "nowOverdue": "{n} maintenance overdue | {n} maintenance overdue",
+    "nowTodos": "{n} task | {n} tasks",
+    "nowShopping": "{n} to buy | {n} to buy",
+    "nowNext": "{name} arrives {when}",
+    "getApp": "Get the app on your phone"
   },
   "booking": {
     "subtitle": "Who's at the cabin when?",
@@ -99,8 +109,10 @@
     "writePost": "Write in the cabin book",
     "recent": "Recent visits",
     "guests": "Number of people",
-    "guestsPlaceholder": "–",
-    "people": "{n} person | {n} people"
+    "people": "{n} person | {n} people",
+    "goToMonth": "Go to month",
+    "fewer": "Fewer",
+    "more": "More"
   },
   "todo": {
     "new": "New task",
@@ -113,15 +125,19 @@
     "whatToDo": "What needs doing?",
     "details": "Details",
     "doneBy": "Done by {name}, {date}",
-    "deleteTitle": "Delete task?"
+    "deleteTitle": "Delete task?",
+    "doneToast": "“{name}” done"
   },
   "shopping": {
-    "placeholder": "Paper towels, petrol, coffee…",
+    "placeholder": "What's missing? E.g. paper towels",
     "quantity": "Qty",
     "add": "Add",
     "remove": "Remove",
     "empty": "Nothing missing. The cabin is fully stocked!",
-    "bought": "Bought ({n})"
+    "bought": "Bought ({n})",
+    "boughtToast": "“{name}” bought",
+    "quantityShort": "Qty",
+    "item": "Item"
   },
   "suggestions": {
     "new": "New idea",
@@ -135,7 +151,8 @@
     "completedCount": "Done ({n})",
     "undo": "Undo",
     "empty": "No ideas yet. What do you dream of at the cabin?",
-    "deleteTitle": "Delete idea?"
+    "deleteTitle": "Delete idea?",
+    "kind": "What kind of idea?"
   },
   "notes": {
     "new": "New note",
@@ -171,7 +188,12 @@
     "stay": "Stay",
     "stayPlaceholder": "Choose a stay (optional)",
     "stayOf": "Stay: {name}",
-    "removingCover": "This is the cover photo. It will also be removed from the front page when you save."
+    "removingCover": "This is the cover photo. It will also be removed from the front page when you save.",
+    "upcoming": "upcoming",
+    "whenFromStay": "The dates come from the stay.",
+    "published": "Post published",
+    "photosFailed": "The post is saved, but {n} photo couldn't be uploaded. Tap “Retry photos”. | The post is saved, but {n} photos couldn't be uploaded. Tap “Retry photos”.",
+    "retryPhotos": "Retry photos"
   },
   "photos": {
     "upload": "Upload",
@@ -189,10 +211,10 @@
     "close": "Close",
     "prev": "Previous",
     "next": "Next",
-    "noCaption": "No caption",
     "unknown": "Unknown",
     "seeAll": "See all {n} photos",
-    "deleteCoverMessage": "This is the cover photo. If you delete it, the cabin has no cover photo until someone picks a new one."
+    "deleteCoverMessage": "This is the cover photo. If you delete it, the cabin has no cover photo until someone picks a new one.",
+    "uploadedBy": "{name} · uploaded {date}"
   },
   "time": {
     "justNow": "just now"
@@ -218,7 +240,8 @@
     "otherTitle": "Install from your browser",
     "otherText": "Open this page in Chrome on Android or Safari on iPhone. On a computer, look for the install icon in the address bar.",
     "openFromHome": "Open Hyttebok from your home screen or app list.",
-    "continueInBrowser": "Continue in the browser"
+    "continueInBrowser": "Continue in the browser",
+    "back": "Back to the cabin book"
   },
   "maintenance": {
     "tasks": "Tasks",
@@ -228,7 +251,7 @@
     "namePlaceholder": "E.g. Clean the gutters",
     "interval": "How often?",
     "nextPreview": "Next time: {date}",
-    "lastCompleted": "Last done (optional)",
+    "lastCompleted": "Last done (month, optional)",
     "lastCompletedPlaceholder": "Never / not sure",
     "description": "Description",
     "descriptionPlaceholder": "How it is done, what is needed …",
@@ -311,6 +334,7 @@
         "title": "Maintenance",
         "hint": "At 8 am when something is due"
       }
-    }
+    },
+    "recheck": "Check again"
   }
 }

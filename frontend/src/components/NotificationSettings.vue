@@ -1,13 +1,19 @@
 <script setup>
-import { ref } from 'vue'
+import { onMounted, onUnmounted, ref } from 'vue'
 import Button from 'primevue/button'
 import ToggleSwitch from 'primevue/toggleswitch'
-import { needsInstall, permission, sendTest, setTopics, supported, TOPICS, topics } from '../push'
+import { needsInstall, permission, refreshPermission, sendTest, setTopics, supported, TOPICS, topics } from '../push'
 import { askName, userName } from '../user'
 import { locale, t } from '../i18n'
 
 const busy = ref(false)
 const testSent = ref(false)
+
+// The panel mounts each time it's opened; also re-check when coming back from the phone's settings.
+onMounted(() => { refreshPermission(); document.addEventListener('visibilitychange', refreshPermission) })
+onUnmounted(() => document.removeEventListener('visibilitychange', refreshPermission))
+// Bumped after every attempt so a switch whose change failed snaps back to the real state.
+const attempt = ref(0)
 
 async function toggle(topic, on) {
 
@@ -22,6 +28,7 @@ async function toggle(topic, on) {
     await setTopics(TOPICS.filter(x => next.includes(x)), { name: userName.value, lang: locale.value })
   } finally {
     busy.value = false
+    attempt.value++
   }
 }
 
@@ -42,10 +49,7 @@ async function test() {
   <p v-else-if="!supported" class="rounded-lg bg-zinc-100 p-4 text-sm text-zinc-600">{{ t('push.unsupported') }}</p>
 
   <div v-else>
-    <p v-if="permission === 'denied'" class="mb-4 flex gap-2 rounded-lg bg-amber-50 p-3 text-sm text-amber-800">
-      <i class="pi pi-exclamation-triangle mt-0.5" />{{ t('push.blocked') }}
-    </p>
-    <p v-else class="mb-3 text-sm text-zinc-600">{{ t('push.intro') }}</p>
+    <p class="mb-3 text-sm text-zinc-600">{{ t('push.intro') }}</p>
 
     <ul class="divide-y divide-zinc-100">
       <li v-for="topic in TOPICS" :key="topic">
@@ -54,10 +58,18 @@ async function test() {
             <span class="block text-sm font-medium">{{ t(`push.topics.${topic}.title`) }}</span>
             <span class="block text-xs text-zinc-500">{{ t(`push.topics.${topic}.hint`) }}</span>
           </span>
-          <ToggleSwitch :model-value="topics.includes(topic)" :disabled="busy || permission === 'denied'" @update:model-value="toggle(topic, $event)" />
+          <ToggleSwitch :key="`${topic}-${attempt}`" :model-value="topics.includes(topic)" :disabled="busy || permission === 'denied'" @update:model-value="toggle(topic, $event)" />
         </label>
       </li>
     </ul>
+
+    <p v-if="permission === 'denied'" class="mt-4 flex gap-2 rounded-lg bg-amber-50 p-3 text-sm text-amber-800">
+      <i class="pi pi-exclamation-triangle mt-0.5" />
+      <span class="flex-1">
+        {{ t('push.blocked') }}
+        <button class="mt-1 block min-h-11 font-semibold underline underline-offset-4" @click="refreshPermission(); attempt++">{{ t('push.recheck') }}</button>
+      </span>
+    </p>
 
     <div v-if="topics.length" class="mt-4 flex flex-wrap items-center justify-between gap-2 border-t border-zinc-100 pt-4">
       <p class="text-xs text-zinc-500">{{ t('push.notOwn') }}</p>

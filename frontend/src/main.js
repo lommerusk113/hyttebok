@@ -65,7 +65,7 @@ app
 // Any failed API call or handler ends up here instead of failing silently.
 app.config.errorHandler = err => {
   console.error(err)
-  app.config.globalProperties.$toast.add({ severity: 'error', summary: t('common.error'), detail: err?.message?.slice(0, 200), life: 5000 })
+  app.config.globalProperties.$toast.add({ severity: 'error', summary: t('common.error'), detail: t('common.tryAgain'), life: 5000 })
 }
 
 app.mount('#app')

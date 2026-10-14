@@ -9,6 +9,12 @@ const remember = on => { try { on ? localStorage.setItem(KEY, '1') : localStorag
 export const isIos = /iphone|ipad|ipod/i.test(navigator.userAgent)
 export const installed = matchMedia('(display-mode: standalone)').matches || navigator.standalone === true
 export const installPrompt = ref(null)
+// The dashboard suggests the install page once; after a visit it stops nagging.
+export const installPageSeen = ref((() => { try { return localStorage.getItem('hyttebok.installSeen') === '1' } catch { return false } })())
+export function markInstallPageSeen() {
+  installPageSeen.value = true
+  try { localStorage.setItem('hyttebok.installSeen', '1') } catch { /* private mode */ }
+}
 export const installedBefore = ref(installed || (() => { try { return localStorage.getItem(KEY) === '1' } catch { return false } })())
 
 if (installed) remember(true)

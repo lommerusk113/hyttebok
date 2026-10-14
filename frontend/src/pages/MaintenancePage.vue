@@ -1,9 +1,8 @@
 <script setup>
-import { computed, onMounted, onUnmounted, ref } from 'vue'
+import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useToast } from 'primevue/usetoast'
 import { useConfirm } from 'primevue/useconfirm'
 import Button from 'primevue/button'
-import DatePicker from 'primevue/datepicker'
 import Dialog from 'primevue/dialog'
 import InputNumber from 'primevue/inputnumber'
 import InputText from 'primevue/inputtext'
@@ -26,6 +25,7 @@ const tasks = ref([])
 const completions = ref([])
 const formOpen = ref(false)
 const form = ref({})
+const highlighted = ref(null)
 
 // "Today" refreshes when the app comes back to the foreground, so an app left open overnight stays right.
 const today = ref(toIsoDate(new Date()))
@@ -37,13 +37,24 @@ onUnmounted(() => document.removeEventListener('visibilitychange', refreshToday)
 
 onMounted(async () => {
   [tasks.value, completions.value] = await Promise.all([api.get('/maintenance'), api.get('/maintenance-completions')])
-  if (takeQuery().new === 'vedlikehold') openForm()
+  const query = takeQuery()
+  if (query.new === 'vedlikehold') openForm()
+  if (query.id) showTask(Number(query.id))
 })
 
 // Most urgent first: overdue, then whatever is due soonest.
-const rows = computed(() => tasks.value
-  .map(m => ({ m, kind: status(m, today.value).kind, label: dueLabel(m, today.value) }))
-  .sort((a, b) => nextDue(a.m).localeCompare(nextDue(b.m))))
+// Sorted once per visit (and when tasks are added/removed); completing a task keeps it in place, outlined,
+// instead of making it jump to the bottom while you look at it.
+const order = ref([])
+const sortByDue = list => [...list].sort((a, b) => nextDue(a).localeCompare(nextDue(b))).map(m => m.id)
+watch(() => tasks.value.map(m => m.id).join(), () => {
+  const known = new Set(order.value)
+  order.value = order.value.length && tasks.value.every(m => known.has(m.id)) && tasks.value.length === known.size ? order.value : sortByDue(tasks.value)
+})
+const rows = computed(() => order.value
+  .map(id => tasks.value.find(m => m.id === id))
+  .filter(Boolean)
+  .map(m => ({ m, kind: status(m, today.value).kind, label: dueLabel(m, today.value) })))
 const overdueCount = computed(() => rows.value.filter(r => r.kind === 'overdue').length)
 
 const intervalText = m => t(`maintenance.every.${m.intervalUnit}`, m.intervalValue)
@@ -70,6 +81,14 @@ const ENTRY_STYLE = {
   planned: { icon: 'pi pi-circle', color: 'text-zinc-500' },
 }
 
+// Scroll to a task and outline it briefly, e.g. when coming from the dashboard or after it moved in the list.
+async function showTask(id) {
+  highlighted.value = id
+  await nextTick()
+  document.getElementById(`task-${id}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+  setTimeout(() => { if (highlighted.value === id) highlighted.value = null }, 2500)
+}
+
 // ---- actions ----
 
 async function complete(m) {
@@ -83,6 +102,7 @@ async function complete(m) {
   const saved = await api.post('/maintenance-completions', { maintenanceId: m.id, completedOn, completedBy: userName.value })
   completions.value = [saved, ...completions.value]
   tasks.value = tasks.value.map(x => (x.id === m.id ? { ...x, lastCompleted: completedOn } : x))
+  showTask(m.id)
   toast.add({ group: 'action', summary: t('maintenance.markedDone', { name: m.name }), actionLabel: t('maintenance.undo'), action: () => undo(saved), life: 6000 })
 }
 
@@ -96,9 +116,29 @@ async function undo(completion) {
 
 function openForm(m) {
   form.value = m
-    ? { ...m, last: m.lastCompleted ? parseIsoDate(m.lastCompleted) : null }
-    : { name: '', description: '', intervalValue: 1, intervalUnit: 'YEARS', last: null }
+    ? { ...m, lastMonth: m.lastCompleted?.slice(0, 7) ?? '' }
+    : { name: '', description: '', intervalValue: 1, intervalUnit: 'YEARS', lastMonth: '' }
   formOpen.value = true
+}
+
+// "Sist utført" choices: this month and five years back, newest first (plus the task's own month if older).
+const MONTHS_BACK = 60
+const monthChoices = computed(() => {
+  const now = new Date()
+  const list = [...Array(MONTHS_BACK)].map((_, i) => {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1)
+    return { value: toIsoDate(d).slice(0, 7), label: d.toLocaleDateString(localeTag(), { month: 'long', year: 'numeric' }) }
+  })
+  const current = form.value.lastMonth
+  if (current && !list.some(c => c.value === current)) list.push({ value: current, label: parseIsoDate(`${current}-01`).toLocaleDateString(localeTag(), { month: 'long', year: 'numeric' }) })
+  return list
+})
+
+// Unchanged month on an existing task keeps its exact date; a newly picked month counts from the 1st.
+const lastCompletedFromForm = () => {
+  const month = form.value.lastMonth
+  if (!month) return null
+  return form.value.lastCompleted?.startsWith(month) ? form.value.lastCompleted : `${month}-01`
 }
 
 const unitOptions = computed(() => UNITS.map(u => ({ value: u, label: t(`maintenance.units.${u}`, form.value.intervalValue || 1) })))
@@ -106,7 +146,7 @@ const unitOptions = computed(() => UNITS.map(u => ({ value: u, label: t(`mainten
 // Live answer to "so when is it next?" while filling in the form.
 const preview = computed(() => {
   if (!form.value.intervalValue) return null
-  const base = form.value.last ? toIsoDate(form.value.last) : form.value.createdAt ? toIsoDate(new Date(form.value.createdAt)) : today.value
+  const base = lastCompletedFromForm() || (form.value.createdAt ? toIsoDate(new Date(form.value.createdAt)) : today.value)
   const next = addInterval(base, form.value.intervalValue, form.value.intervalUnit)
   const date = formatDate(parseIsoDate(next))
   return next < today.value ? { text: t('maintenance.nextPreviewPast', { date }), past: true } : { text: t('maintenance.nextPreview', { date }), past: false }
@@ -114,8 +154,8 @@ const preview = computed(() => {
 
 async function save() {
 
-  const { last, ...fields } = form.value
-  const body = { ...fields, name: fields.name.trim(), lastCompleted: last ? toIsoDate(last) : null }
+  const { lastMonth, ...fields } = form.value
+  const body = { ...fields, name: fields.name.trim(), lastCompleted: lastCompletedFromForm() }
   const saved = await (body.id ? api.put('/maintenance', body) : api.post('/maintenance', body))
 
   tasks.value = body.id ? tasks.value.map(x => (x.id === saved.id ? saved : x)) : [...tasks.value, saved]
@@ -150,7 +190,8 @@ function remove(m) {
       </template>
 
       <ul v-if="rows.length" class="-mx-5 divide-y divide-zinc-100 border-t border-zinc-100">
-        <li v-for="{ m, kind, label } in rows" :key="m.id" class="flex items-center gap-3 py-2.5 pl-3 pr-4">
+        <li v-for="{ m, kind, label } in rows" :id="`task-${m.id}`" :key="m.id" class="flex scroll-mt-40 items-center gap-3 py-2.5 pl-3 pr-4 transition-colors duration-700"
+            :class="highlighted === m.id && 'bg-amber-50'">
           <span :class="STATUS_STYLE[kind].bar" class="w-1 self-stretch rounded-full" />
           <!-- The whole name area opens the task; the chevron says so -->
           <button class="group flex min-h-11 min-w-0 flex-1 items-center gap-2 text-left" @click="openForm(m)">
@@ -163,9 +204,9 @@ function remove(m) {
             </span>
             <i class="pi pi-chevron-right shrink-0 text-xs text-zinc-400" />
           </button>
-          <!-- Urgent tasks get the visible button; the rest a quieter one -->
+          <!-- Always outlined: testers read a borderless "Utført" as plain text -->
           <Button :label="t('maintenance.done')" icon="pi pi-check" size="small" severity="secondary" class="max-sm:!min-h-11 shrink-0"
-                  :outlined="kind !== 'later'" :text="kind === 'later'" @click="complete(m)" />
+                  outlined @click="complete(m)" />
         </li>
       </ul>
       <EmptyState v-else icon="pi pi-wrench" :text="t('maintenance.empty')">
@@ -230,8 +271,12 @@ function remove(m) {
 
       <label class="flex flex-col gap-1.5 text-sm font-medium">
         {{ t('maintenance.lastCompleted') }}
-        <DatePicker v-model="form.last" :max-date="new Date()" show-icon icon-display="input" show-button-bar :manual-input="false" :placeholder="t('maintenance.lastCompletedPlaceholder')" />
-        <span v-if="!form.last" class="text-xs font-normal text-zinc-500">{{ form.id ? t('maintenance.lastCompletedHintEdit') : t('maintenance.lastCompletedHintNew') }}</span>
+        <!-- Month is enough (people remember "June", not the 15th). A native select opens the phone's own picker. -->
+        <select v-model="form.lastMonth" class="min-h-11 rounded-md border border-zinc-300 bg-surface px-3 text-base font-normal text-zinc-900 sm:text-sm">
+          <option value="">{{ t('maintenance.lastCompletedPlaceholder') }}</option>
+          <option v-for="c in monthChoices" :key="c.value" :value="c.value">{{ c.label }}</option>
+        </select>
+        <span v-if="!form.lastMonth" class="text-xs font-normal text-zinc-500">{{ form.id ? t('maintenance.lastCompletedHintEdit') : t('maintenance.lastCompletedHintNew') }}</span>
       </label>
 
       <label class="flex flex-col gap-1.5 text-sm font-medium">

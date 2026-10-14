@@ -2,6 +2,8 @@
 import { computed, nextTick, onMounted, ref } from 'vue'
 import { useDeepLink } from '../deepLink'
 import { useConfirm } from 'primevue/useconfirm'
+import { useToast } from 'primevue/usetoast'
+import Message from 'primevue/message'
 import Avatar from 'primevue/avatar'
 import AvatarGroup from 'primevue/avatargroup'
 import Button from 'primevue/button'
@@ -25,6 +27,8 @@ const MAX_GRID = 6
 const emit = defineEmits(['photos-changed'])
 
 const confirm = useConfirm()
+const toast = useToast()
+const photoError = ref('')
 const entries = ref([])
 const photos = ref([])
 const bookings = ref([])
@@ -63,8 +67,16 @@ const photosByEntry = computed(() => {
   return map
 })
 const photosOf = e => photosByEntry.value.get(e.id) || []
-const stays = computed(() => [...bookings.value].sort((a, b) => b.startDate.localeCompare(a.startDate))
-  .map(b => ({ ...b, label: `${b.guestName} · ${dateRange(b)}` })))
+// Stays you'd write about first: the latest past/current ones, then upcoming ones (soonest first).
+const stays = computed(() => {
+  const today = toIsoDate(new Date())
+  const past = bookings.value.filter(b => b.startDate <= today).sort((a, b) => b.startDate.localeCompare(a.startDate))
+  const upcoming = bookings.value.filter(b => b.startDate > today).sort((a, b) => a.startDate.localeCompare(b.startDate))
+  return [
+    ...past.map(b => ({ ...b, label: `${b.guestName} · ${dateRange(b)}` })),
+    ...upcoming.map(b => ({ ...b, label: `${b.guestName} · ${dateRange(b)} (${t('log.upcoming')})` })),
+  ]
+})
 const stayOf = e => e.bookingId && bookings.value.find(b => b.id === e.bookingId)
 
 // Choosing a stay fills in its dates and adds the guest to "who was there".
@@ -99,6 +111,7 @@ function compose(entry) {
   }
 
   newPhotos.value = []
+  photoError.value = ''
   if (entry) {
     form.value = {
       ...entry,
@@ -169,7 +182,13 @@ async function post() {
       startDate: start ? toIsoDate(start) : null,
       endDate: start ? toIsoDate(end || start) : null,
     }
+    const isNew = !body.id
     const entry = await (body.id ? api.put('/log', body) : api.post('/log', body))
+    // From here on the post exists: a retry after a photo failure must update it, not create a second one.
+    form.value.id = entry.id
+    form.value.author = entry.author
+    form.value.createdAt = entry.createdAt
+    entries.value = isNew && !entries.value.some(e => e.id === entry.id) ? [entry, ...entries.value] : entries.value.map(e => (e.id === entry.id ? entry : e))
 
     // Existing photos: removed ones are deleted, changed captions saved.
     const removedIds = new Set()
@@ -183,15 +202,30 @@ async function post() {
       }
     }
 
+    // Each photo on its own: one failing doesn't lose the others, and only the failed ones stay to retry.
     const uploaded = []
+    const failed = []
     for (const p of newPhotos.value) {
-      uploaded.push(await uploadPhoto(p.file, p.caption.trim(), userName.value, entry.id))
+      try {
+        uploaded.push(await uploadPhoto(p.file, p.caption.trim(), userName.value, entry.id))
+      } catch (err) {
+        console.error(err)
+        failed.push(p)
+      }
     }
 
     photos.value = [...uploaded.reverse(), ...photos.value.filter(p => !removedIds.has(p.id))]
-    entries.value = body.id ? entries.value.map(e => (e.id === entry.id ? entry : e)) : [entry, ...entries.value]
-    composing.value = false
+    existingPhotos.value = existingPhotos.value.filter(p => !p.removed)
+    newPhotos.value = failed
     emit('photos-changed')
+    if (failed.length) {
+      photoError.value = t('log.photosFailed', failed.length)
+      return
+    }
+
+    photoError.value = ''
+    composing.value = false
+    toast.add({ severity: 'success', summary: isNew ? t('log.published') : t('common.saved'), life: 2500 })
   } finally {
     posting.value = false
   }
@@ -268,7 +302,7 @@ function remove(entry) {
   <PhotoLightbox v-model:index="lightbox.index" :photos="lightbox.photos" />
 
   <Drawer v-model:visible="composing" position="right" :header="form.id ? t('log.edit') : t('log.new')" class="!w-full sm:!w-[34rem]">
-    <form id="log-form" class="flex flex-col gap-5" @submit.prevent="post">
+    <form id="log-form" class="flex flex-col gap-5 pb-8" @submit.prevent="post">
       <label class="flex flex-col gap-1.5 text-sm font-medium">
         {{ t('log.titleLabel') }}
         <InputText v-model="form.title" required autofocus :placeholder="t('log.titlePlaceholder')" />
@@ -302,9 +336,12 @@ function remove(entry) {
                 :placeholder="t('log.stayPlaceholder')" @update:model-value="pickStay" />
       </label>
 
-      <label v-if="!form.bookingId" class="flex flex-col gap-1.5 text-sm font-medium">
+      <!-- With a stay picked the dates come from it: shown read-only (not hidden) so the form doesn't jump -->
+      <label class="flex flex-col gap-1.5 text-sm font-medium">
         {{ t('log.when') }}
-        <DatePicker v-model="form.range" selection-mode="range" :manual-input="false" show-icon icon-display="input" :placeholder="t('log.whenPlaceholder')" />
+        <DatePicker v-model="form.range" selection-mode="range" hide-on-range-selection :manual-input="false" show-icon icon-display="input" :disabled="!!form.bookingId"
+                    :placeholder="t('log.whenPlaceholder')" />
+        <span v-if="form.bookingId" class="text-xs font-normal text-zinc-500">{{ t('log.whenFromStay') }}</span>
       </label>
 
       <label class="flex flex-col gap-1.5 text-sm font-medium">
@@ -318,7 +355,7 @@ function remove(entry) {
         <div v-for="p in existingPhotos" :key="p.photo.id" class="rounded-md border p-2"
              :class="p.removed && p.photo.id === cabin?.heroPhotoId ? 'border-amber-300' : 'border-zinc-200'">
           <div class="flex items-center gap-3" :class="p.removed && 'opacity-50'">
-            <img :src="photoUrl(p.photo.id)" alt="" class="size-16 shrink-0 rounded object-cover" :class="p.removed && 'grayscale'">
+            <img :src="photoUrl(p.photo.id)" alt="" class="size-20 shrink-0 rounded object-cover" :class="p.removed && 'grayscale'">
             <InputText v-model="p.caption" :disabled="p.removed" :placeholder="t('log.captionPlaceholder')" class="min-w-0 flex-1" />
             <Button :icon="p.removed ? 'pi pi-undo' : 'pi pi-times'" text rounded severity="secondary" size="small"
                     :aria-label="p.removed ? t('suggestions.undo') : t('log.removePhoto')" @click="p.removed = !p.removed" />
@@ -328,7 +365,7 @@ function remove(entry) {
           </p>
         </div>
         <div v-for="(p, i) in newPhotos" :key="p.url" class="flex items-center gap-3 rounded-md border border-zinc-200 p-2">
-          <img :src="p.url" alt="" class="size-16 shrink-0 rounded object-cover">
+          <img :src="p.url" alt="" class="size-20 shrink-0 rounded object-cover">
           <InputText v-model="p.caption" :placeholder="t('log.captionPlaceholder')" class="min-w-0 flex-1" />
           <Button icon="pi pi-times" text rounded severity="secondary" size="small" :aria-label="t('log.removePhoto')" @click="newPhotos.splice(i, 1)" />
         </div>
@@ -339,10 +376,11 @@ function remove(entry) {
       </div>
     </form>
 
+    <Message v-if="photoError" severity="warn" class="mt-4">{{ photoError }}</Message>
     <template #footer>
       <div class="flex justify-end gap-2">
         <Button :label="t('common.cancel')" text severity="secondary" @click="composing = false" />
-        <Button type="submit" form="log-form" :label="form.id ? t('common.save') : t('log.publish')" :icon="form.id ? 'pi pi-check' : 'pi pi-send'" :loading="posting" :disabled="!form.title?.trim()" />
+        <Button type="submit" form="log-form" :label="photoError ? t('log.retryPhotos') : form.id ? t('common.save') : t('log.publish')" :icon="form.id ? 'pi pi-check' : 'pi pi-send'" :loading="posting" :disabled="!form.title?.trim()" />
       </div>
     </template>
   </Drawer>

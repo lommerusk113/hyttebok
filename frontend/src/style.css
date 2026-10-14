@@ -54,13 +54,29 @@ body {
   border-radius: 9999px;
 }
 
+/* Selected = black pill (white in dark mode), like the active tab, so it's obvious in both themes. */
 .p-selectbutton .p-togglebutton-checked {
-  color: var(--color-zinc-950);
+  color: var(--color-surface);
 }
 
 .p-selectbutton .p-togglebutton-checked .p-togglebutton-content {
-  background: var(--color-surface);
-  box-shadow: 0 1px 2px rgb(0 0 0 / 0.1);
+  background: var(--color-zinc-950);
+}
+
+/* Date pickers: the month/year headings are buttons that jump to a month/year grid; make them look like it. */
+.p-datepicker-select-month,
+.p-datepicker-select-year {
+  padding: 0.25rem 0.625rem !important;
+  border: 1px solid var(--color-zinc-200) !important;
+  border-radius: 9999px !important;
+}
+
+.p-datepicker-select-month::after,
+.p-datepicker-select-year::after {
+  content: "▾";
+  margin-left: 0.25rem;
+  color: var(--color-zinc-500);
+  font-size: 0.75em;
 }
 
 /* --- Accessibility --- */

@@ -11,7 +11,7 @@ export default defineConfig({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.png', 'apple-touch-icon.png', 'mark.png', 'wordmark.png'],
       manifest: {
-        name: 'Ravnsmark Hyttebok',
+        name: 'Hyttebok',
         short_name: 'Hyttebok',
         description: 'Booking, lister og hyttebok for hytta',
         lang: 'nb',

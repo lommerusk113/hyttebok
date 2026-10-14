@@ -1,5 +1,5 @@
 <script setup>
-import { computed, onMounted, ref } from 'vue'
+import { computed, nextTick, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useDeepLink } from '../deepLink'
 import { useToast } from 'primevue/usetoast'
@@ -9,7 +9,7 @@ import Dialog from 'primevue/dialog'
 import DatePicker from 'primevue/datepicker'
 import InputText from 'primevue/inputtext'
 import Textarea from 'primevue/textarea'
-import InputNumber from 'primevue/inputnumber'
+import Select from 'primevue/select'
 import Message from 'primevue/message'
 import PageHeader from '../components/PageHeader.vue'
 import { api } from '../api'
@@ -101,9 +101,35 @@ const range = computed(() => {
   return start && { start: toIsoDate(start), end: toIsoDate(end || start) }
 })
 
+const slotIso = d => toIsoDate(new Date(d.year, d.month, d.day))
+const isBooked = d => bookedDays.value.has(slotIso(d))
+const isPicked = d => range.value && slotIso(d) >= range.value.start && slotIso(d) <= range.value.end
+
 const conflicts = computed(() => range.value
   ? bookings.value.filter(b => b.id !== form.value.id && b.startDate <= range.value.end && b.endDate >= range.value.start)
   : [])
+
+// "Go to month" for the booking calendar: the next two years, so far-off trips are two taps away.
+const pickerRef = ref()
+const monthOptions = computed(() => [...Array(24)].map((_, i) => {
+  const d = new Date(new Date().getFullYear(), new Date().getMonth() + i, 1)
+  return { value: `${d.getFullYear()}-${d.getMonth()}`, label: d.toLocaleDateString(localeTag(), { month: 'long', year: 'numeric' }) }
+}))
+// DatePicker has no "show this month" option, so this taps through its own year → month views.
+async function goToMonth(value) {
+  const [year, month] = value.split('-').map(Number)
+  const root = pickerRef.value.$el
+  root.querySelector('.p-datepicker-select-year')?.click()
+  await nextTick()
+  ;[...root.querySelectorAll('.p-datepicker-year')].find(y => y.textContent.trim() === String(year))?.click()
+  await nextTick()
+  root.querySelectorAll('.p-datepicker-month')[month]?.click()
+}
+
+// The chosen dates in words, so nobody has to decode circles in a calendar.
+const rangeSummary = computed(() => range.value && range.value.start !== range.value.end
+  ? `${period({ startDate: range.value.start, endDate: range.value.end })} · ${t('booking.nights', nights({ startDate: range.value.start, endDate: range.value.end }))}`
+  : null)
 
 const nights = b => Math.round((parseIsoDate(b.endDate) - parseIsoDate(b.startDate)) / 864e5)
 const period = b => `${formatDay(parseIsoDate(b.startDate))} – ${formatDay(parseIsoDate(b.endDate))}`
@@ -114,7 +140,7 @@ function shiftMonth(delta) {
 
 function openNew(iso) {
   const start = iso ? parseIsoDate(iso) : null
-  form.value = { guestName: userName.value, guests: null, note: '', range: start ? [start, null] : null }
+  form.value = { guestName: userName.value, guests: 1, note: '', range: start ? [start, null] : null }
   formOpen.value = true
 }
 
@@ -265,15 +291,21 @@ function remove(b) {
     <form id="booking-form" class="flex flex-col gap-4" @submit.prevent="save">
       <label class="flex flex-col gap-1.5 text-sm font-medium">{{ t('booking.who') }}<InputText v-model="form.guestName" required :placeholder="t('booking.namePlaceholder')" /></label>
       <div class="flex flex-col gap-1.5 text-sm font-medium">
-        {{ t('booking.period') }}
-        <DatePicker v-model="form.range" selection-mode="range" inline :manual-input="false" class="w-full">
+        <span class="flex items-center justify-between gap-2">
+          {{ t('booking.period') }}
+          <Select :options="monthOptions" option-label="label" option-value="value" :placeholder="t('booking.goToMonth')" size="small" class="min-w-0"
+                  :aria-label="t('booking.goToMonth')" @update:model-value="goToMonth" />
+        </span>
+        <DatePicker ref="pickerRef" v-model="form.range" selection-mode="range" inline :manual-input="false" class="w-full">
           <template #date="{ date }">
-            <span class="relative">
+            <!-- Already booked by someone else: amber number + dot, unless it's part of your selection -->
+            <span class="relative" :class="isBooked(date) && !isPicked(date) && 'font-semibold text-amber-700'">
               {{ date.day }}
-              <span v-if="bookedDays.has(toIsoDate(new Date(date.year, date.month, date.day)))" class="absolute -bottom-1.5 left-1/2 size-1 -translate-x-1/2 rounded-full bg-amber-500" />
+              <span v-if="isBooked(date)" class="absolute -bottom-2 left-1/2 size-1.5 -translate-x-1/2 rounded-full bg-amber-500" />
             </span>
           </template>
         </DatePicker>
+        <p v-if="rangeSummary" class="rounded-md bg-zinc-100 px-3 py-2 text-sm font-semibold">{{ rangeSummary }}</p>
         <span class="text-xs font-normal text-zinc-500"><span class="mr-1 inline-block size-1.5 rounded-full bg-amber-500 align-middle" />{{ t('booking.alreadyBooked') }}</span>
       </div>
       <Message v-if="conflicts.length" severity="warn" icon="pi pi-exclamation-triangle">
@@ -281,11 +313,15 @@ function remove(b) {
         <span v-for="(c, i) in conflicts" :key="c.id"><b>{{ c.guestName }}</b> ({{ period(c) }}){{ i < conflicts.length - 1 ? ', ' : '' }}</span>.
         {{ t('booking.overlapHint') }}
       </Message>
-      <label class="flex flex-col gap-1.5 text-sm font-medium">
-        {{ t('booking.guests') }}
-        <InputNumber v-model="form.guests" show-buttons button-layout="horizontal" :min="1" :max="99" :placeholder="t('booking.guestsPlaceholder')"
-                     increment-button-icon="pi pi-plus" decrement-button-icon="pi pi-minus" input-class="!w-16 text-center" class="self-start" />
-      </label>
+      <!-- Buttons only: no text field that pops up the phone keyboard -->
+      <div class="flex items-center justify-between gap-3 text-sm font-medium" role="group" aria-labelledby="guests-label">
+        <span id="guests-label">{{ t('booking.guests') }}</span>
+        <span class="flex items-center gap-1">
+          <Button type="button" icon="pi pi-minus" rounded outlined severity="secondary" class="!size-11" :aria-label="t('booking.fewer')" :disabled="(form.guests || 1) <= 1" @click="form.guests = Math.max(1, (form.guests || 1) - 1)" />
+          <span class="w-10 text-center text-lg tabular-nums" aria-live="polite">{{ form.guests || 1 }}</span>
+          <Button type="button" icon="pi pi-plus" rounded outlined severity="secondary" class="!size-11" :aria-label="t('booking.more')" @click="form.guests = Math.min(99, (form.guests || 1) + 1)" />
+        </span>
+      </div>
       <label class="flex flex-col gap-1.5 text-sm font-medium">{{ t('booking.note') }}<Textarea v-model="form.note" rows="2" auto-resize :placeholder="t('booking.notePlaceholder')" /></label>
     </form>
     <template #footer>

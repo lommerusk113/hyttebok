@@ -41,6 +41,7 @@ onMounted(loadCabin)
 
 // After offline changes are synced, reload the view, but never pull an open form away from someone.
 const viewKey = ref(0)
+
 watch(dataVersion, function refresh() {
   if (document.querySelector('.p-dialog, .p-drawer')) return setTimeout(refresh, 2000)
   viewKey.value++
@@ -49,6 +50,12 @@ watch(dataVersion, function refresh() {
 
 const tab = computed(() => TABS.find(tb => tb.key === (route.params.tab || '')))
 const view = computed(() => tab.value.component)
+// New tab: if you'd scrolled past the cover, start the new content at its top (nothing above the tabs moves).
+const tabsNav = ref()
+watch(() => tab.value.key, () => {
+  const top = tabsNav.value.getBoundingClientRect().top + scrollY - (window.innerWidth < 640 ? 56 : 64)
+  if (scrollY > top) scrollTo({ top })
+})
 const tabLink = tb => (tb.key ? `/${tb.key}` : '/')
 
 const textareas = {}
@@ -117,7 +124,7 @@ async function save() {
     </section>
 
     <!-- Tabs -->
-    <nav class="sticky top-14 z-20 -mx-4 bg-page/90 px-4 py-2 backdrop-blur mt-4 sm:top-16">
+    <nav ref="tabsNav" class="sticky top-14 z-20 -mx-4 bg-page/90 px-4 py-2 backdrop-blur mt-4 sm:top-16">
       <div class="grid grid-cols-5 gap-1 rounded-lg border border-zinc-200 bg-surface p-1 shadow-sm">
         <RouterLink v-for="tb in TABS" :key="tb.key" :to="tabLink(tb)"
                     class="flex min-w-0 flex-col items-center gap-0.5 rounded-md px-1 py-1.5 text-[11px] sm:px-2 sm:text-xs font-medium text-zinc-500 transition hover:bg-zinc-100 hover:text-zinc-900 sm:flex-row sm:justify-center sm:gap-2 sm:text-sm"

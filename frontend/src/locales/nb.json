@@ -13,19 +13,22 @@
     "error": "Noe gikk galt",
     "uploadFailed": "Opplasting feilet",
     "copy": "Kopier",
-    "new": "Ny"
+    "new": "Ny",
+    "tryAgain": "Prøv igjen, eller sjekk nettet."
   },
   "app": {
-    "subtitle": "Hyttebok",
     "whoAreYou": "Hvem er du?",
     "nameHint": "Navnet brukes når du krysser av gjøremål, handler inn eller skriver i hytteboka.",
     "namePlaceholder": "Ditt navn",
     "language": "Språk",
-    "knownNames": "Velg navn",
+    "knownNames": "Trykk på navnet ditt",
     "darkMode": "Mørk modus",
     "menu": "Meny",
     "changeName": "Bytt navn",
-    "install": "Installer appen"
+    "install": "Installer appen",
+    "hello": "Hei, {name}!",
+    "by": "fra",
+    "orTypeName": "Eller skriv det:"
   },
   "tabs": {
     "overview": "Oversikt",
@@ -72,7 +75,14 @@
     "inDays": "i dag | i morgen | om {n} dager",
     "more": "+ {n} til",
     "topIdeas": "Populære forslag",
-    "add": "Legg til: {what}"
+    "add": "Legg til: {what}",
+    "now": "Akkurat nå",
+    "allClear": "Alt er i rute",
+    "nowOverdue": "{n} vedlikehold på overtid | {n} vedlikehold på overtid",
+    "nowTodos": "{n} gjøremål | {n} gjøremål",
+    "nowShopping": "{n} å kjøpe | {n} å kjøpe",
+    "nowNext": "{name} kommer {when}",
+    "getApp": "Få appen på telefonen"
   },
   "booking": {
     "subtitle": "Hvem er på hytta når?",
@@ -99,8 +109,10 @@
     "writePost": "Skriv i hytteboka",
     "recent": "Nylige besøk",
     "guests": "Antall personer",
-    "guestsPlaceholder": "–",
-    "people": "{n} person | {n} personer"
+    "people": "{n} person | {n} personer",
+    "goToMonth": "Gå til måned",
+    "fewer": "Færre",
+    "more": "Flere"
   },
   "todo": {
     "new": "Ny oppgave",
@@ -113,15 +125,19 @@
     "whatToDo": "Hva må gjøres?",
     "details": "Detaljer",
     "doneBy": "Gjort av {name}, {date}",
-    "deleteTitle": "Slette oppgave?"
+    "deleteTitle": "Slette oppgave?",
+    "doneToast": "«{name}» er gjort"
   },
   "shopping": {
-    "placeholder": "Tørkepapir, bensin, kaffe…",
+    "placeholder": "Hva mangler? F.eks. tørkepapir",
     "quantity": "Antall",
     "add": "Legg til",
     "remove": "Fjern",
     "empty": "Ingenting mangler. Hytta er fullt utstyrt!",
-    "bought": "Kjøpt ({n})"
+    "bought": "Kjøpt ({n})",
+    "boughtToast": "«{name}» er kjøpt",
+    "quantityShort": "Ant.",
+    "item": "Vare"
   },
   "suggestions": {
     "new": "Nytt forslag",
@@ -135,7 +151,8 @@
     "completedCount": "Gjennomført ({n})",
     "undo": "Angre",
     "empty": "Ingen forslag ennå. Hva drømmer du om på hytta?",
-    "deleteTitle": "Slette forslag?"
+    "deleteTitle": "Slette forslag?",
+    "kind": "Hva slags forslag?"
   },
   "notes": {
     "new": "Nytt notat",
@@ -171,7 +188,12 @@
     "stay": "Opphold",
     "stayPlaceholder": "Velg opphold (valgfritt)",
     "stayOf": "Opphold: {name}",
-    "removingCover": "Dette er forsidebildet. Det fjernes også fra forsiden når du lagrer."
+    "removingCover": "Dette er forsidebildet. Det fjernes også fra forsiden når du lagrer.",
+    "upcoming": "kommende",
+    "whenFromStay": "Datoene hentes fra oppholdet.",
+    "published": "Innlegget er publisert",
+    "photosFailed": "Innlegget er lagret, men {n} bilde kunne ikke lastes opp. Trykk «Prøv bildene igjen». | Innlegget er lagret, men {n} bilder kunne ikke lastes opp. Trykk «Prøv bildene igjen».",
+    "retryPhotos": "Prøv bildene igjen"
   },
   "photos": {
     "upload": "Last opp",
@@ -189,10 +211,10 @@
     "close": "Lukk",
     "prev": "Forrige",
     "next": "Neste",
-    "noCaption": "Uten tekst",
     "unknown": "Ukjent",
     "seeAll": "Se alle {n} bildene",
-    "deleteCoverMessage": "Dette er forsidebildet. Sletter du det, står hytta uten forsidebilde til noen velger et nytt."
+    "deleteCoverMessage": "Dette er forsidebildet. Sletter du det, står hytta uten forsidebilde til noen velger et nytt.",
+    "uploadedBy": "{name} · lastet opp {date}"
   },
   "time": {
     "justNow": "akkurat nå"
@@ -218,7 +240,8 @@
     "otherTitle": "Installer fra nettleseren",
     "otherText": "Åpne denne siden i Chrome på Android eller Safari på iPhone. På PC: se etter installer-ikonet i adressefeltet.",
     "openFromHome": "Åpne Hyttebok fra hjemskjermen eller app-listen på telefonen.",
-    "continueInBrowser": "Fortsett i nettleseren"
+    "continueInBrowser": "Fortsett i nettleseren",
+    "back": "Tilbake til hytteboka"
   },
   "maintenance": {
     "tasks": "Oppgaver",
@@ -228,7 +251,7 @@
     "namePlaceholder": "F.eks. Rense takrennene",
     "interval": "Hvor ofte?",
     "nextPreview": "Neste gang: {date}",
-    "lastCompleted": "Sist utført (valgfritt)",
+    "lastCompleted": "Sist utført (måned, valgfritt)",
     "lastCompletedPlaceholder": "Aldri / vet ikke",
     "description": "Beskrivelse",
     "descriptionPlaceholder": "Hvordan det gjøres, hva som trengs …",
@@ -311,6 +334,7 @@
         "title": "Vedlikehold",
         "hint": "Kl. 08 når noe skal gjøres"
       }
-    }
+    },
+    "recheck": "Sjekk på nytt"
   }
 }

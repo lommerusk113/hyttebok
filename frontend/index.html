@@ -11,12 +11,11 @@
     <meta name="theme-color" content="#ffffff" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Michroma&display=swap" rel="stylesheet" />
-    <title>Ravnsmark</title>
+    <title>Hyttebok</title>
     <script>
-      // Set the theme before first paint to avoid a white flash (see src/theme.js).
+      // Dark only if chosen in the app; set before first paint to avoid a flash (see src/theme.js).
       try {
-        var t = localStorage.getItem('hyttebok.theme')
-        if (t ? t === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches) document.documentElement.classList.add('app-dark')
+        if (localStorage.getItem('hyttebok.theme') === 'dark') document.documentElement.classList.add('app-dark')
       } catch (e) {}
     </script>
   </head>
