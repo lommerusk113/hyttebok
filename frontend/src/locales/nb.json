@@ -335,7 +335,11 @@
         "hint": "Kl. 08 når noe skal gjøres"
       }
     },
-    "recheck": "Sjekk på nytt"
+    "recheck": "Sjekk på nytt",
+    "failed": {
+      "pushService": "Nettleseren fikk ikke kontakt med varseltjenesten sin. Bruker du Brave: slå på «Bruk Google-tjenester for push-meldinger» under brave://settings/privacy og prøv igjen. Ellers: prøv igjen senere, eller bruk Chrome.",
+      "generic": "Fikk ikke slått på varsler. Sjekk nettet og prøv igjen."
+    }
   },
   "weather": {
     "today": "{max}° / {min}° i dag",

@@ -204,18 +204,10 @@ function remove(b) {
 
       <div v-for="(week, w) in weeks" :key="w" class="grid grid-cols-7 border-b border-zinc-100 last:border-0">
         <div v-for="day in week" :key="day.iso"
-             class="group min-h-20 cursor-pointer border-r border-zinc-100 pb-1.5 last:border-r-0 hover:bg-zinc-100 sm:min-h-24"
+             class="group flex min-h-20 cursor-pointer flex-col border-r border-zinc-100 pb-1 last:border-r-0 hover:bg-zinc-100 sm:min-h-24"
              :class="{ 'bg-zinc-50/60': !day.inMonth }" @click="openNew(day.iso)">
-          <!-- Weather on the left (measured, forecast or usual), day number on the right -->
-          <div class="flex items-start justify-between gap-0.5 p-1.5">
-            <span v-if="dayWeather(day.iso)?.symbol" class="flex flex-col items-center leading-none sm:flex-row sm:gap-1">
-              <WeatherIcon :symbol="dayWeather(day.iso).symbol" :uncertain="dayWeather(day.iso).uncertain" size="size-5 sm:size-6" />
-              <span class="text-[10px] font-medium tabular-nums text-zinc-600 sm:text-xs" :class="dayWeather(day.iso).uncertain && 'opacity-60'">{{ Math.round(dayWeather(day.iso).maxTemp) }}°</span>
-            </span>
-            <!-- Too far ahead for a forecast: the usual temperature for the date -->
-            <span v-else-if="dayWeather(day.iso)" class="pl-0.5 pt-1 text-[10px] tabular-nums text-zinc-500 sm:text-xs"
-                  :title="t('weather.normalDay', { max: Math.round(dayWeather(day.iso).maxTemp), min: Math.round(dayWeather(day.iso).minTemp) })">≈{{ Math.round(dayWeather(day.iso).maxTemp) }}°</span>
-            <span v-else />
+          <!-- Day number alone at the top, so a temperature next to it isn't read as the date -->
+          <div class="flex justify-end p-1.5">
             <span class="grid size-7 shrink-0 place-items-center rounded-full text-sm"
                   :class="day.iso === today ? 'bg-zinc-950 font-semibold text-surface' : day.inMonth ? 'text-zinc-700' : 'text-zinc-300'">
               {{ day.day }}
@@ -231,6 +223,15 @@ function remove(b) {
               </div>
               <div v-else class="h-5" />
             </template>
+          </div>
+          <!-- Weather at the bottom: measured, forecast, or (≈) the usual temperature for the date -->
+          <div v-if="dayWeather(day.iso)" class="mt-auto flex items-center gap-0.5 px-1.5 pt-1 leading-none">
+            <template v-if="dayWeather(day.iso).symbol">
+              <WeatherIcon :symbol="dayWeather(day.iso).symbol" :uncertain="dayWeather(day.iso).uncertain" size="size-5" />
+              <span class="text-[10px] tabular-nums text-zinc-500 sm:text-xs" :class="dayWeather(day.iso).uncertain && 'opacity-60'">{{ Math.round(dayWeather(day.iso).maxTemp) }}°</span>
+            </template>
+            <span v-else class="text-[10px] tabular-nums text-zinc-500 sm:text-xs"
+                  :title="t('weather.normalDay', { max: Math.round(dayWeather(day.iso).maxTemp), min: Math.round(dayWeather(day.iso).minTemp) })">≈{{ Math.round(dayWeather(day.iso).maxTemp) }}°</span>
           </div>
         </div>
       </div>

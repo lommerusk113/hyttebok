@@ -7,6 +7,7 @@ import { askName, userName } from '../user'
 import { locale, t } from '../i18n'
 
 const busy = ref(false)
+const failed = ref(null) // 'pushService' when the browser can't reach its push server (e.g. Brave), else 'generic'
 const testSent = ref(false)
 
 // The panel mounts each time it's opened; also re-check when coming back from the phone's settings.
@@ -23,9 +24,12 @@ async function toggle(topic, on) {
   }
 
   busy.value = true
+  failed.value = null
   try {
     const next = on ? [...topics.value, topic] : topics.value.filter(x => x !== topic)
     await setTopics(TOPICS.filter(x => next.includes(x)), { name: userName.value, lang: locale.value })
+  } catch (err) {
+    failed.value = err?.name === 'AbortError' ? 'pushService' : 'generic'
   } finally {
     busy.value = false
     attempt.value++
@@ -62,6 +66,11 @@ async function test() {
         </label>
       </li>
     </ul>
+
+    <p v-if="failed" class="mt-4 flex gap-2 rounded-lg bg-amber-50 p-3 text-sm text-amber-800" role="alert">
+      <i class="pi pi-exclamation-triangle mt-0.5" />
+      <span class="flex-1">{{ t(`push.failed.${failed}`) }}</span>
+    </p>
 
     <p v-if="permission === 'denied'" class="mt-4 flex gap-2 rounded-lg bg-amber-50 p-3 text-sm text-amber-800">
       <i class="pi pi-exclamation-triangle mt-0.5" />

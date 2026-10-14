@@ -335,7 +335,11 @@
         "hint": "At 8 am when something is due"
       }
     },
-    "recheck": "Check again"
+    "recheck": "Check again",
+    "failed": {
+      "pushService": "The browser couldn't reach its push service. Using Brave? Turn on \"Use Google services for push messaging\" in brave://settings/privacy and try again. Otherwise try again later, or use Chrome.",
+      "generic": "Couldn't turn on notifications. Check your connection and try again."
+    }
   },
   "weather": {
     "today": "{max}° / {min}° today",
