@@ -36,7 +36,6 @@
     "booking": "Booking",
     "logbook": "Cabin book",
     "shopping": "Shopping list",
-    "suggestions": "Ideas",
     "notes": "Notes",
     "posts": "Posts",
     "photos": "Photos",
@@ -137,24 +136,25 @@
     "boughtToast": "“{name}” bought",
     "quantityShort": "Qty",
     "item": "Item",
-    "toBuyTab": "To buy",
     "boughtTab": "Bought",
-    "noneBought": "Nothing bought yet."
+    "noneBought": "Nothing bought yet.",
+    "seeBought": "See bought ({n})"
   },
   "suggestions": {
     "new": "New idea",
     "suggestion": "Idea",
-    "all": "All",
     "do": "Do",
     "buy": "Buy",
-    "placeholder": "E.g. kayak, sauna, fishing trip",
     "why": "Why / details",
-    "completed": "Done",
-    "completedCount": "Done ({n})",
     "undo": "Undo",
-    "empty": "No ideas yet. What do you dream of at the cabin?",
+    "empty": "No suggestions yet.",
     "deleteTitle": "Delete idea?",
-    "kind": "What kind of idea?"
+    "title": "Suggestions",
+    "propose": "Suggest",
+    "accept": "Accept",
+    "vote": "Vote",
+    "placeholderDO": "E.g. build a sauna, paint the deck",
+    "placeholderBUY": "E.g. kayak, new grill"
   },
   "notes": {
     "new": "New note",
@@ -305,12 +305,19 @@
     "pickMonth": "Pick month",
     "pickYear": "Year",
     "dueThisMonth": "This month",
-    "active": "Active",
     "completed": "Done",
     "noneCompleted": "No finished one-off tasks yet.",
     "once": "One-off task",
     "repeats": "Repeats regularly",
-    "repeatsHint": "Turn on for routine jobs like sweeping the chimney. Off = a one-off job, e.g. \"Fix the gate\"."
+    "repeatsHint": "Turn on for routine jobs like sweeping the chimney. Off = a one-off job, e.g. \"Fix the gate\".",
+    "filter": {
+      "all": "All",
+      "recurring": "Recurring",
+      "once": "One-off",
+      "suggestions": "Suggestions"
+    },
+    "seeCompleted": "See completed ({n})",
+    "noneInFilter": "Nothing here."
   },
   "push": {
     "title": "Notifications",

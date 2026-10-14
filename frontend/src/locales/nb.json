@@ -36,7 +36,6 @@
     "booking": "Booking",
     "logbook": "Hyttebok",
     "shopping": "Handleliste",
-    "suggestions": "Forslag",
     "notes": "Notater",
     "posts": "Innlegg",
     "photos": "Bilder",
@@ -137,24 +136,25 @@
     "boughtToast": "«{name}» er kjøpt",
     "quantityShort": "Ant.",
     "item": "Vare",
-    "toBuyTab": "Å kjøpe",
     "boughtTab": "Kjøpt",
-    "noneBought": "Ingenting kjøpt ennå."
+    "noneBought": "Ingenting kjøpt ennå.",
+    "seeBought": "Se kjøpte ({n})"
   },
   "suggestions": {
     "new": "Nytt forslag",
     "suggestion": "Forslag",
-    "all": "Alle",
     "do": "Gjøre",
     "buy": "Kjøpe",
-    "placeholder": "F.eks. kajakk, badstue, fisketur",
     "why": "Hvorfor / detaljer",
-    "completed": "Gjennomført",
-    "completedCount": "Gjennomført ({n})",
     "undo": "Angre",
-    "empty": "Ingen forslag ennå. Hva drømmer du om på hytta?",
+    "empty": "Ingen forslag ennå.",
     "deleteTitle": "Slette forslag?",
-    "kind": "Hva slags forslag?"
+    "title": "Forslag",
+    "propose": "Foreslå",
+    "accept": "Godta",
+    "vote": "Stem",
+    "placeholderDO": "F.eks. bygge badstue, male terrassen",
+    "placeholderBUY": "F.eks. kajakk, ny grill"
   },
   "notes": {
     "new": "Nytt notat",
@@ -305,12 +305,19 @@
     "pickMonth": "Velg måned",
     "pickYear": "År",
     "dueThisMonth": "Denne måneden",
-    "active": "Aktive",
     "completed": "Fullført",
     "noneCompleted": "Ingen ferdige engangsoppgaver ennå.",
     "once": "Engangsoppgave",
     "repeats": "Gjentas jevnlig",
-    "repeatsHint": "Slå på for faste ting som å feie pipa. Av = en engangsjobb, f.eks. «Fikse porten»."
+    "repeatsHint": "Slå på for faste ting som å feie pipa. Av = en engangsjobb, f.eks. «Fikse porten».",
+    "filter": {
+      "all": "Alle",
+      "recurring": "Faste",
+      "once": "Engang",
+      "suggestions": "Forslag"
+    },
+    "seeCompleted": "Se fullførte ({n})",
+    "noneInFilter": "Ingenting her."
   },
   "push": {
     "title": "Varsler",

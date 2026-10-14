@@ -3,7 +3,7 @@ import { t } from '../i18n'
 
 // `countLabel`/`countClass` replace the plain number when it means something specific (e.g. "2 på overtid");
 // `countTitle` explains a bare number (tooltip and screen readers).
-defineProps({ title: String, icon: String, tint: String, to: String, count: Number, countLabel: String, countClass: String, countTitle: String })
+defineProps({ title: String, icon: String, tint: String, to: String, count: Number, countLabel: String, countClass: String, countTitle: String, scroll: Boolean })
 </script>
 
 <template>
@@ -21,7 +21,8 @@ defineProps({ title: String, icon: String, tint: String, to: String, count: Numb
         <span class="max-sm:hidden">{{ t('overview.seeAll') }}</span> <i class="pi pi-arrow-right text-xs sm:text-[10px]" />
       </RouterLink>
     </header>
-    <div class="flex-1 px-5 pb-4">
+    <!-- `scroll`: the card keeps the height it's given and the body scrolls -->
+    <div class="flex-1 px-5 pb-4" :class="scroll && 'min-h-0 overflow-y-auto'">
       <slot />
     </div>
   </section>

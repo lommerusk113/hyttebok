@@ -10,7 +10,7 @@ import RichText from '../components/RichText.vue'
 import WeatherIcon from '../components/WeatherIcon.vue'
 import { loadWeather, loadWeatherDays, stayWeather } from '../weather'
 import { api, photoUrl } from '../api'
-import { toggleShopping, toggleTodo, undoToast } from '../actions'
+import { toggleShopping, undoToast } from '../actions'
 import { cabin, INFO_TILES } from '../cabin'
 import { status as maintenanceStatus } from '../maintenance'
 import { dueLabel, overdueBadge, STATUS_STYLE } from '../maintenanceLabels'
@@ -66,7 +66,7 @@ const dueMaintenance = computed(() => maintenance.value
 const overdueCount = computed(() => dueMaintenance.value.filter(x => x.kind === 'overdue').length)
 const taskRows = computed(() => [
   ...dueMaintenance.value.filter(x => x.kind === 'overdue').map(x => ({ key: `m-${x.m.id}`, ...x })),
-  ...todos.value.filter(x => !x.done || tickedHere.value.has(x.id)).map(x => ({ key: `t-${x.id}`, todo: x })),
+  ...todos.value.filter(x => !x.done).map(x => ({ key: `t-${x.id}`, todo: x })),
   ...dueMaintenance.value.filter(x => x.kind !== 'overdue').map(x => ({ key: `m-${x.m.id}`, ...x })),
 ])
 
@@ -80,14 +80,6 @@ async function tickShopping(item) {
   tickedHere.value.add(item.id)
   shopping.value = shopping.value.map(i => (i.id === updated.id ? updated : i))
   if (updated.bought) undoToast(toast, t('shopping.boughtToast', { name: updated.name }), () => tickShopping(updated))
-}
-
-async function tickTodo(todo) {
-  const updated = await toggleTodo(todo)
-  if (!updated) return
-  tickedHere.value.add(todo.id)
-  todos.value = todos.value.map(x => (x.id === updated.id ? updated : x))
-  if (updated.done) undoToast(toast, t('todo.doneToast', { name: updated.title }), () => tickTodo(updated))
 }
 
 // One info section open at a time; `shownInfo` lags behind on close so the panel can slide shut with its content.
@@ -224,7 +216,7 @@ function copy(text) {
       </div>
 
       <div class="contents lg:flex lg:flex-col lg:gap-6">
-        <DashCard class="order-3" :title="t('tabs.shopping')" icon="pi pi-shopping-cart" tint="bg-amber-50 text-amber-700" to="/vedlikehold/handle" :count="openShopping">
+        <DashCard class="order-3" :title="t('tabs.shopping')" icon="pi pi-shopping-cart" tint="bg-amber-50 text-amber-700" to="/handleliste" :count="openShopping">
           <ul class="-mx-1">
             <li v-for="i in visibleShopping.slice(0, SHOPPING_LIMIT)" :key="i.id">
               <label class="flex min-h-11 cursor-pointer items-center gap-3 rounded px-1">
@@ -234,7 +226,7 @@ function copy(text) {
               </label>
             </li>
           </ul>
-          <RouterLink v-if="visibleShopping.length > SHOPPING_LIMIT" to="/vedlikehold/handle" class="mt-1 inline-flex min-h-9 items-center text-sm text-zinc-500 hover:text-zinc-950">
+          <RouterLink v-if="visibleShopping.length > SHOPPING_LIMIT" to="/handleliste" class="mt-1 inline-flex min-h-9 items-center text-sm text-zinc-500 hover:text-zinc-950">
             {{ t('overview.more', { n: visibleShopping.length - SHOPPING_LIMIT }) }}
           </RouterLink>
           <p v-if="!visibleShopping.length" class="py-1 text-sm text-zinc-500">{{ t('shopping.empty') }}</p>
@@ -245,10 +237,12 @@ function copy(text) {
                   :count="overdueCount" count-class="bg-rose-50 text-rose-700" :count-title="overdueBadge(overdueCount)">
           <ul v-if="taskRows.length" class="-mx-2">
             <li v-for="r in taskRows.slice(0, TASK_LIMIT)" :key="r.key">
-              <label v-if="r.todo" class="flex min-h-11 cursor-pointer items-center gap-3 rounded-md px-2">
-                <Checkbox :model-value="r.todo.done" binary @update:model-value="tickTodo(r.todo)" />
-                <span class="min-w-0 flex-1 truncate text-sm" :class="r.todo.done && 'text-zinc-500 line-through'">{{ r.todo.title }}</span>
-              </label>
+              <!-- One-off jobs are ticked off on the Vedlikehold tab; here they just get their own colour -->
+              <RouterLink v-if="r.todo" :to="`/vedlikehold?todo=${r.todo.id}`" class="flex min-h-11 items-center gap-3 rounded-md px-2 transition hover:bg-zinc-50">
+                <span class="h-7 w-1 shrink-0 rounded-full bg-sky-400" />
+                <span class="min-w-0 flex-1 truncate text-sm">{{ r.todo.title }}</span>
+                <span class="shrink-0 text-xs font-medium text-sky-700">{{ t('maintenance.once') }}</span>
+              </RouterLink>
               <RouterLink v-else :to="`/vedlikehold?id=${r.m.id}`" class="flex min-h-11 items-center gap-3 rounded-md px-2 transition hover:bg-zinc-50">
                 <span class="h-7 w-1 shrink-0 rounded-full" :class="STATUS_STYLE[r.kind].bar" />
                 <span class="min-w-0 flex-1 truncate text-sm">{{ r.m.name }}</span>
@@ -262,11 +256,15 @@ function copy(text) {
           <p v-if="!taskRows.length" class="flex items-center gap-2 py-1 text-sm text-zinc-500"><i class="pi pi-check-circle text-emerald-600" />{{ t('maintenance.allGood') }}</p>
         </DashCard>
 
-        <DashCard class="order-6" :title="t('overview.topIdeas')" icon="pi pi-lightbulb" tint="bg-amber-50 text-amber-700" to="/vedlikehold/forslag">
-          <ul v-if="topIdeas.length" class="space-y-2">
-            <li v-for="s in topIdeas" :key="s.id" class="flex items-center gap-2.5">
-              <span class="flex w-9 shrink-0 items-center gap-1 text-sm text-rose-600"><i class="pi pi-heart-fill text-xs" />{{ s.voters.length }}</span>
-              <span class="min-w-0 flex-1 truncate text-sm">{{ s.title }}</span>
+        <!-- Suggestions live in their lists now: jobs under Vedlikehold, purchases on the shopping list -->
+        <DashCard class="order-6" :title="t('overview.topIdeas')" icon="pi pi-lightbulb" tint="bg-amber-50 text-amber-700">
+          <ul v-if="topIdeas.length" class="-mx-2">
+            <li v-for="s in topIdeas" :key="s.id">
+              <RouterLink :to="s.category === 'BUY' ? '/handleliste' : '/vedlikehold/forslag'" class="flex min-h-11 items-center gap-2.5 rounded-md px-2 transition hover:bg-zinc-50">
+                <span class="flex w-9 shrink-0 items-center gap-1 text-sm text-rose-600"><i class="pi pi-heart-fill text-xs" />{{ s.voters.length }}</span>
+                <span class="min-w-0 flex-1 truncate text-sm">{{ s.title }}</span>
+                <span class="shrink-0 text-xs text-zinc-500">{{ t(s.category === 'BUY' ? 'suggestions.buy' : 'suggestions.do') }}</span>
+              </RouterLink>
             </li>
           </ul>
           <p v-else class="py-1 text-sm text-zinc-500">{{ t('suggestions.empty') }}</p>

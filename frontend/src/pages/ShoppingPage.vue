@@ -2,10 +2,11 @@
 import { computed, nextTick, onMounted, ref } from 'vue'
 import Button from 'primevue/button'
 import Checkbox from 'primevue/checkbox'
+import Drawer from 'primevue/drawer'
 import InputText from 'primevue/inputtext'
-import SelectButton from 'primevue/selectbutton'
 import DashCard from '../components/DashCard.vue'
 import EmptyState from '../components/EmptyState.vue'
+import SuggestionList from '../components/SuggestionList.vue'
 import { api } from '../api'
 import { addShoppingItem, toggleShopping, undoToast } from '../actions'
 import { useToast } from 'primevue/usetoast'
@@ -15,7 +16,7 @@ import { t } from '../i18n'
 const items = ref([])
 const name = ref('')
 const quantity = ref('')
-const filter = ref('toBuy')
+const boughtOpen = ref(false)
 // The add fields stay out of the way until "New" is tapped, then stay open for adding several items.
 const adding = ref(false)
 
@@ -38,7 +39,6 @@ const nameInput = ref()
 
 async function toggleAdding() {
   adding.value = !adding.value
-  filter.value = 'toBuy' // new items land in "to buy"; show them
   if (adding.value) {
     await nextTick()
     nameInput.value.$el.focus()
@@ -55,6 +55,11 @@ async function toggle(item) {
 async function remove(item) {
   await api.del(`/shopping/${item.id}`)
   items.value = items.value.filter(i => i.id !== item.id)
+}
+
+// A suggested purchase someone said yes to goes on the list.
+async function acceptSuggestion(s) {
+  items.value = [await addShoppingItem(s.title, ''), ...items.value]
 }
 
 async function clearBought() {
@@ -76,45 +81,40 @@ async function clearBought() {
       <Button type="submit" :label="t('shopping.add')" :disabled="!name.trim()" />
     </form>
 
-    <!-- Same two views as Gjøremål: what's missing, and what's been bought -->
-    <div class="mb-3 flex items-center justify-between gap-2">
-      <SelectButton v-model="filter" :options="['toBuy', 'bought']" :allow-empty="false">
-        <template #option="{ option }">
-          {{ t(`shopping.${option}Tab`) }}
-          <span class="ml-1.5 rounded-full bg-zinc-200/70 px-1.5 text-xs">{{ option === 'toBuy' ? toBuy.length : bought.length }}</span>
-        </template>
-      </SelectButton>
-      <Button v-if="filter === 'bought' && bought.length" :label="t('common.clear')" icon="pi pi-trash" text size="small" severity="secondary" @click="clearBought" />
+    <!-- What's missing; what's been bought waits in a slide-in -->
+    <div v-if="bought.length" class="-mt-1 mb-2 flex justify-end">
+      <Button :label="t('shopping.seeBought', { n: bought.length })" text size="small" severity="secondary" class="!min-h-11" @click="boughtOpen = true" />
     </div>
 
-    <template v-if="filter === 'toBuy'">
-      <ul v-if="toBuy.length" class="-mx-5 divide-y divide-zinc-100 border-t border-zinc-100">
-        <li v-for="i in toBuy" :key="i.id" class="group flex items-center gap-3 px-5 py-1">
-          <label class="flex min-h-11 min-w-0 flex-1 cursor-pointer items-center gap-3">
-            <Checkbox :model-value="false" binary @update:model-value="toggle(i)" />
-            <span class="min-w-0 flex-1">
-              <span class="block font-medium">{{ i.name }}</span>
-              <span v-if="i.addedBy" class="block text-xs text-zinc-500">{{ i.addedBy }} · {{ timeAgo(i.createdAt) }}</span>
-            </span>
-          </label>
-          <span v-if="i.quantity" class="rounded-full bg-zinc-100 px-2.5 py-0.5 text-sm text-zinc-600">{{ i.quantity }}</span>
-          <Button icon="pi pi-times" text rounded severity="secondary" size="small" :aria-label="t('shopping.remove')" class="max-sm:!size-10 sm:opacity-0 sm:group-hover:opacity-100" @click="remove(i)" />
-        </li>
-      </ul>
-      <EmptyState v-else icon="pi pi-shopping-bag" :text="t('shopping.empty')" />
-    </template>
+    <ul v-if="toBuy.length" class="-mx-5 divide-y divide-zinc-100 border-t border-zinc-100">
+      <li v-for="i in toBuy" :key="i.id" class="group flex items-center gap-3 px-5 py-1">
+        <label class="flex min-h-11 min-w-0 flex-1 cursor-pointer items-center gap-3">
+          <Checkbox :model-value="false" binary @update:model-value="toggle(i)" />
+          <span class="min-w-0 flex-1">
+            <span class="block font-medium">{{ i.name }}</span>
+            <span v-if="i.addedBy" class="block text-xs text-zinc-500">{{ i.addedBy }} · {{ timeAgo(i.createdAt) }}</span>
+          </span>
+        </label>
+        <span v-if="i.quantity" class="rounded-full bg-zinc-100 px-2.5 py-0.5 text-sm text-zinc-600">{{ i.quantity }}</span>
+        <Button icon="pi pi-times" text rounded severity="secondary" size="small" :aria-label="t('shopping.remove')" class="max-sm:!size-10 sm:opacity-0 sm:group-hover:opacity-100" @click="remove(i)" />
+      </li>
+    </ul>
+    <EmptyState v-else icon="pi pi-shopping-bag" :text="t('shopping.empty')" />
 
-    <template v-else>
-      <ul v-if="bought.length" class="-mx-5 divide-y divide-zinc-100 border-t border-zinc-100">
-        <li v-for="i in bought" :key="i.id">
-          <label class="flex min-h-11 cursor-pointer items-center gap-3 px-5 py-1">
-            <Checkbox :model-value="true" binary @update:model-value="toggle(i)" />
-            <span class="flex-1 text-zinc-500 line-through">{{ i.name }}</span>
-            <span class="text-xs text-zinc-500">{{ i.boughtBy }}</span>
-          </label>
-        </li>
-      </ul>
-      <EmptyState v-else icon="pi pi-inbox" :text="t('shopping.noneBought')" />
-    </template>
+    <SuggestionList category="BUY" class="mt-4 scroll-mt-36" @accept="acceptSuggestion" />
   </DashCard>
+
+  <Drawer v-model:visible="boughtOpen" position="right" :header="t('shopping.boughtTab')" class="!w-full sm:!w-[26rem]">
+    <ul v-if="bought.length" class="-mx-5 divide-y divide-zinc-100">
+      <li v-for="i in bought" :key="i.id">
+        <label class="flex min-h-11 cursor-pointer items-center gap-3 px-5 py-1">
+          <Checkbox :model-value="true" binary @update:model-value="toggle(i)" />
+          <span class="flex-1 text-zinc-500 line-through">{{ i.name }}</span>
+          <span class="text-xs text-zinc-500">{{ i.boughtBy }}</span>
+        </label>
+      </li>
+    </ul>
+    <EmptyState v-else icon="pi pi-inbox" :text="t('shopping.noneBought')" />
+    <Button v-if="bought.length" :label="t('common.clear')" icon="pi pi-trash" text size="small" severity="secondary" class="mt-3" @click="clearBought" />
+  </Drawer>
 </template>

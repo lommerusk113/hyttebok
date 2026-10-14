@@ -83,7 +83,7 @@ public class Notifier {
 
     public void suggestionCreated(Suggestion suggestion) {
         notify(Topic.SUGGESTION, s -> s.isFrom(suggestion.author()) ? null : new Message(
-            en(s) ? "New idea" : "Nytt forslag", by(suggestion.author()) + suggestion.title(), "/vedlikehold/forslag", "suggestion-" + suggestion.id()));
+            en(s) ? "New idea" : "Nytt forslag", by(suggestion.author()) + suggestion.title(), "BUY".equals(suggestion.category()) ? "/handleliste" : "/vedlikehold/forslag", "suggestion-" + suggestion.id()));
     }
 
     public void todoCreated(Todo todo) {
