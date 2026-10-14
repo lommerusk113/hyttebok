@@ -15,6 +15,16 @@ body {
   color: var(--color-zinc-800);
 }
 
+/* While a dialog, drawer or the photo viewer covers the page, the page behind stays put.
+   One rule for every overlay instead of a prop on each; the reserved gutter stops the page jumping sideways. */
+html {
+  scrollbar-gutter: stable;
+}
+
+html:has(.p-dialog-mask, .p-drawer-mask, [role="dialog"][aria-modal="true"]) {
+  overflow: hidden;
+}
+
 .card {
   @apply rounded-lg border border-zinc-200/80 bg-surface shadow-sm;
 }

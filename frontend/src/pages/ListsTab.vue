@@ -17,9 +17,10 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="grid grid-cols-1 gap-6 lg:grid-cols-2 lg:items-start">
-    <div id="lists-gjoremal" class="scroll-mt-36"><TodoPage /></div>
-    <div id="lists-handle" class="scroll-mt-36"><ShoppingPage /></div>
+  <!-- Gjøremål and Handleliste side by side on wide screens, stretched to the same height -->
+  <div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
+    <div id="lists-gjoremal" class="flex scroll-mt-36 *:flex-1"><TodoPage /></div>
+    <div id="lists-handle" class="flex scroll-mt-36 *:flex-1"><ShoppingPage /></div>
     <div id="lists-forslag" class="scroll-mt-36 lg:col-span-2"><SuggestionsPage /></div>
     <div id="lists-notater" class="scroll-mt-36 lg:col-span-2"><NotesPage /></div>
   </div>

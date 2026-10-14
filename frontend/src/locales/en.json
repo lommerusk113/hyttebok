@@ -14,7 +14,8 @@
     "uploadFailed": "Upload failed",
     "copy": "Copy",
     "new": "New",
-    "tryAgain": "Try again, or check your connection."
+    "tryAgain": "Try again, or check your connection.",
+    "done": "Done"
   },
   "app": {
     "whoAreYou": "Who are you?",
@@ -144,7 +145,10 @@
     "bought": "Bought ({n})",
     "boughtToast": "“{name}” bought",
     "quantityShort": "Qty",
-    "item": "Item"
+    "item": "Item",
+    "toBuyTab": "To buy",
+    "boughtTab": "Bought",
+    "noneBought": "Nothing bought yet."
   },
   "suggestions": {
     "new": "New idea",

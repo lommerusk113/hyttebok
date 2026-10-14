@@ -14,7 +14,8 @@
     "uploadFailed": "Opplasting feilet",
     "copy": "Kopier",
     "new": "Ny",
-    "tryAgain": "Prøv igjen, eller sjekk nettet."
+    "tryAgain": "Prøv igjen, eller sjekk nettet.",
+    "done": "Ferdig"
   },
   "app": {
     "whoAreYou": "Hvem er du?",
@@ -144,7 +145,10 @@
     "bought": "Kjøpt ({n})",
     "boughtToast": "«{name}» er kjøpt",
     "quantityShort": "Ant.",
-    "item": "Vare"
+    "item": "Vare",
+    "toBuyTab": "Å kjøpe",
+    "boughtTab": "Kjøpt",
+    "noneBought": "Ingenting kjøpt ennå."
   },
   "suggestions": {
     "new": "Nytt forslag",
