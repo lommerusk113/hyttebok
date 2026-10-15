@@ -22,14 +22,15 @@
     "nameHint": "Your name is shown when you complete tasks, buy things or write in the cabin book.",
     "namePlaceholder": "Your name",
     "language": "Language",
-    "knownNames": "Tap your name",
     "darkMode": "Dark mode",
     "menu": "Menu",
-    "changeName": "Change name",
+    "changeName": "Change display name",
     "install": "Install the app",
     "hello": "Hi, {name}!",
     "by": "by",
-    "orTypeName": "Or type it:"
+    "displayName": "Display name",
+    "displayNameHint": "The name others see when you book, tick something off or write in the cabin book. You are logged in as {email}.",
+    "nameSaved": "Display name saved"
   },
   "tabs": {
     "overview": "Overview",

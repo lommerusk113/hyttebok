@@ -22,14 +22,15 @@
     "nameHint": "Navnet brukes når du krysser av gjøremål, handler inn eller skriver i hytteboka.",
     "namePlaceholder": "Ditt navn",
     "language": "Språk",
-    "knownNames": "Trykk på navnet ditt",
     "darkMode": "Mørk modus",
     "menu": "Meny",
-    "changeName": "Bytt navn",
+    "changeName": "Endre visningsnavn",
     "install": "Installer appen",
     "hello": "Hei, {name}!",
     "by": "fra",
-    "orTypeName": "Eller skriv det:"
+    "displayName": "Visningsnavn",
+    "displayNameHint": "Navnet andre ser når du booker, krysser av eller skriver i hytteboka. Du er logget inn som {email}.",
+    "nameSaved": "Visningsnavnet er lagret"
   },
   "tabs": {
     "overview": "Oversikt",

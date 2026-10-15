@@ -30,56 +30,69 @@ async function installNow() {
 </script>
 
 <template>
-  <div class="flex flex-col gap-2">
-    <button class="flex min-h-14 items-center gap-3 rounded-lg border border-zinc-200 p-2 text-left transition hover:bg-zinc-50"
-            @click="emit('close'); askName = true">
-      <Avatar :label="initials(userName)" shape="circle" :class="[colorFor(userName).bg, colorFor(userName).text]" class="!font-semibold" />
+  <!-- Grouped: you · the cabin · settings · the app and your account. Every row: icon, label, value or arrow. -->
+  <nav class="flex flex-col text-sm" :aria-label="t('app.menu')">
+    <!-- You: display name (and the account you're logged in with) -->
+    <button class="flex min-h-16 items-center gap-3 rounded-lg px-2 text-left transition hover:bg-zinc-50" @click="emit('close'); askName = true">
+      <img v-if="auth?.user?.picture" :src="auth.user.picture" alt="" referrerpolicy="no-referrer" class="size-10 rounded-full">
+      <Avatar v-else :label="initials(userName)" shape="circle" size="large" :class="[colorFor(userName).bg, colorFor(userName).text]" class="!size-10 !text-sm !font-semibold" />
       <span class="min-w-0 flex-1">
-        <span class="block truncate font-medium">{{ userName || t('app.whoAreYou') }}</span>
-        <span class="block text-xs text-zinc-500">{{ t('app.changeName') }}</span>
+        <span class="block truncate font-semibold">{{ userName || t('app.whoAreYou') }}</span>
+        <span class="block truncate text-xs text-zinc-500">{{ auth?.user?.email || t('app.changeName') }}</span>
       </span>
-      <i class="pi pi-chevron-right text-xs text-zinc-500" />
+      <i class="pi pi-pencil text-xs text-zinc-500" :aria-label="t('app.changeName')" />
     </button>
-    <button class="flex min-h-14 items-center justify-between gap-3 px-2 text-left" @click="emit('close'); emit('notifications')">
-      <span class="flex items-center gap-2 text-sm font-medium"><i class="pi pi-bell" />{{ t('push.title') }}</span>
-      <span class="flex items-center gap-2 text-sm text-zinc-500">{{ pushTopics.length ? t('push.on') : t('push.off') }}<i class="pi pi-chevron-right text-xs" /></span>
-    </button>
-    <div class="flex min-h-14 items-center justify-between gap-3 px-2">
-      <span class="text-sm font-medium">{{ t('app.language') }}</span>
-      <LanguageToggle />
-    </div>
-    <label class="flex min-h-14 cursor-pointer items-center justify-between gap-3 px-2">
-      <span class="text-sm font-medium">{{ t('app.darkMode') }}</span>
-      <ThemeSwitch />
-    </label>
 
-    <!-- Your cabins: switch, make a new one, or ask for access with a code -->
-    <RouterLink to="/?alle=1" class="flex min-h-14 items-center justify-between gap-3 px-2" @click="emit('close')">
-      <span class="flex items-center gap-2 text-sm font-medium"><i class="pi pi-home" />{{ t('cabins.title') }}</span>
-      <i class="pi pi-chevron-right text-xs text-zinc-500" />
+    <div class="my-2 border-t border-zinc-200" role="separator" />
+
+    <!-- The cabin -->
+    <RouterLink to="/?alle=1" class="row" @click="emit('close')">
+      <i class="pi pi-home row-icon" /><span class="flex-1">{{ t('cabins.title') }}</span><i class="pi pi-chevron-right text-xs text-zinc-400" />
     </RouterLink>
+    <button class="row" @click="emit('close'); emit('notifications')">
+      <i class="pi pi-bell row-icon" /><span class="flex-1 text-left">{{ t('push.title') }}</span>
+      <span class="text-zinc-500">{{ pushTopics.length ? t('push.on') : t('push.off') }}</span><i class="pi pi-chevron-right text-xs text-zinc-400" />
+    </button>
 
+    <div class="my-2 border-t border-zinc-200" role="separator" />
+
+    <!-- Settings -->
+    <div class="row">
+      <i class="pi pi-globe row-icon" /><span class="flex-1">{{ t('app.language') }}</span><LanguageToggle />
+    </div>
+    <label class="row cursor-pointer">
+      <i class="pi pi-moon row-icon" /><span class="flex-1">{{ t('app.darkMode') }}</span><ThemeSwitch />
+    </label>
     <!-- System admins only: see every cabin, for troubleshooting -->
-    <label v-if="auth?.admin" class="flex min-h-14 cursor-pointer items-center justify-between gap-3 px-2">
-      <span class="text-sm">
-        <span class="flex items-center gap-2 font-medium"><i class="pi pi-shield" />{{ t('cabins.adminMode') }}</span>
-        <span class="block text-xs text-zinc-500">{{ t('cabins.adminModeHint') }}</span>
-      </span>
+    <label v-if="auth?.admin" class="row cursor-pointer">
+      <i class="pi pi-shield row-icon" />
+      <span class="flex-1">{{ t('cabins.adminMode') }}<span class="block text-xs text-zinc-500">{{ t('cabins.adminModeHint') }}</span></span>
       <ToggleSwitch :model-value="adminMode" @update:model-value="toggleAdminMode" />
     </label>
 
-    <!-- Logged in with Google: whose account, and the way out -->
-    <div v-if="auth?.user" class="mt-2 flex items-center gap-3 border-t border-zinc-200 px-2 pt-4">
-      <img v-if="auth.user.picture" :src="auth.user.picture" alt="" referrerpolicy="no-referrer" class="size-8 rounded-full">
-      <span class="min-w-0 flex-1 truncate text-xs text-zinc-500">{{ t('login.signedInAs') }}<br><span class="text-sm text-zinc-800">{{ auth.user.email }}</span></span>
-      <Button :label="t('login.logout')" icon="pi pi-sign-out" size="small" text severity="secondary" @click="logout" />
-    </div>
+    <div class="my-2 border-t border-zinc-200" role="separator" />
 
-    <!-- iPhones always go to the instructions: only Safari's Share menu can install there -->
-    <Button v-if="installPrompt && !isIos" icon="pi pi-download" :label="t('app.install')" class="mt-2" @click="installNow" />
-    <RouterLink v-else-if="!installed" to="/app" class="mt-2 flex min-h-11 items-center justify-center gap-2 rounded-lg bg-zinc-100 text-sm font-medium"
-                @click="emit('close')">
-      <i class="pi pi-mobile" />{{ t('app.install') }}
+    <!-- The app and your account. iPhones always go to the instructions: only Safari's Share menu can install there. -->
+    <button v-if="installPrompt && !isIos" class="row" @click="installNow">
+      <i class="pi pi-download row-icon" /><span class="flex-1 text-left">{{ t('app.install') }}</span>
+    </button>
+    <RouterLink v-else-if="!installed" to="/app" class="row" @click="emit('close')">
+      <i class="pi pi-mobile row-icon" /><span class="flex-1">{{ t('app.install') }}</span><i class="pi pi-chevron-right text-xs text-zinc-400" />
     </RouterLink>
-  </div>
+    <button v-if="auth?.user" class="row text-rose-700" @click="logout">
+      <i class="pi pi-sign-out row-icon !text-rose-600" /><span class="flex-1 text-left">{{ t('login.logout') }}</span>
+    </button>
+  </nav>
 </template>
+
+<style scoped>
+@reference "../style.css";
+
+.row {
+  @apply flex min-h-12 w-full items-center gap-3 rounded-md px-2 font-medium transition hover:bg-zinc-50;
+}
+
+.row-icon {
+  @apply w-5 shrink-0 text-center text-zinc-500;
+}
+</style>

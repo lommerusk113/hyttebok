@@ -17,7 +17,6 @@ import NotificationSettings from './components/NotificationSettings.vue'
 import { forgetLostTopics, loadPushState, lostTopics, restoreTopics, syncProfile } from './push'
 import { userName, askName } from './user'
 import { initials, colorFor } from './utils'
-import { api } from './api'
 import { locale, primeLocale, t } from './i18n'
 import { online, pending } from './offline'
 import LoginPage from './components/LoginPage.vue'
@@ -66,15 +65,9 @@ const draftName = ref(userName.value)
 
 watch(locale, () => { primevue.config.locale = primeLocale() })
 
-// Names already in use, so the same person doesn't end up as both "Joakim" and "joakim".
-const knownNames = ref([])
-watch([askName, needsLogin, auth], async ([open, locked]) => {
-  if (!open || locked || !auth.value || noAccess.value) return
-  draftName.value = userName.value
-  const [bookings, log, todos] = await Promise.all(['/bookings', '/log', '/todos'].map(api.get))
-  knownNames.value = [...new Set([...bookings.map(b => b.guestName), ...log.flatMap(e => [e.author, ...e.participants]), ...todos.map(x => x.doneBy)]
-    .filter(Boolean))].sort((a, b) => a.localeCompare(b))
-}, { immediate: true })
+// Your display name: the name others see on bookings, ticked-off items and posts. Logged in, it comes from
+// your account at first login and can be changed here; it's yours only (no list of other people's names).
+watch(askName, open => { if (open) draftName.value = userName.value }, { immediate: true })
 
 async function restoreNotifications() {
   try {
@@ -88,7 +81,7 @@ function saveName(name = draftName.value) {
   if (!name.trim()) return
   userName.value = name.trim()
   askName.value = false
-  toast.add({ severity: 'success', summary: t('app.hello', { name: userName.value }), life: 2500 })
+  toast.add({ severity: 'success', summary: auth.value?.user ? t('app.nameSaved') : t('app.hello', { name: userName.value }), life: 2500 })
 }
 </script>
 
@@ -119,7 +112,8 @@ function saveName(name = draftName.value) {
           <!-- Wide screens: your name opens a dropdown with the same menu as the phone drawer -->
           <button class="hidden items-center gap-2 rounded-full py-1 pl-1 pr-3 transition hover:bg-zinc-100 sm:flex"
                   :aria-label="t('app.menu')" aria-haspopup="true" @click="menuPopover.toggle($event)">
-            <Avatar :label="initials(userName)" shape="circle" :class="[colorFor(userName).bg, colorFor(userName).text]" class="!text-xs !font-semibold" />
+            <img v-if="auth?.user?.picture" :src="auth.user.picture" alt="" referrerpolicy="no-referrer" class="size-8 rounded-full">
+            <Avatar v-else :label="initials(userName)" shape="circle" :class="[colorFor(userName).bg, colorFor(userName).text]" class="!text-xs !font-semibold" />
             <span class="text-sm font-medium">{{ userName || t('app.whoAreYou') }}</span>
             <i class="pi pi-chevron-down text-xs text-zinc-500" />
           </button>
@@ -174,21 +168,11 @@ function saveName(name = draftName.value) {
     <ConfirmDialog :pt="confirmPt" />
     <ChatBot v-if="chatEnabled && route.path !== '/app'" />
 
-    <Dialog dismissable-mask :visible="askName && route.path !== '/app' && !needsLogin && !noAccess" @update:visible="askName = $event" modal :header="t('app.whoAreYou')" class="w-[26rem] max-w-[calc(100vw-2rem)]">
-      <p class="mb-4 text-sm text-zinc-500">{{ t('app.nameHint') }}</p>
-      <div v-if="knownNames.length" class="mb-4">
-        <p class="mb-2 text-sm font-medium">{{ t('app.knownNames') }}</p>
-        <div class="flex flex-wrap gap-2">
-          <button v-for="n in knownNames" :key="n" type="button" class="flex min-h-9 items-center gap-2 rounded-full border py-1 pl-1 pr-3 text-sm transition hover:border-zinc-400"
-                  :class="n === userName ? 'border-zinc-950' : 'border-zinc-200'" @click="saveName(n)">
-            <Avatar :label="initials(n)" shape="circle" size="small" :class="[colorFor(n).bg, colorFor(n).text]" class="!size-7 !text-[10px] !font-semibold" />
-            {{ n }}
-          </button>
-        </div>
-      </div>
-      <p v-if="knownNames.length" class="mb-2 text-sm font-medium">{{ t('app.orTypeName') }}</p>
+    <Dialog dismissable-mask :visible="askName && route.path !== '/app' && !needsLogin" @update:visible="askName = $event" modal
+            :header="auth?.user ? t('app.displayName') : t('app.whoAreYou')" class="w-[26rem] max-w-[calc(100vw-2rem)]">
+      <p class="mb-4 text-sm text-zinc-500">{{ auth?.user ? t('app.displayNameHint', { email: auth.user.email }) : t('app.nameHint') }}</p>
       <form class="flex gap-2" @submit.prevent="saveName()">
-        <InputText v-model="draftName" :placeholder="t('app.namePlaceholder')" class="flex-1" :autofocus="!knownNames.length" />
+        <InputText v-model="draftName" :placeholder="t('app.namePlaceholder')" :aria-label="t('app.displayName')" class="flex-1" maxlength="40" autofocus />
         <Button type="submit" :label="t('common.save')" :disabled="!draftName?.trim()" />
       </form>
     </Dialog>
