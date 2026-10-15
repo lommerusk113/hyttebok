@@ -414,12 +414,12 @@
     "placeholder": "Skriv et spørsmål …",
     "send": "Send",
     "thinking": "Tenker …",
-    "notSetUp": "Chatten er ikke satt opp ennå (mangler GEMINI_API_KEY på serveren).",
-    "quota": "Gratiskvoten hos Google er brukt opp for nå. Prøv igjen senere.",
+    "notSetUp": "Chatten er ikke satt opp ennå (mangler OPENAI_API_KEY på serveren).",
+    "quota": "Grensen hos OpenAI er nådd (eller kontoen mangler kreditt). Prøv igjen senere.",
     "failed": "Noe gikk galt. Prøv igjen.",
     "offline": "Du er frakoblet. Chatten trenger nett.",
     "noAnswer": "Jeg fant ikke noe svar på det.",
-    "busy": "Googles KI er overbelastet akkurat nå. Prøv igjen om litt."
+    "busy": "KI-tjenesten svarer ikke akkurat nå. Prøv igjen om litt."
   },
   "login": {
     "intro": "Logg inn for å se bookinger, lister og hytteboka.",

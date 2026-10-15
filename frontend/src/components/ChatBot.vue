@@ -9,7 +9,7 @@ import { dataVersion } from '../offline'
 import { cabinHeaders } from '../hytte'
 import { locale, t } from '../i18n'
 
-// Chat with the cabin (Gemini, via /api/chat). It can answer from the app's data and make changes
+// Chat with the cabin (OpenAI, via /api/chat). It can answer from the app's data and make changes
 // (shopping list, to-dos, bookings, maintenance); after a change the open views reload.
 // ponytail: the conversation lives in memory only; closing the tab starts a new one.
 const open = ref(false)

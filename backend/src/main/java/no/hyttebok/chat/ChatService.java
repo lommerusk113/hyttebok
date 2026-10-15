@@ -45,7 +45,7 @@ import java.util.Locale;
 import java.util.Map;
 
 /**
- * The cabin chatbot. Each question goes to Google Gemini together with a summary of the cabin's data
+ * The cabin chatbot. Each question goes to OpenAI (gpt-5-nano by default) together with a summary of the cabin's data
  * (no WiFi password, no notes) and a few tools; tool calls run through the normal controllers, so
  * notifications and history behave exactly as when the change is made in the app. Nothing is deleted.
  */
@@ -58,12 +58,11 @@ public class ChatService {
     private static final int MAX_HISTORY = 20;
     private static final int RECENT_BOOKINGS = 5;
     private static final int WEATHER_DAYS = 45;
-    // Gemini answers 503 ("overloaded") now and then: wait a little and try again, the last time with the lighter model.
+    // The API is busy now and then (5xx): wait a little and try again.
     private static final List<Duration> RETRY_AFTER = List.of(Duration.ofSeconds(1), Duration.ofSeconds(3));
 
     private final String apiKey;
     private final String model;
-    private final String fallbackModel;
     private final String apiUrl;
     private final CabinInfoRepository cabins;
     private final BookingController bookings;
@@ -89,9 +88,8 @@ public class ChatService {
     }
 
     public ChatService(@Value("${hyttebok.chat.api-key:}") String apiKey,
-                       @Value("${hyttebok.chat.model:gemini-flash-latest}") String model,
-                       @Value("${hyttebok.chat.fallback-model:gemini-flash-lite-latest}") String fallbackModel,
-                       @Value("${hyttebok.chat.url:`https://generativelanguage.googleapis.com/v1beta/models/`}") String apiUrl,
+                       @Value("${hyttebok.chat.model:gpt-5-nano}") String model,
+                       @Value("${hyttebok.chat.url:`https://api.openai.com/v1/chat/completions`}") String apiUrl,
                        CabinInfoRepository cabins,
                        BookingController bookings,
                        ShoppingItemController shopping,
@@ -102,7 +100,6 @@ public class ChatService {
                        JsonMapper json) {
         this.apiKey = apiKey;
         this.model = model;
-        this.fallbackModel = fallbackModel;
         this.apiUrl = apiUrl;
         this.cabins = cabins;
         this.bookings = bookings;
@@ -117,52 +114,45 @@ public class ChatService {
     public Reply reply(Request request) {
 
         if (apiKey.isBlank()) {
-            throw new HttpStatusException(HttpStatus.SERVICE_UNAVAILABLE, "Chat is not set up (GEMINI_API_KEY)");
+            throw new HttpStatusException(HttpStatus.SERVICE_UNAVAILABLE, "Chat is not set up (OPENAI_API_KEY)");
         }
 
         var english = "en".equals(request.lang());
         var user = request.name() == null || request.name().isBlank() ? null : request.name().trim();
-        var contents = new ArrayList<Object>();
+        var messages = new ArrayList<Object>();
+        messages.add(null); // the system message, rebuilt each round below
         var history = request.messages();
         for (var m : history.subList(Math.max(0, history.size() - MAX_HISTORY), history.size())) {
-            contents.add(Map.of("role", m.role(), "parts", List.of(Map.of("text", m.text()))));
+            messages.add(Map.of("role", "model".equals(m.role()) ? "assistant" : "user", "content", m.text()));
         }
 
         var actions = new ArrayList<String>();
         for (int round = 0; round < MAX_TOOL_ROUNDS; round++) {
             // The data is rebuilt each round, so a follow-up question sees what the tools just changed.
-            var body = Map.of(
-                "systemInstruction", Map.of("parts", List.of(Map.of("text", instructions(user, english) + "\n\n" + context()))),
-                "contents", contents,
-                "tools", List.of(Map.of("functionDeclarations", ChatTools.DECLARATIONS)));
-            var content = generate(body);
-            if (content == null) {
+            messages.set(0, Map.of("role", "system", "content", instructions(user, english) + "\n\n" + context()));
+            var message = generate(Map.of("model", model, "reasoning_effort", "low", "messages", messages, "tools", ChatTools.DECLARATIONS));
+            if (message == null) {
                 break;
             }
-            contents.add(content); // as returned, so Gemini's own bookkeeping (e.g. thought signatures) survives
+            messages.add(message); // as returned: the tool results below refer to its tool call ids
 
-            var parts = parts(content);
-            var calls = parts.stream().filter(p -> p.get("functionCall") instanceof Map).<Map<?, ?>>map(p -> (Map<?, ?>) p.get("functionCall")).toList();
+            var calls = message.get("tool_calls") instanceof List<?> list ? list : List.of();
             if (calls.isEmpty()) {
-                var text = new StringBuilder();
-                parts.stream().filter(p -> p.get("text") instanceof String && !Boolean.TRUE.equals(p.get("thought")))
-                    .forEach(p -> text.append(p.get("text")));
-                return new Reply(text.toString().trim(), actions);
+                return new Reply(message.get("content") instanceof String text ? text.trim() : "", actions);
             }
 
-            var results = new ArrayList<Object>();
             for (var call : calls) {
-                var name = String.valueOf(call.get("name"));
-                var args = call.get("args") instanceof Map<?, ?> a ? a : Map.of();
+                var toolCall = (Map<?, ?>) call;
+                var function = (Map<?, ?>) toolCall.get("function");
+                var name = String.valueOf(function.get("name"));
                 Map<String, Object> result;
                 try {
-                    result = run(name, args, user, english, actions);
+                    result = run(name, arguments(function.get("arguments")), user, english, actions);
                 } catch (RuntimeException e) {
                     result = Map.of("error", String.valueOf(e.getMessage()));
                 }
-                results.add(Map.of("functionResponse", Map.of("name", name, "response", result)));
+                messages.add(Map.of("role", "tool", "tool_call_id", String.valueOf(toolCall.get("id")), "content", toJson(result)));
             }
-            contents.add(Map.of("role", "user", "parts", results));
         }
 
         return new Reply(english ? "Sorry, I couldn't finish that. Try asking again." : "Beklager, det fikk jeg ikke til. Prøv å spørre på nytt.", actions);
@@ -307,30 +297,28 @@ public class ChatService {
         }
     }
 
-    /** One call to Gemini, tried again (after a pause) while it's overloaded or unreachable; the last try uses the fallback model. */
+    /** One call to the model, tried again (after a pause) while the API is busy or unreachable. */
     private HttpResponse<byte[]> send(Map<String, Object> body) {
 
         for (var attempt = 0; ; attempt++) {
             var last = attempt == RETRY_AFTER.size();
-            var useModel = last ? fallbackModel : model;
             try {
-                var request = HttpRequest.newBuilder(URI.create(apiUrl + useModel + ":generateContent"))
+                var request = HttpRequest.newBuilder(URI.create(apiUrl))
                     .timeout(Duration.ofSeconds(60))
                     .header("Content-Type", "application/json")
-                    .header("x-goog-api-key", apiKey)
+                    .header("Authorization", "Bearer " + apiKey)
                     .POST(HttpRequest.BodyPublishers.ofByteArray(json.writeValueAsBytes(body)))
                     .build();
                 var response = http.send(request, HttpResponse.BodyHandlers.ofByteArray());
-                var status = response.statusCode();
-                if (last || (status != 500 && status != 503 && status != 504)) {
+                if (last || response.statusCode() < 500) {
                     return response;
                 }
-                LOG.info("Gemini {} ({}), trying again", status, useModel);
+                LOG.info("OpenAI {}, trying again", response.statusCode());
             } catch (IOException e) {
                 if (last) {
-                    throw new HttpStatusException(HttpStatus.BAD_GATEWAY, "Gemini unreachable");
+                    throw new HttpStatusException(HttpStatus.BAD_GATEWAY, "OpenAI unreachable");
                 }
-                LOG.info("Gemini unreachable ({}), trying again: {}", useModel, e.toString());
+                LOG.info("OpenAI unreachable, trying again: {}", e.toString());
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
                 throw new HttpStatusException(HttpStatus.BAD_GATEWAY, "Interrupted");
@@ -344,34 +332,48 @@ public class ChatService {
         }
     }
 
+    /** The reply message ({@code content} and/or {@code tool_calls}), or null if there was none. */
     @Nullable
     private Map<?, ?> generate(Map<String, Object> body) {
 
         var response = send(body);
 
         if (response.statusCode() == 429) {
-            throw new HttpStatusException(HttpStatus.TOO_MANY_REQUESTS, "Gemini quota used up");
+            LOG.warn("OpenAI 429: {}", new String(response.body()));
+            throw new HttpStatusException(HttpStatus.TOO_MANY_REQUESTS, "OpenAI rate limit or quota");
         }
         if (response.statusCode() != 200) {
-            LOG.warn("Gemini {}: {}", response.statusCode(), new String(response.body()));
-            throw new HttpStatusException(HttpStatus.BAD_GATEWAY, "Gemini error " + response.statusCode());
+            LOG.warn("OpenAI {}: {}", response.statusCode(), new String(response.body()));
+            throw new HttpStatusException(HttpStatus.BAD_GATEWAY, "OpenAI error " + response.statusCode());
         }
 
         try {
             Map<?, ?> result = json.readValue(response.body(), Argument.mapOf(String.class, Object.class));
-            var candidates = result.get("candidates") instanceof List<?> list ? list : List.of();
-            if (candidates.isEmpty() || !(candidates.get(0) instanceof Map<?, ?> first)) {
+            var choices = result.get("choices") instanceof List<?> list ? list : List.of();
+            if (choices.isEmpty() || !(choices.get(0) instanceof Map<?, ?> first)) {
                 return null;
             }
 
-            return first.get("content") instanceof Map<?, ?> content ? content : null;
+            return first.get("message") instanceof Map<?, ?> message ? message : null;
         } catch (IOException e) {
-            throw new HttpStatusException(HttpStatus.BAD_GATEWAY, "Unreadable Gemini response");
+            throw new HttpStatusException(HttpStatus.BAD_GATEWAY, "Unreadable OpenAI response");
         }
     }
 
-    private static List<Map<?, ?>> parts(Map<?, ?> content) {
-        var parts = content.get("parts") instanceof List<?> list ? list : List.of();
-        return parts.stream().filter(p -> p instanceof Map<?, ?>).<Map<?, ?>>map(p -> (Map<?, ?>) p).toList();
+    /** Tool arguments come as a JSON string. */
+    private Map<?, ?> arguments(@Nullable Object raw) {
+        try {
+            return raw instanceof String text && !text.isBlank() ? json.readValue(text, Argument.mapOf(String.class, Object.class)) : Map.of();
+        } catch (IOException e) {
+            throw new IllegalArgumentException("Unreadable arguments");
+        }
+    }
+
+    private String toJson(Object value) {
+        try {
+            return json.writeValueAsString(value);
+        } catch (IOException e) {
+            throw new IllegalStateException(e);
+        }
     }
 }

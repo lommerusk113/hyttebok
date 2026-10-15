@@ -5,7 +5,7 @@ import io.micronaut.core.annotation.Nullable;
 import java.util.List;
 import java.util.Map;
 
-/** The actions the chatbot may take, described for Gemini, and helpers to read its arguments. */
+/** The actions the chatbot may take, described for the model (OpenAI function tools), and helpers to read its arguments. */
 final class ChatTools {
 
     static final String ADD_SHOPPING = "add_shopping_item";
@@ -33,16 +33,16 @@ final class ChatTools {
     }
 
     private static Map<String, Object> tool(String name, String description, Map<String, Object> properties, List<String> required) {
-        return Map.of("name", name, "description", description,
-            "parameters", Map.of("type", "OBJECT", "properties", properties, "required", required));
+        return Map.of("type", "function", "function", Map.of("name", name, "description", description,
+            "parameters", Map.of("type", "object", "properties", properties, "required", required)));
     }
 
     private static Map<String, Object> text(String description) {
-        return Map.of("type", "STRING", "description", description);
+        return Map.of("type", "string", "description", description);
     }
 
     private static Map<String, Object> integer(String description) {
-        return Map.of("type", "INTEGER", "description", description);
+        return Map.of("type", "integer", "description", description);
     }
 
     static String text(Map<?, ?> args, String key) {
