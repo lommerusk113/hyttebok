@@ -11,6 +11,8 @@ import no.hyttebok.auth.AppUser;
 import no.hyttebok.auth.AppUserRepository;
 import no.hyttebok.booking.Booking;
 import no.hyttebok.cabin.CabinContext;
+import no.hyttebok.forum.ForumPost;
+import no.hyttebok.forum.ForumReply;
 import no.hyttebok.log.LogEntry;
 import no.hyttebok.suggestion.Suggestion;
 import no.hyttebok.todo.Todo;
@@ -19,6 +21,7 @@ import org.slf4j.LoggerFactory;
 
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
+import java.util.List;
 import java.util.Locale;
 import java.util.function.Function;
 
@@ -137,8 +140,24 @@ public class Notifier {
             en(s) ? "New task" : "Ny oppgave", by(todo.createdBy()) + todo.title(), "/vedlikehold?todo=" + todo.id(), "todo-" + todo.id()));
     }
 
+    public void forumPostCreated(ForumPost post) {
+        notify(Topic.FORUM, s -> s.isFrom(post.author()) ? null : new Message(
+            en(s) ? "New in the forum" : "Nytt i forumet", by(post.author()) + post.title(), "/forum/" + post.id(), "forum-" + post.id()));
+    }
+
+    /** Only to those in the thread (who wrote the post or replied before), so a busy forum doesn't buzz everyone. */
+    public void forumReplied(ForumPost post, ForumReply reply, List<String> earlier) {
+        notify(Topic.FORUM, s -> s.isFrom(reply.author()) || (!s.isFrom(post.author()) && earlier.stream().noneMatch(s::isFrom)) ? null : new Message(
+            (en(s) ? "Reply: " : "Svar: ") + post.title(), by(reply.author()) + shorten(reply.body()), "/forum/" + post.id(), "forum-" + post.id()));
+    }
+
     static boolean en(PushSubscription subscription) {
         return "en".equals(subscription.lang());
+    }
+
+    /** Push messages have a size limit (about 4 kB), and a phone shows a couple of lines anyway. */
+    private static String shorten(String text) {
+        return text.length() <= 140 ? text : text.substring(0, 139) + "…";
     }
 
     private static String by(@Nullable String person) {

@@ -11,6 +11,7 @@ import io.micronaut.http.annotation.QueryValue;
 import io.micronaut.http.exceptions.HttpStatusException;
 import io.micronaut.serde.annotation.Serdeable;
 import jakarta.validation.Valid;
+import no.hyttebok.push.Notifier;
 
 import java.time.Instant;
 import java.util.Comparator;
@@ -24,10 +25,12 @@ public class ForumController {
 
     private final ForumPostRepository posts;
     private final ForumReplyRepository replies;
+    private final Notifier notifier;
 
-    public ForumController(ForumPostRepository posts, ForumReplyRepository replies) {
+    public ForumController(ForumPostRepository posts, ForumReplyRepository replies, Notifier notifier) {
         this.posts = posts;
         this.replies = replies;
+        this.notifier = notifier;
     }
 
     /** A post in the list: how many replies, and the latest one. */
@@ -75,7 +78,11 @@ public class ForumController {
 
     @Post
     public ForumPost create(@Body @Valid ForumPost post) {
-        return posts.save(new ForumPost(null, post.title().trim(), blankToNull(post.body()), post.author(), null, null));
+
+        var saved = posts.save(new ForumPost(null, post.title().trim(), blankToNull(post.body()), post.author(), null, null));
+        notifier.forumPostCreated(saved);
+
+        return saved;
     }
 
     @Delete("/{id}")
@@ -85,7 +92,13 @@ public class ForumController {
 
     @Post("/{id}/replies")
     public ForumReply reply(Long id, @Body @Valid ForumReply reply) {
-        return replies.save(new ForumReply(null, post(id).id(), reply.body().trim(), reply.author(), null, null));
+
+        var post = post(id);
+        var earlier = replies.findByPostIdOrderByCreatedAt(id).stream().map(ForumReply::author).toList();
+        var saved = replies.save(new ForumReply(null, post.id(), reply.body().trim(), reply.author(), null, null));
+        notifier.forumReplied(post, saved, earlier);
+
+        return saved;
     }
 
     @Delete("/replies/{id}")

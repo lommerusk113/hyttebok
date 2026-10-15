@@ -366,6 +366,10 @@
       "ACCESS": {
         "title": "Access requests",
         "hint": "When someone asks for access to the cabin"
+      },
+      "FORUM": {
+        "title": "The forum",
+        "hint": "New posts, and replies in threads you take part in"
       }
     },
     "recheck": "Check again",

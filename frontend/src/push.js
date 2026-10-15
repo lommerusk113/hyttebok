@@ -6,7 +6,7 @@ import { installed, isIos } from './install'
 // Push notifications for this device. The server keeps one subscription per device with the
 // topics it wants; this module subscribes/unsubscribes and keeps name + language up to date.
 
-export const TOPICS = ['BOOKING', 'POST', 'SUGGESTION', 'TODO', 'SHOPPING', 'MAINTENANCE', 'ACCESS']
+export const TOPICS = ['BOOKING', 'POST', 'SUGGESTION', 'TODO', 'SHOPPING', 'MAINTENANCE', 'FORUM', 'ACCESS']
 
 export const supported = 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window
 // iPhones only allow push for apps added to the home screen.

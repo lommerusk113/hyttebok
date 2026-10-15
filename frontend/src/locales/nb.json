@@ -366,6 +366,10 @@
       "ACCESS": {
         "title": "Forespørsler om tilgang",
         "hint": "Når noen ber om tilgang til hytta"
+      },
+      "FORUM": {
+        "title": "Forumet",
+        "hint": "Nye innlegg, og svar i tråder du er med i"
       }
     },
     "recheck": "Sjekk på nytt",
