@@ -84,7 +84,9 @@ app.config.errorHandler = err => {
   app.config.globalProperties.$toast.add({ severity: 'error', summary: t('common.error'), detail: t('common.tryAgain'), life: 5000 })
 }
 
-app.mount('#app')
+// Only once the address is understood: otherwise "not logged in" could show the plain login page before
+// the router knows it's an invitation link (and the invitation would be forgotten).
+router.isReady().then(() => app.mount('#app'))
 
 startSync(({ sent, dropped }) => {
   const toast = app.config.globalProperties.$toast

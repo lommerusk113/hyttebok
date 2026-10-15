@@ -28,7 +28,9 @@ let firstVisit = true
 onMounted(async () => {
   ;[cabins.value, waiting.value] = await Promise.all([api.get('/cabins'), auth.value?.user ? api.get('/cabins/waiting') : []])
   const resume = cabins.value.find(c => c.id === cabinId.value) || (cabins.value.length === 1 && !adminMode.value && cabins.value[0])
-  if (firstVisit && !router.currentRoute.value.query.alle && resume) router.replace(`/h/${resume.id}`)
+  // Only if still here: after a login the app may already have gone on to where you were heading.
+  const stillHere = router.currentRoute.value.path === '/'
+  if (firstVisit && stillHere && !router.currentRoute.value.query.alle && resume) router.replace(`/h/${resume.id}`)
   firstVisit = false
 })
 

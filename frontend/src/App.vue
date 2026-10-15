@@ -1,6 +1,6 @@
 <script setup>
 import { defineAsyncComponent, ref, watch } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { usePrimeVue } from 'primevue/config'
 import Toast from 'primevue/toast'
 import ConfirmDialog from 'primevue/confirmdialog'
@@ -41,6 +41,25 @@ const route = useRoute()
 const menuOpen = ref(false)
 const menuPopover = ref()
 const notificationsOpen = ref(false)
+
+// Where a logged-out visitor was heading (an invitation, a link from a notification): the login page shows
+// first, then they're taken there, also after Google's login, which always comes back to "/".
+const router = useRouter()
+const RETURN_KEY = 'hyttebok.returnTo'
+watch(needsLogin, locked => {
+  if (locked && route.fullPath !== '/') {
+    try { localStorage.setItem(RETURN_KEY, route.fullPath) } catch { /* private mode */ }
+  }
+}, { immediate: true })
+watch(() => auth.value?.user, user => {
+  if (!user) return
+  let target = null
+  try {
+    target = localStorage.getItem(RETURN_KEY)
+    localStorage.removeItem(RETURN_KEY)
+  } catch { /* private mode */ }
+  if (target && target !== route.fullPath) router.replace(target)
+})
 
 // Login state, push settings and the weather belong to the cabin on screen: (re)load them when it changes.
 // Push state needs the API, so only once we know the user is let in.

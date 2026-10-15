@@ -156,7 +156,9 @@
     "accept": "Accept",
     "vote": "Vote",
     "placeholderDO": "E.g. build a sauna, paint the deck",
-    "placeholderBUY": "E.g. kayak, new grill"
+    "placeholderBUY": "E.g. kayak, new grill",
+    "readMore": "Read more",
+    "showLess": "Show less"
   },
   "notes": {
     "new": "New note",

@@ -47,7 +47,7 @@ async function submit() {
       return
     }
     // Same page again, now logged in (an invitation waiting in this browser is accepted on the way).
-    location.replace(location.pathname)
+    location.replace(location.pathname + location.search)
   } catch {
     error.value = 'login.offline'
   } finally {

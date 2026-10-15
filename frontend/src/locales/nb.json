@@ -156,7 +156,9 @@
     "accept": "Godta",
     "vote": "Stem",
     "placeholderDO": "F.eks. bygge badstue, male terrassen",
-    "placeholderBUY": "F.eks. kajakk, ny grill"
+    "placeholderBUY": "F.eks. kajakk, ny grill",
+    "readMore": "Les mer",
+    "showLess": "Vis mindre"
   },
   "notes": {
     "new": "Nytt notat",

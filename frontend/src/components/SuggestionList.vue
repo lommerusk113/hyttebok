@@ -10,6 +10,7 @@ import { askName, userName } from '../user'
 import { timeAgo } from '../utils'
 import { t } from '../i18n'
 import { useDeepLink } from '../deepLink'
+import RichText from './RichText.vue'
 
 // Ideas nobody has agreed to yet, shown inside the list they belong to: DO under Vedlikehold, BUY on the
 // shopping list. People vote with hearts; "Godta" hands it to `onAccept` (which adds the real task/item)
@@ -18,6 +19,17 @@ import { useDeepLink } from '../deepLink'
 const props = defineProps({ category: String, onAccept: Function, titled: { type: Boolean, default: true } })
 
 const confirm = useConfirm()
+
+// Each description opens on "Les mer"; short ones never need it.
+const expanded = ref(new Set())
+const isLong = text => text.length > 90 || text.includes('\n')
+// Collapsed: one flowing line, bullets and line breaks turned into "·".
+const preview = text => text.split('\n').map(line => line.replace(/^\s*[-*•]\s+/, '').trim()).filter(Boolean).join(' · ')
+function toggle(id) {
+  const next = new Set(expanded.value)
+  next.has(id) ? next.delete(id) : next.add(id)
+  expanded.value = next
+}
 const takeQuery = useDeepLink()
 const suggestions = ref([])
 const formOpen = ref(false)
@@ -92,19 +104,25 @@ defineExpose({ openForm })
       <Button :label="t('suggestions.propose')" icon="pi pi-lightbulb" text size="small" severity="secondary" class="!min-h-11" @click="openForm()" />
     </div>
     <ul v-if="open.length" class="-mx-5 divide-y divide-zinc-100 border-t border-zinc-100">
-      <li v-for="s in open" :key="s.id" class="flex items-center gap-3 py-2 pl-3 pr-4">
+      <li v-for="s in open" :key="s.id" class="flex items-start gap-3 py-2 pl-3 pr-4">
         <span class="w-1 self-stretch rounded-full bg-amber-300" />
-        <button class="group min-h-11 min-w-0 flex-1 text-left" @click="openForm(s)">
-          <span class="block font-medium group-hover:underline">{{ s.title }}</span>
-          <span v-if="s.description" class="block line-clamp-1 text-sm text-zinc-500">{{ s.description }}</span>
+        <div class="min-w-0 flex-1 py-1">
+          <button class="min-h-9 text-left font-medium hover:underline" @click="openForm(s)">{{ s.title }}</button>
+          <!-- Two lines to start with; "Les mer" shows it all, with bullet points and clickable links -->
+          <template v-if="s.description">
+            <RichText v-if="expanded.has(s.id)" :text="s.description" class="text-sm text-zinc-600" />
+            <p v-else class="line-clamp-2 text-sm text-zinc-500">{{ preview(s.description) }}</p>
+            <button v-if="isLong(s.description)" class="min-h-9 text-xs font-medium text-zinc-600 underline-offset-2 hover:underline" :aria-expanded="expanded.has(s.id)"
+                    @click="toggle(s.id)">{{ expanded.has(s.id) ? t('suggestions.showLess') : t('suggestions.readMore') }}</button>
+          </template>
           <span class="block text-xs text-zinc-500">{{ t('suggestions.suggestion') }} · {{ s.author }} · {{ timeAgo(s.createdAt) }}</span>
-        </button>
-        <button class="flex min-h-11 shrink-0 items-center gap-1.5 rounded-full px-2 text-sm font-medium transition"
+        </div>
+        <button class="mt-1 flex min-h-11 shrink-0 items-center gap-1.5 rounded-full px-2 text-sm font-medium transition"
                 :class="s.voters.includes(userName) ? 'text-rose-600' : 'text-zinc-500 hover:text-zinc-900'"
                 :title="s.voters.join(', ')" :aria-label="t('suggestions.vote')" @click="vote(s)">
           <i class="pi" :class="s.voters.includes(userName) ? 'pi-heart-fill' : 'pi-heart'" />{{ s.voters.length }}
         </button>
-        <Button :label="t('suggestions.accept')" size="small" severity="secondary" outlined class="max-sm:!min-h-11 shrink-0" @click="accept(s)" />
+        <Button :label="t('suggestions.accept')" size="small" severity="secondary" outlined class="mt-2 max-sm:!min-h-11 shrink-0" @click="accept(s)" />
       </li>
     </ul>
     <p v-else class="text-sm text-zinc-500">{{ t('suggestions.empty') }}</p>
@@ -112,7 +130,8 @@ defineExpose({ openForm })
   <Dialog dismissable-mask v-model:visible="formOpen" modal :header="form.id ? t('suggestions.suggestion') : t('suggestions.new')" class="w-[30rem] max-w-[calc(100vw-2rem)]">
     <form :id="`suggestion-form-${category}`" class="flex flex-col gap-4" @submit.prevent="save">
       <label class="flex flex-col gap-1.5 text-sm font-medium">{{ t('suggestions.suggestion') }}<InputText v-model="form.title" required autofocus :placeholder="t(`suggestions.placeholder${category}`)" /></label>
-      <label class="flex flex-col gap-1.5 text-sm font-medium">{{ t('suggestions.why') }}<Textarea v-model="form.description" rows="3" auto-resize /></label>
+      <label class="flex flex-col gap-1.5 text-sm font-medium">{{ t('suggestions.why') }}<Textarea v-model="form.description" rows="3" auto-resize />
+        <span class="text-xs font-normal text-zinc-500">{{ t('home.bulletHint') }}</span></label>
     </form>
     <template #footer>
       <Button v-if="form.id" :label="t('common.delete')" icon="pi pi-trash" text severity="danger" class="mr-auto" @click="remove(form)" />
