@@ -40,7 +40,8 @@
     "notes": "Notater",
     "posts": "Innlegg",
     "photos": "Bilder",
-    "maintenance": "Vedlikehold"
+    "maintenance": "Vedlikehold",
+    "forum": "Forum"
   },
   "info": {
     "arrivalInfo": "Ankomst",
@@ -555,5 +556,30 @@
     "note": "Beskrivelse (valgfritt)",
     "notePlaceholder": "F.eks. «Byttet to batterier, det i gangen var tomt»",
     "save": "Lagre som utført"
+  },
+  "forum": {
+    "new": "Nytt innlegg",
+    "search": "Søk i forumet",
+    "sortBy": "Sorter etter",
+    "sort": {
+      "active": "Siste aktivitet",
+      "new": "Nyeste først",
+      "old": "Eldste først",
+      "replies": "Flest svar"
+    },
+    "by": "{name}, {date}",
+    "lastReply": "siste svar fra {name} {time}",
+    "replyCount": "Ingen svar | {n} svar | {n} svar",
+    "empty": "Ingen innlegg ennå. Start en tråd: spør om noe, del et tips eller en idé.",
+    "noMatch": "Fant ingen innlegg som passer søket.",
+    "missing": "Innlegget finnes ikke lenger.",
+    "title": "Tittel",
+    "titlePlaceholder": "Hva handler det om?",
+    "body": "Tekst",
+    "bodyPlaceholder": "Skriv mer her (valgfritt)",
+    "publish": "Publiser",
+    "reply": "Svar",
+    "replyPlaceholder": "Skriv et svar …",
+    "deleteTitle": "Slette?"
   }
 }

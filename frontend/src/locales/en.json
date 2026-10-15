@@ -40,7 +40,8 @@
     "notes": "Notes",
     "posts": "Posts",
     "photos": "Photos",
-    "maintenance": "Maintenance"
+    "maintenance": "Maintenance",
+    "forum": "Forum"
   },
   "info": {
     "arrivalInfo": "Arrival",
@@ -555,5 +556,30 @@
     "note": "Description (optional)",
     "notePlaceholder": "E.g. \"Replaced two batteries, the one in the hall was empty\"",
     "save": "Save as done"
+  },
+  "forum": {
+    "new": "New post",
+    "search": "Search the forum",
+    "sortBy": "Sort by",
+    "sort": {
+      "active": "Latest activity",
+      "new": "Newest first",
+      "old": "Oldest first",
+      "replies": "Most replies"
+    },
+    "by": "{name}, {date}",
+    "lastReply": "last reply from {name} {time}",
+    "replyCount": "No replies | {n} reply | {n} replies",
+    "empty": "No posts yet. Start a thread: ask something, share a tip or an idea.",
+    "noMatch": "No posts match your search.",
+    "missing": "This post no longer exists.",
+    "title": "Title",
+    "titlePlaceholder": "What is it about?",
+    "body": "Text",
+    "bodyPlaceholder": "Write more here (optional)",
+    "publish": "Publish",
+    "reply": "Reply",
+    "replyPlaceholder": "Write a reply …",
+    "deleteTitle": "Delete?"
   }
 }

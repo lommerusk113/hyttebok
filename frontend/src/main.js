@@ -49,12 +49,12 @@ const router = createRouter({
     // "Mine hytter": the cabins you belong to, a new cabin, and asking for access with a join code.
     { path: '/', component: () => import('./pages/CabinsPage.vue') },
     // One cabin: /h/<id>/<tab>/<section>. The id (not the name: names needn't be unique) picks the cabin.
-    { path: '/h/:cabinId(\\d+)/:tab(booking|hyttebok|vedlikehold|handleliste|tilgang)?/:sub?', component: () => import('./pages/HomePage.vue') },
+    { path: '/h/:cabinId(\\d+)/:tab(booking|hyttebok|vedlikehold|handleliste|forum|tilgang)?/:sub?', component: () => import('./pages/HomePage.vue') },
     // Links without a cabin (inside the app, and in notifications sent before there were several cabins)
     // open in the cabin you're in. Older names first: "Lister" moved to Vedlikehold, the shopping list to its own tab.
     { path: '/lister/:sub?', redirect: to => ({ path: inCabin(`/vedlikehold/${to.params.sub || ''}`), query: to.query }) },
     { path: '/vedlikehold/handle', redirect: () => inCabin('/handleliste') },
-    { path: '/:tab(booking|hyttebok|vedlikehold|handleliste|tilgang)/:sub?', redirect: to => ({ path: inCabin(to.path), query: to.query }) },
+    { path: '/:tab(booking|hyttebok|vedlikehold|handleliste|forum|tilgang)/:sub?', redirect: to => ({ path: inCabin(to.path), query: to.query }) },
     { path: '/:pathMatch(.*)*', redirect: '/' },
   ],
 

@@ -24,6 +24,7 @@ const BookingPage = defineAsyncComponent(() => import('./BookingPage.vue'))
 const HyttebokTab = defineAsyncComponent(() => import('./HyttebokTab.vue'))
 const MaintenanceTab = defineAsyncComponent(() => import('./MaintenanceTab.vue'))
 const ShoppingPage = defineAsyncComponent(() => import('./ShoppingPage.vue'))
+const ForumPage = defineAsyncComponent(() => import('./ForumPage.vue'))
 const AccessPage = defineAsyncComponent(() => import('./AccessPage.vue'))
 
 // "Tilgang" is only for those who can manage access (owners and system admins).
@@ -33,6 +34,7 @@ const ALL_TABS = [
   { key: 'handleliste', label: 'tabs.shopping', icon: 'pi pi-shopping-cart', component: ShoppingPage },
   { key: 'vedlikehold', label: 'tabs.maintenance', icon: 'pi pi-wrench', component: MaintenanceTab },
   { key: 'hyttebok', label: 'tabs.logbook', icon: 'pi pi-book', component: HyttebokTab },
+  { key: 'forum', label: 'tabs.forum', icon: 'pi pi-comments', component: ForumPage },
   { key: 'tilgang', label: 'access.title', icon: 'pi pi-users', component: AccessPage, managersOnly: true },
 ]
 const TABS = computed(() => ALL_TABS.filter(tb => !tb.managersOnly || auth.value?.canManage))
