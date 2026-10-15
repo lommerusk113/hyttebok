@@ -1,5 +1,5 @@
 <script setup>
-import { computed, defineAsyncComponent, nextTick, onMounted, ref, watch } from 'vue'
+import { computed, defineAsyncComponent, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { useToast } from 'primevue/usetoast'
 import Button from 'primevue/button'
@@ -73,11 +73,23 @@ const tabsNav = ref()
 watch([() => tab.value.key, cabin], async () => {
   await nextTick()
   tabsNav.value?.querySelector('[aria-current="page"]')?.scrollIntoView({ block: 'nearest', inline: 'nearest' })
+  measureTabs()
 }, { immediate: true })
 watch(() => tab.value.key, () => {
   const top = tabsNav.value.getBoundingClientRect().top + scrollY - (window.innerWidth < 640 ? 56 : 64)
   if (scrollY > top) scrollTo({ top })
 })
+// More tabs than fit: fade the edge that has more behind it, with an arrow, so it's clear the bar scrolls.
+const tabsScroll = ref()
+const moreTabs = ref({ left: false, right: false })
+function measureTabs() {
+  const el = tabsScroll.value
+  if (el) moreTabs.value = { left: el.scrollLeft > 4, right: el.scrollLeft + el.clientWidth < el.scrollWidth - 4 }
+}
+const scrollTabs = dir => tabsScroll.value.scrollBy({ left: dir * tabsScroll.value.clientWidth * 0.6, behavior: 'smooth' })
+onMounted(() => addEventListener('resize', measureTabs))
+onBeforeUnmount(() => removeEventListener('resize', measureTabs))
+
 const tabLink = tb => `/h/${route.params.cabinId}${tb.key ? `/${tb.key}` : ''}`
 
 const textareas = {}
@@ -176,17 +188,25 @@ async function save() {
 
     <!-- Tabs -->
     <nav ref="tabsNav" class="sticky top-14 z-20 -mx-4 bg-page/90 px-4 py-2 backdrop-blur mt-4 sm:top-16">
-      <!-- Each tab keeps a readable width; on a narrow phone with six tabs (owners) the bar scrolls sideways -->
-      <div class="grid gap-1 overflow-x-auto rounded-lg border border-zinc-200 bg-surface p-1 shadow-sm [scrollbar-width:none]"
-           :style="{ gridTemplateColumns: `repeat(${TABS.length}, minmax(4.25rem, 1fr))` }">
-        <RouterLink v-for="tb in TABS" :key="tb.key" :to="tabLink(tb)"
-                    class="relative flex min-w-0 flex-col items-center gap-0.5 rounded-md px-1 py-1.5 text-[11px] sm:px-2 sm:text-xs font-medium text-zinc-500 transition hover:bg-zinc-100 hover:text-zinc-900 sm:flex-row sm:justify-center sm:gap-2 sm:text-sm"
-                    :class="tab === tb && '!bg-zinc-950 !text-surface'">
-          <i :class="tb.icon" />{{ t(tb.label) }}
-          <!-- People waiting for an answer -->
-          <span v-if="tb.key === 'tilgang' && auth?.waitingRequests" class="absolute right-1 top-1 grid min-w-4 place-items-center rounded-full bg-rose-500 px-1 text-[10px] font-semibold leading-4 text-white sm:static sm:min-w-5 sm:text-xs sm:leading-5"
-                :aria-label="t('access.waiting', auth.waitingRequests)">{{ auth.waitingRequests }}</span>
-        </RouterLink>
+      <!-- Each tab keeps a readable width; on a narrow phone the bar scrolls sideways -->
+      <div class="relative">
+        <div ref="tabsScroll" class="grid gap-1 overflow-x-auto rounded-lg border border-zinc-200 bg-surface p-1 shadow-sm [scrollbar-width:none]"
+             :style="{ gridTemplateColumns: `repeat(${TABS.length}, minmax(4.25rem, 1fr))` }" @scroll.passive="measureTabs">
+          <RouterLink v-for="tb in TABS" :key="tb.key" :to="tabLink(tb)"
+                      class="relative flex min-w-0 flex-col items-center gap-0.5 rounded-md px-1 py-1.5 text-[11px] sm:px-2 sm:text-xs font-medium text-zinc-500 transition hover:bg-zinc-100 hover:text-zinc-900 sm:flex-row sm:justify-center sm:gap-2 sm:text-sm"
+                      :class="tab === tb && '!bg-zinc-950 !text-surface'">
+            <i :class="tb.icon" />{{ t(tb.label) }}
+            <!-- People waiting for an answer -->
+            <span v-if="tb.key === 'tilgang' && auth?.waitingRequests" class="absolute right-1 top-1 grid min-w-4 place-items-center rounded-full bg-rose-500 px-1 text-[10px] font-semibold leading-4 text-white sm:static sm:min-w-5 sm:text-xs sm:leading-5"
+                  :aria-label="t('access.waiting', auth.waitingRequests)">{{ auth.waitingRequests }}</span>
+          </RouterLink>
+        </div>
+        <button v-for="side in ['left', 'right']" v-show="moreTabs[side]" :key="side" type="button" tabindex="-1" aria-hidden="true"
+                :class="side === 'left' ? 'left-px rounded-l-lg bg-gradient-to-r justify-start pl-1' : 'right-px rounded-r-lg bg-gradient-to-l justify-end pr-1'"
+                class="absolute inset-y-px flex w-10 items-center from-surface from-40% to-transparent text-zinc-500"
+                @click="scrollTabs(side === 'left' ? -1 : 1)">
+          <i :class="side === 'left' ? 'pi pi-chevron-left' : 'pi pi-chevron-right'" class="text-xs" />
+        </button>
       </div>
     </nav>
 
