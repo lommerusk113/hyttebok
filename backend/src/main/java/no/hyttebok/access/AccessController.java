@@ -93,10 +93,6 @@ public class AccessController {
     public record RoleBody(@Pattern(regexp = "OWNER|MEMBER") String role) {
     }
 
-    @Serdeable
-    public record GrantBody(Long userId, @Pattern(regexp = "OWNER|MEMBER") String role) {
-    }
-
     // ---- asking for access ----
 
     @Post("/requests")
@@ -168,27 +164,18 @@ public class AccessController {
         memberships.deleteById(userId);
     }
 
-    /** System admins only: everyone who has logged in, so they can give access to anyone (themselves included). */
-    @Get("/users")
-    public List<Person> users(Authentication auth) {
+    /**
+     * System admins only, for themselves: how an admin gets into a cabin nobody has access to yet. There is
+     * deliberately no list of all users: access is given through requests and invitations.
+     */
+    @Post("/self")
+    public void grantSelf(Authentication auth) {
 
         access.requireAdmin(auth);
-        var ids = StreamSupport.stream(users.findAll().spliterator(), false).map(AppUser::id).toList();
-
-        return people(ids).values().stream().sorted((a, b) -> a.name().compareToIgnoreCase(b.name())).toList();
-    }
-
-    @Post("/members")
-    public void grant(Authentication auth, @Body @Valid GrantBody body) {
-
-        access.requireAdmin(auth);
-        if (users.findById(body.userId()).isEmpty()) {
-            throw new HttpStatusException(HttpStatus.NOT_FOUND, "No such user");
-        }
-        var role = body.role();
-        memberships.findById(body.userId()).ifPresentOrElse(
-            m -> memberships.update(new Membership(m.userId(), role, m.createdAt())),
-            () -> memberships.save(new Membership(body.userId(), role, Instant.now())));
+        var userId = AccessService.userId(auth);
+        memberships.findById(userId).ifPresentOrElse(
+            m -> memberships.update(new Membership(m.userId(), Membership.OWNER, m.createdAt())),
+            () -> memberships.save(new Membership(userId, Membership.OWNER, Instant.now())));
     }
 
     // ---- new password (no email service: the link is shared by hand) ----
@@ -197,11 +184,11 @@ public class AccessController {
     public record ResetLink(String token, Instant expiresAt) {
     }
 
-    /** Owners for members, admins for anyone: a one-time link to set a new password, valid for a day. */
+    /** For members: a one-time link to set a new password, valid for a day. */
     @Post("/users/{userId}/password-reset")
     public ResetLink passwordReset(Authentication auth, Long userId) {
 
-        if (!(access.isAdmin(auth) || (access.canManage(auth) && memberships.existsById(userId)))) {
+        if (!access.canManage(auth) || !memberships.existsById(userId)) {
             throw new HttpStatusException(HttpStatus.FORBIDDEN, "Not allowed");
         }
         if (users.findById(userId).isEmpty()) {

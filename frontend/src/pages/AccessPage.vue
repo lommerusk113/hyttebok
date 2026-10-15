@@ -11,23 +11,20 @@ import { auth, loadAuth } from '../auth'
 import { colorFor, formatDate, initials } from '../utils'
 import { t } from '../i18n'
 
-// "Tilgang": requests to approve, invitation links, members and their roles, and (system admins) everyone
-// who has logged in, so access can be given directly, your own included.
+// "Tilgang": requests to approve, invitation links, and members with their roles. There is no list of
+// everyone who has logged in: access is given through requests and invitations.
 const confirm = useConfirm()
 const toast = useToast()
 const requests = ref([])
 const invites = ref([])
 const members = ref([])
-const users = ref([])
 const loaded = ref(false)
 
 const ROLES = computed(() => [{ value: 'OWNER', label: t('access.roles.OWNER') }, { value: 'MEMBER', label: t('access.roles.MEMBER') }])
-const withoutAccess = computed(() => users.value.filter(u => !u.role))
 const inviteUrl = token => `${location.origin}/invitasjon/${token}`
 
 async function load() {
   ;[requests.value, invites.value, members.value] = await Promise.all(['/access/requests', '/access/invites', '/access/members'].map(api.get))
-  if (auth.value.admin) users.value = await api.get('/access/users')
   loaded.value = true
 }
 onMounted(load)
@@ -95,18 +92,10 @@ function remove(member) {
   })
 }
 
-async function grant(user, role) {
-  await api.post('/access/members', { userId: user.id, role })
-  await changed()
-}
 </script>
 
 <template>
   <div class="mx-auto max-w-3xl space-y-6">
-    <div class="flex items-center justify-between gap-3">
-      <h1 class="text-xl font-semibold">{{ t('access.title') }}</h1>
-      <RouterLink v-if="auth.role" to="/" class="inline-flex min-h-11 items-center gap-2 text-sm font-medium"><i class="pi pi-arrow-left text-xs" />{{ t('install.back') }}</RouterLink>
-    </div>
 
     <p v-if="!auth.canManage" class="rounded-lg bg-amber-50 p-4 text-sm text-amber-800">{{ t('access.notAllowed') }}</p>
 
@@ -164,24 +153,6 @@ async function grant(user, role) {
         </ul>
       </DashCard>
 
-      <!-- System admins: anyone who has logged in, to give access directly -->
-      <DashCard v-if="auth.admin" :title="t('access.withoutAccess')" icon="pi pi-user-plus" tint="bg-zinc-100 text-zinc-700" :count="withoutAccess.length">
-        <ul v-if="withoutAccess.length" class="-mx-5 divide-y divide-zinc-100 border-t border-zinc-100">
-          <li v-for="u in withoutAccess" :key="u.id" class="flex flex-wrap items-center gap-3 px-5 py-2.5">
-            <Avatar :image="u.picture || undefined" :label="u.picture ? undefined : initials(u.name)" shape="circle" :class="[colorFor(u.name).bg, colorFor(u.name).text]" />
-            <span class="min-w-0 flex-1">
-              <span class="block truncate font-medium">{{ u.name }}<span v-if="u.email === auth.user.email" class="ml-2 text-xs font-normal text-zinc-500">({{ t('access.you') }})</span></span>
-              <span class="block truncate text-xs text-zinc-500">{{ u.email }}</span>
-            </span>
-            <span class="flex gap-2">
-              <Button icon="pi pi-key" text rounded severity="secondary" :aria-label="t('access.resetLink')" v-tooltip.left="t('access.resetLink')" @click="resetLink(u)" />
-              <Button :label="t('access.roles.MEMBER')" icon="pi pi-plus" size="small" outlined severity="secondary" @click="grant(u, 'MEMBER')" />
-              <Button :label="t('access.roles.OWNER')" icon="pi pi-plus" size="small" outlined severity="secondary" @click="grant(u, 'OWNER')" />
-            </span>
-          </li>
-        </ul>
-        <p v-else class="py-1 text-sm text-zinc-500">{{ t('access.everyoneHasAccess') }}</p>
-      </DashCard>
     </template>
   </div>
 </template>

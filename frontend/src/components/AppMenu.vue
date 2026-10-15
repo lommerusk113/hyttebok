@@ -45,15 +45,6 @@ async function installNow() {
       <ThemeSwitch />
     </label>
 
-    <!-- Owners and system admins: who has access, invitations, requests -->
-    <RouterLink v-if="auth?.canManage" to="/tilgang" class="flex min-h-14 items-center justify-between gap-3 px-2" @click="emit('close')">
-      <span class="flex items-center gap-2 text-sm font-medium"><i class="pi pi-users" />{{ t('access.title') }}</span>
-      <span class="flex items-center gap-2">
-        <span v-if="auth.waitingRequests" class="rounded-full bg-rose-500 px-2 py-0.5 text-xs font-semibold text-white" :aria-label="t('access.waiting', auth.waitingRequests)">{{ auth.waitingRequests }}</span>
-        <i class="pi pi-chevron-right text-xs text-zinc-500" />
-      </span>
-    </RouterLink>
-
     <!-- Logged in with Google: whose account, and the way out -->
     <div v-if="auth?.user" class="mt-2 flex items-center gap-3 border-t border-zinc-200 px-2 pt-4">
       <img v-if="auth.user.picture" :src="auth.user.picture" alt="" referrerpolicy="no-referrer" class="size-8 rounded-full">

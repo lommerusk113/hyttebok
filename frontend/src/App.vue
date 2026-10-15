@@ -86,7 +86,7 @@ function saveName(name = draftName.value) {
   <!-- Invitation and new-password links work before login and before access: the pages handle both -->
   <main v-else-if="route.path.startsWith('/invitasjon/') || route.path.startsWith('/nytt-passord/')" class="px-4"><RouterView /></main>
   <LoginPage v-else-if="needsLogin && route.path !== '/app'" />
-  <NoAccessPage v-else-if="noAccess && route.path !== '/tilgang'" />
+  <NoAccessPage v-else-if="noAccess" />
   <div v-else class="min-h-screen">
     <header class="sticky top-0 z-30 border-b border-zinc-200 bg-surface/85 text-zinc-950 backdrop-blur">
       <div class="mx-auto flex h-14 max-w-6xl items-center justify-between gap-4 px-4 sm:h-16">
@@ -111,13 +111,10 @@ function saveName(name = draftName.value) {
             <Avatar :label="initials(userName)" shape="circle" :class="[colorFor(userName).bg, colorFor(userName).text]" class="!text-xs !font-semibold" />
             <span class="text-sm font-medium">{{ userName || t('app.whoAreYou') }}</span>
             <i class="pi pi-chevron-down text-xs text-zinc-500" />
-            <!-- Someone is waiting for access (owners and admins) -->
-            <span v-if="auth?.waitingRequests" class="-ml-1 size-2 rounded-full bg-rose-500" :aria-label="t('access.waiting', auth.waitingRequests)" />
           </button>
           <button class="relative -mr-2 grid size-11 place-items-center rounded-full transition hover:bg-zinc-100 sm:hidden"
                   :aria-label="t('app.menu')" :aria-expanded="menuOpen" @click="menuOpen = true">
             <i class="pi pi-bars text-lg" />
-            <span v-if="auth?.waitingRequests" class="absolute right-2 top-2 size-2 rounded-full bg-rose-500" :aria-label="t('access.waiting', auth.waitingRequests)" />
           </button>
         </div>
       </div>

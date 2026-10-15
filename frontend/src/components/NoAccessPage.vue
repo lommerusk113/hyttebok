@@ -10,6 +10,16 @@ import { t } from '../i18n'
 const message = ref('')
 const sending = ref(false)
 
+async function grantSelf() {
+  sending.value = true
+  try {
+    await fetch('/api/access/self', { method: 'POST' })
+    await loadAuth()
+  } finally {
+    sending.value = false
+  }
+}
+
 async function requestAccess() {
   sending.value = true
   try {
@@ -28,10 +38,10 @@ async function requestAccess() {
       <h1 class="mt-5 text-xl font-semibold">{{ t('access.noAccessTitle') }}</h1>
       <p class="mt-1 text-sm text-zinc-500">{{ t('login.signedInAs') }} {{ auth.user.email }}</p>
 
-      <!-- System admin: manage access (including your own) -->
+      <!-- System admin: let yourself in (then invite or approve the others from Tilgang) -->
       <div v-if="auth.admin" class="mt-6 rounded-lg bg-zinc-100 p-4 text-left text-sm">
         <p class="mb-3">{{ t('access.adminHint') }}</p>
-        <RouterLink to="/tilgang" class="inline-flex min-h-11 items-center gap-2 rounded-md bg-zinc-950 px-4 font-medium text-surface"><i class="pi pi-users" />{{ t('access.manage') }}</RouterLink>
+        <Button :label="t('access.grantSelf')" icon="pi pi-key" :loading="sending" @click="grantSelf" />
       </div>
 
       <div v-else-if="auth.requestPending" class="mt-6 rounded-lg bg-emerald-50 p-4 text-sm text-emerald-900" role="status">

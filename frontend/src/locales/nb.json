@@ -355,6 +355,10 @@
       "MAINTENANCE": {
         "title": "Vedlikehold",
         "hint": "Kl. 08 når noe skal gjøres"
+      },
+      "ACCESS": {
+        "title": "Forespørsler om tilgang",
+        "hint": "Når noen ber om tilgang til hytta"
       }
     },
     "recheck": "Sjekk på nytt",
@@ -437,14 +441,13 @@
   },
   "access": {
     "title": "Tilgang",
-    "manage": "Administrer tilgang",
     "noAccessTitle": "Du har ikke tilgang ennå",
     "noAccessText": "Be om tilgang, så får eierne av hytta beskjed. Har du fått en invitasjonslenke, kan du åpne den i stedet.",
     "messagePlaceholder": "Melding (valgfritt), f.eks. «Hei, det er Kari!»",
     "request": "Be om tilgang",
     "requestSent": "Forespørselen er sendt. En eier må godkjenne den.",
     "checkAgain": "Sjekk på nytt",
-    "adminHint": "Du er systemadministrator. Gi deg selv (og andre) tilgang under Tilgang.",
+    "adminHint": "Du er systemadministrator. Gi deg selv tilgang som eier, og inviter de andre fra Tilgang.",
     "invitedTo": "Du er invitert til {cabin}",
     "invitedBy": "av {name}",
     "joining": "Blir med …",
@@ -474,13 +477,11 @@
     "remove": "Fjern tilgang",
     "removeTitle": "Fjerne tilgang?",
     "removeMessage": "{name} mister tilgangen til hytta.",
-    "withoutAccess": "Uten tilgang",
-    "you": "deg",
-    "everyoneHasAccess": "Alle som har logget inn, har tilgang.",
     "copyLink": "Kopier lenken:",
     "resetLink": "Lenke for nytt passord",
     "resetShareTitle": "Nytt passord for {name}",
-    "waiting": "{n} venter på svar | {n} venter på svar"
+    "waiting": "{n} venter på svar | {n} venter på svar",
+    "grantSelf": "Gi meg tilgang som eier"
   },
   "checklist": {
     "title": "Sjekkliste",

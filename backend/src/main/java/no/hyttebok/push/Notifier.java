@@ -83,13 +83,14 @@ public class Notifier {
     // ---- events (actors are left out: you don't get notified about your own changes) ----
 
     /**
-     * Someone asked for access: tell the devices of everyone who can approve it (owners and system admins).
-     * Not tied to a topic: it's a question only they can answer, and they'd otherwise never see it.
+     * Someone asked for access: tell the devices of everyone who can approve it (owners and system admins)
+     * and switched on "Forespørsler om tilgang" (ACCESS, only offered to them in the app).
      */
     public void accessRequested(Long requestId, Long requesterId, String name, @Nullable String message) {
         Thread.startVirtualThread(() -> {
             for (var subscription : subscriptions.findAll()) {
-                if (subscription.userId() == null || subscription.userId().equals(requesterId) || !canApprove(subscription.userId())) {
+                if (!subscription.wants(Topic.ACCESS) || subscription.userId() == null || subscription.userId().equals(requesterId)
+                    || !canApprove(subscription.userId())) {
                     continue;
                 }
                 var quote = message == null ? "" : ": «" + message + "»";

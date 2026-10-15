@@ -355,6 +355,10 @@
       "MAINTENANCE": {
         "title": "Maintenance",
         "hint": "At 8 am when something is due"
+      },
+      "ACCESS": {
+        "title": "Access requests",
+        "hint": "When someone asks for access to the cabin"
       }
     },
     "recheck": "Check again",
@@ -437,14 +441,13 @@
   },
   "access": {
     "title": "Access",
-    "manage": "Manage access",
     "noAccessTitle": "You don't have access yet",
     "noAccessText": "Ask for access and the cabin's owners are told. If you got an invitation link, open that instead.",
     "messagePlaceholder": "Message (optional), e.g. \"Hi, it's Kari!\"",
     "request": "Request access",
     "requestSent": "Request sent. An owner needs to approve it.",
     "checkAgain": "Check again",
-    "adminHint": "You're a system admin. Give yourself (and others) access under Access.",
+    "adminHint": "You're a system admin. Give yourself access as owner, then invite the others from Access.",
     "invitedTo": "You're invited to {cabin}",
     "invitedBy": "by {name}",
     "joining": "Joining …",
@@ -474,13 +477,11 @@
     "remove": "Remove access",
     "removeTitle": "Remove access?",
     "removeMessage": "{name} will lose access to the cabin.",
-    "withoutAccess": "Without access",
-    "you": "you",
-    "everyoneHasAccess": "Everyone who has logged in has access.",
     "copyLink": "Copy the link:",
     "resetLink": "New-password link",
     "resetShareTitle": "New password for {name}",
-    "waiting": "{n} waiting for an answer | {n} waiting for an answer"
+    "waiting": "{n} waiting for an answer | {n} waiting for an answer",
+    "grantSelf": "Give me access as owner"
   },
   "checklist": {
     "title": "Checklist",

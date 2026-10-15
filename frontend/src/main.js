@@ -43,14 +43,13 @@ const router = createRouter({
   history: createWebHistory(),
   routes: [
     { path: '/app', component: () => import('./pages/AppPage.vue') },
-    { path: '/tilgang', component: () => import('./pages/AccessPage.vue') },
     { path: '/invitasjon/:token', component: () => import('./pages/InvitePage.vue') },
     { path: '/nytt-passord/:token', component: () => import('./pages/ResetPasswordPage.vue') },
     // The old "Lister" tab now lives under Vedlikehold; links in old notifications still work.
     { path: '/lister/:sub?', redirect: to => ({ path: `/vedlikehold/${to.params.sub || ''}`, query: to.query }) },
     // Older links and notifications: the shopping list used to live under Vedlikehold
     { path: '/vedlikehold/handle', redirect: '/handleliste' },
-    { path: '/:tab(booking|hyttebok|vedlikehold|handleliste)?/:sub?', component: () => import('./pages/HomePage.vue') },
+    { path: '/:tab(booking|hyttebok|vedlikehold|handleliste|tilgang)?/:sub?', component: () => import('./pages/HomePage.vue') },
     { path: '/:pathMatch(.*)*', redirect: '/' },
   ],
 
