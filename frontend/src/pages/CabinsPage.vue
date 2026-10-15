@@ -21,6 +21,8 @@ const code = ref('')
 const message = ref('')
 const result = ref(null) // { status, cabinName } or { error }
 const busy = ref(false)
+// The join code is the exception (most people come in through an invitation link): tucked behind a link.
+const showCode = ref(false)
 
 // Opening the app ("/") goes straight back to the cabin you were in; the menu's "Mine hytter" (?alle) stays here.
 let firstVisit = true
@@ -77,7 +79,7 @@ const ROLE = { OWNER: 'access.roles.OWNER', MEMBER: 'access.roles.MEMBER' }
   <div class="mx-auto max-w-3xl space-y-6">
     <div class="flex flex-wrap items-center justify-between gap-3">
       <h1 class="text-xl font-semibold">{{ t('cabins.title') }}</h1>
-      <Button v-if="auth?.user" :label="t('cabins.new')" icon="pi pi-plus" @click="creating = true; newName = ''" />
+      <Button v-if="auth?.user && cabins?.length" :label="t('cabins.new')" icon="pi pi-plus" @click="creating = true; newName = ''" />
     </div>
 
     <p v-if="adminMode" class="rounded-lg bg-amber-50 p-3 text-sm text-amber-800"><i class="pi pi-shield mr-1" />{{ t('cabins.adminModeOn') }}</p>
@@ -96,6 +98,19 @@ const ROLE = { OWNER: 'access.roles.OWNER', MEMBER: 'access.roles.MEMBER' }
         <i class="pi pi-chevron-right text-xs text-zinc-400" />
       </RouterLink>
     </div>
+    <!-- No cabins yet: making one is the main thing; an invitation link takes you straight into someone else's -->
+    <form v-else-if="cabins && auth?.user" class="card flex flex-col items-center gap-4 px-5 py-8 text-center" @submit.prevent="create">
+      <span class="grid size-14 place-items-center rounded-2xl bg-emerald-50 text-emerald-700"><i class="pi pi-home text-2xl" /></span>
+      <div>
+        <h2 class="text-lg font-semibold">{{ t('cabins.firstTitle') }}</h2>
+        <p class="mt-1 text-sm text-zinc-500">{{ t('cabins.newHint') }}</p>
+      </div>
+      <div class="flex w-full max-w-sm flex-col gap-2 sm:flex-row">
+        <InputText v-model="newName" maxlength="80" :placeholder="t('cabins.namePlaceholder')" :aria-label="t('cabins.name')" class="min-w-0 flex-1" />
+        <Button type="submit" :label="t('cabins.create')" icon="pi pi-plus" :loading="busy" :disabled="!newName.trim()" />
+      </div>
+      <p class="flex items-start gap-2 text-left text-sm text-zinc-500"><i class="pi pi-link mt-1 text-xs" />{{ t('cabins.inviteHint') }}</p>
+    </form>
     <p v-else-if="cabins" class="card p-5 text-zinc-600">{{ t('cabins.none') }}</p>
 
     <!-- Asked with a code, no answer yet -->
@@ -103,8 +118,12 @@ const ROLE = { OWNER: 'access.roles.OWNER', MEMBER: 'access.roles.MEMBER' }
       <p v-for="w in waiting" :key="w.cabinName"><i class="pi pi-clock mr-1.5 text-zinc-500" />{{ t('cabins.waitingFor', { name: w.cabinName }) }}</p>
     </div>
 
-    <!-- Someone else's cabin: the owners share its code -->
-    <form v-if="auth?.user" class="card space-y-3 p-5" @submit.prevent="join">
+    <!-- Someone else's cabin by its code (owners approve): secondary, opened from a link -->
+    <button v-if="auth?.user && !showCode && !result" class="mx-auto flex min-h-11 items-center gap-2 text-sm text-zinc-500 underline-offset-4 hover:text-zinc-900 hover:underline"
+            @click="showCode = true">
+      <i class="pi pi-key text-xs" />{{ cabins?.length ? t('cabins.codeOtherCabin') : t('cabins.codeInstead') }}
+    </button>
+    <form v-if="auth?.user && (showCode || result)" class="card space-y-3 p-5" @submit.prevent="join">
       <div>
         <h2 class="font-semibold">{{ t('cabins.haveCode') }}</h2>
         <p class="text-sm text-zinc-500">{{ t('cabins.codeHint') }}</p>

@@ -532,10 +532,14 @@
     "waitingFor": "Venter på svar fra {name}",
     "name": "Hva heter hytta?",
     "namePlaceholder": "F.eks. Fjellro",
-    "newHint": "Du blir eier og kan invitere resten av familien.",
+    "newHint": "Gi den et navn. Du blir eier og kan invitere resten av familien.",
     "create": "Lag hytta",
     "adminModeOn": "Adminmodus er på: du ser alle hyttene.",
     "adminMode": "Adminmodus",
-    "adminModeHint": "Se alle hytter, for feilsøking"
+    "adminModeHint": "Se alle hytter, for feilsøking",
+    "firstTitle": "Lag din første hytte",
+    "inviteHint": "Har du fått en invitasjonslenke fra noen? Åpne den, så kommer du rett inn i hytta deres.",
+    "codeInstead": "Har du en kode i stedet?",
+    "codeOtherCabin": "Har du en kode til en annen hytte?"
   }
 }

@@ -532,10 +532,14 @@
     "waitingFor": "Waiting for an answer from {name}",
     "name": "What's the cabin called?",
     "namePlaceholder": "E.g. Fjellro",
-    "newHint": "You'll be the owner and can invite the rest of the family.",
+    "newHint": "Give it a name. You'll be the owner and can invite the rest of the family.",
     "create": "Create cabin",
     "adminModeOn": "Admin mode is on: you see every cabin.",
     "adminMode": "Admin mode",
-    "adminModeHint": "See every cabin, for troubleshooting"
+    "adminModeHint": "See every cabin, for troubleshooting",
+    "firstTitle": "Create your first cabin",
+    "inviteHint": "Got an invitation link from someone? Open it and you go straight into their cabin.",
+    "codeInstead": "Have a code instead?",
+    "codeOtherCabin": "Have a code for another cabin?"
   }
 }
