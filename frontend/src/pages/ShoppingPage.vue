@@ -109,7 +109,7 @@ async function clearBought() {
 
   <!-- Right column: what should always be there, and purchase ideas -->
   <div class="flex flex-col gap-6">
-  <ChecklistCard :shopping="items" @added="item => (items = [item, ...items])" />
+  <ChecklistCard :shopping="items" :start-open="route.params.sub === 'sjekkliste'" @added="item => (items = [item, ...items])" />
 
   <DashCard id="lists-forslag" class="scroll-mt-36" :title="t('suggestions.title')" icon="pi pi-lightbulb" tint="bg-amber-50 text-amber-700">
     <template #action>

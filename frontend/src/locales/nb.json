@@ -494,6 +494,8 @@
     "addTitle": "Legg til på sjekklista",
     "name": "Hva skal alltid være der?",
     "placeholder": "F.eks. toalettpapir",
-    "goThrough": "Gå gjennom sjekklista"
+    "goThrough": "Gå gjennom sjekklista",
+    "expand": "Vis sjekklista",
+    "collapse": "Skjul sjekklista"
   }
 }

@@ -494,6 +494,8 @@
     "addTitle": "Add to the checklist",
     "name": "What should always be there?",
     "placeholder": "E.g. toilet paper",
-    "goThrough": "Go through the checklist"
+    "goThrough": "Go through the checklist",
+    "expand": "Show the checklist",
+    "collapse": "Hide the checklist"
   }
 }

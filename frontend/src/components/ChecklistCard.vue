@@ -11,11 +11,13 @@ import { t } from '../i18n'
 
 // Things that should always be at the cabin. "Mangler" puts one on the shopping list (once: while it's there
 // unbought the row says "På lista"). `shopping` is the shopping list; `added` hands back the new shopping item.
-const props = defineProps({ shopping: Array })
+// Collapsed by default (it's a reference list); `startOpen` when coming from "Gå gjennom sjekklista".
+const props = defineProps({ shopping: Array, startOpen: Boolean })
 const emit = defineEmits(['added'])
 const toast = useToast()
 
 const items = ref([])
+const expanded = ref(props.startOpen)
 const loaded = ref(false)
 const adding = ref(false)
 const name = ref('')
@@ -58,10 +60,15 @@ async function remove(item) {
 </script>
 
 <template>
-  <DashCard id="lists-sjekkliste" class="scroll-mt-36" :title="t('checklist.title')" icon="pi pi-list-check" tint="bg-emerald-50 text-emerald-700">
+  <DashCard id="lists-sjekkliste" class="scroll-mt-36" :title="t('checklist.title')" icon="pi pi-list-check" tint="bg-emerald-50 text-emerald-700"
+            :count="items.length">
     <template #action>
-      <Button icon="pi pi-plus" :label="t('common.new')" size="small" outlined severity="secondary" @click="adding = true" />
+      <Button v-if="expanded" icon="pi pi-plus" :label="t('common.new')" size="small" outlined severity="secondary" @click="adding = true" />
+      <Button :icon="expanded ? 'pi pi-chevron-up' : 'pi pi-chevron-down'" text rounded severity="secondary" class="!size-11"
+              :aria-label="expanded ? t('checklist.collapse') : t('checklist.expand')" :aria-expanded="expanded" aria-controls="checklist-body"
+              @click="expanded = !expanded" />
     </template>
+    <div v-show="expanded" id="checklist-body">
     <p class="-mt-1 mb-2 text-sm text-zinc-500">{{ t('checklist.hint') }}</p>
 
     <ul v-if="items.length" class="-mx-5 divide-y divide-zinc-100 border-t border-zinc-100">
@@ -76,6 +83,7 @@ async function remove(item) {
     <div v-else-if="loaded" class="py-2 text-sm text-zinc-500">
       <p>{{ t('checklist.empty') }}</p>
       <Button :label="t('checklist.starters')" icon="pi pi-sparkles" size="small" outlined severity="secondary" class="mt-3" @click="addStarters" />
+    </div>
     </div>
   </DashCard>
 
