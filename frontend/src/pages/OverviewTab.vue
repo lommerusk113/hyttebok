@@ -11,7 +11,7 @@ import WeatherIcon from '../components/WeatherIcon.vue'
 import { loadWeather, loadWeatherDays, stayWeather } from '../weather'
 import { api, photoUrl } from '../api'
 import { toggleShopping, undoToast } from '../actions'
-import { cabin, INFO_TILES } from '../cabin'
+import { cabin, editCabin, INFO_TILES } from '../cabin'
 import { status as maintenanceStatus } from '../maintenance'
 import { dueLabel, overdueBadge, STATUS_STYLE } from '../maintenanceLabels'
 import { colorFor, formatDay, initials, parseIsoDate, timeAgo, toIsoDate } from '../utils'
@@ -108,6 +108,12 @@ function copy(text) {
 
     <!-- About the cabin: description + info buttons; a button slides its content open below -->
     <DashCard :title="t('home.about')" icon="pi pi-home" tint="bg-zinc-100 text-zinc-700">
+      <template #action>
+        <RouterLink to="/wiki" class="-my-2 inline-flex min-h-11 items-center gap-1.5 text-sm font-medium text-zinc-500 hover:text-zinc-950">
+          <i class="pi pi-info-circle text-xs" />{{ t('wiki.title') }}
+        </RouterLink>
+        <Button icon="pi pi-pencil" text rounded size="small" severity="secondary" class="-my-2" :aria-label="t('home.editInfo')" v-tooltip.left="t('home.editInfo')" @click="editCabin++" />
+      </template>
       <p v-if="cabin.description" class="mb-4 max-w-3xl whitespace-pre-line leading-relaxed text-zinc-600">{{ cabin.description }}</p>
 
       <div v-if="infoTiles.length" class="flex flex-wrap gap-2">
@@ -221,7 +227,7 @@ function copy(text) {
       </div>
 
       <div class="contents lg:flex lg:flex-col lg:gap-6">
-        <DashCard class="order-3" :title="t('tabs.shopping')" icon="pi pi-shopping-cart" tint="bg-amber-50 text-amber-700" to="/handleliste" :count="openShopping">
+        <DashCard class="order-3" collapsible :title="t('tabs.shopping')" icon="pi pi-shopping-cart" tint="bg-amber-50 text-amber-700" to="/handleliste" :count="openShopping">
           <ul class="-mx-1">
             <li v-for="i in visibleShopping.slice(0, SHOPPING_LIMIT)" :key="i.id">
               <label class="flex min-h-11 cursor-pointer items-center gap-3 rounded px-1">
@@ -238,7 +244,7 @@ function copy(text) {
         </DashCard>
 
         <!-- Recurring tasks and one-off jobs together, like on the Vedlikehold tab -->
-        <DashCard class="order-4" :title="t('tabs.maintenance')" icon="pi pi-wrench" tint="bg-zinc-100 text-zinc-700" to="/vedlikehold"
+        <DashCard class="order-4" collapsible :title="t('tabs.maintenance')" icon="pi pi-wrench" tint="bg-zinc-100 text-zinc-700" to="/vedlikehold"
                   :count="overdueCount" count-class="bg-rose-50 text-rose-700" :count-title="overdueBadge(overdueCount)">
           <ul v-if="taskRows.length" class="-mx-2">
             <li v-for="r in taskRows.slice(0, TASK_LIMIT)" :key="r.key">
@@ -262,7 +268,7 @@ function copy(text) {
         </DashCard>
 
         <!-- Suggestions live in their lists now: jobs under Vedlikehold, purchases on the shopping list -->
-        <DashCard class="order-6" :title="t('overview.topIdeas')" icon="pi pi-lightbulb" tint="bg-amber-50 text-amber-700">
+        <DashCard class="order-6" collapsible :title="t('overview.topIdeas')" icon="pi pi-lightbulb" tint="bg-amber-50 text-amber-700">
           <ul v-if="topIdeas.length" class="-mx-2">
             <li v-for="s in topIdeas" :key="s.id">
               <RouterLink :to="s.category === 'BUY' ? '/handleliste' : '/vedlikehold/forslag'" class="flex min-h-11 items-center gap-2.5 rounded-md px-2 transition hover:bg-zinc-50">

@@ -9,7 +9,7 @@ import InputText from 'primevue/inputtext'
 import Textarea from 'primevue/textarea'
 import ToggleSwitch from 'primevue/toggleswitch'
 import { photoUrl, uploadPhoto } from '../api'
-import { cabin, INFO_TILES, loadCabin, saveCabin } from '../cabin'
+import { cabin, editCabin, INFO_TILES, loadCabin, saveCabin } from '../cabin'
 import { dayWeather, loadWeather, reloadWeather } from '../weather'
 import { toIsoDate } from '../dates'
 import WeatherIcon from '../components/WeatherIcon.vue'
@@ -25,6 +25,7 @@ const HyttebokTab = defineAsyncComponent(() => import('./HyttebokTab.vue'))
 const MaintenanceTab = defineAsyncComponent(() => import('./MaintenanceTab.vue'))
 const ShoppingPage = defineAsyncComponent(() => import('./ShoppingPage.vue'))
 const ForumPage = defineAsyncComponent(() => import('./ForumPage.vue'))
+const WikiPage = defineAsyncComponent(() => import('./WikiPage.vue'))
 const AccessPage = defineAsyncComponent(() => import('./AccessPage.vue'))
 
 // "Tilgang" is only for those who can manage access (owners and system admins).
@@ -36,8 +37,11 @@ const ALL_TABS = [
   { key: 'hyttebok', label: 'tabs.logbook', icon: 'pi pi-book', component: HyttebokTab },
   { key: 'forum', label: 'tabs.forum', icon: 'pi pi-comments', component: ForumPage },
   { key: 'tilgang', label: 'access.title', icon: 'pi pi-users', component: AccessPage, managersOnly: true },
+  // Not in the bar: mostly for the chatbot; reached from "Om hytta".
+  { key: 'wiki', label: 'wiki.title', icon: 'pi pi-info-circle', component: WikiPage, hidden: true },
 ]
 const TABS = computed(() => ALL_TABS.filter(tb => !tb.managersOnly || auth.value?.canManage))
+const BAR_TABS = computed(() => TABS.value.filter(tb => !tb.hidden))
 
 const route = useRoute()
 const toast = useToast()
@@ -128,6 +132,7 @@ function startEdit() {
   pendingHero.value = null
   editing.value = true
 }
+watch(editCabin, startEdit)
 
 async function save() {
 
@@ -191,8 +196,8 @@ async function save() {
       <!-- Each tab keeps a readable width; on a narrow phone the bar scrolls sideways -->
       <div class="relative">
         <div ref="tabsScroll" class="grid gap-1 overflow-x-auto rounded-lg border border-zinc-200 bg-surface p-1 shadow-sm [scrollbar-width:none]"
-             :style="{ gridTemplateColumns: `repeat(${TABS.length}, minmax(4.25rem, 1fr))` }" @scroll.passive="measureTabs">
-          <RouterLink v-for="tb in TABS" :key="tb.key" :to="tabLink(tb)"
+             :style="{ gridTemplateColumns: `repeat(${BAR_TABS.length}, minmax(4.25rem, 1fr))` }" @scroll.passive="measureTabs">
+          <RouterLink v-for="tb in BAR_TABS" :key="tb.key" :to="tabLink(tb)"
                       class="relative flex min-w-0 flex-col items-center gap-0.5 rounded-md px-1 py-1.5 text-[11px] sm:px-2 sm:text-xs font-medium text-zinc-500 transition hover:bg-zinc-100 hover:text-zinc-900 sm:flex-row sm:justify-center sm:gap-2 sm:text-sm"
                       :class="tab === tb && '!bg-zinc-950 !text-surface'">
             <i :class="tb.icon" />{{ t(tb.label) }}

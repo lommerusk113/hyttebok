@@ -602,5 +602,23 @@
       "sad": "Sad",
       "party": "Hooray"
     }
+  },
+  "wiki": {
+    "title": "Cabin wiki",
+    "new": "New page",
+    "search": "Search the wiki",
+    "noMatch": "No pages match.",
+    "empty": "No pages yet. Write down what people wonder about: water, power, heating, keys, where things are.",
+    "chatHint": "The chat uses what is written here when it answers questions about the cabin.",
+    "titlePlaceholder": "E.g. \"Water and pump\"",
+    "pageTitle": "Title",
+    "content": "Content",
+    "contentPlaceholder": "Write what you know …",
+    "formatHint": "Lines starting with \"- \" become a bullet list. Web addresses become links.",
+    "updatedBy": "Last edited by {name} {time}",
+    "blank": "This page is empty.",
+    "missing": "This page no longer exists.",
+    "pick": "Pick a page, or make a new one.",
+    "deleteTitle": "Delete this page?"
   }
 }

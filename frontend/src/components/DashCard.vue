@@ -1,19 +1,29 @@
 <script setup>
+import { ref, useId } from 'vue'
 import { t } from '../i18n'
 
 // `countLabel`/`countClass` replace the plain number when it means something specific (e.g. "2 på overtid");
 // `countTitle` explains a bare number (tooltip and screen readers).
-defineProps({ title: String, icon: String, tint: String, to: String, count: Number, countLabel: String, countClass: String, countTitle: String, scroll: Boolean })
+// `collapsible`: starts folded to its header (title and count); tapping the header opens it.
+const props = defineProps({ title: String, icon: String, tint: String, to: String, count: Number, countLabel: String, countClass: String, countTitle: String, scroll: Boolean,
+  collapsible: Boolean })
+
+const open = ref(!props.collapsible)
+const bodyId = useId()
 </script>
 
 <template>
   <section class="card flex flex-col">
-    <header class="flex items-center gap-3 px-5 pb-2 pt-4">
-      <span :class="tint" class="grid size-8 shrink-0 place-items-center rounded-md"><i :class="icon" class="text-sm" /></span>
-      <h2 class="min-w-0 truncate font-semibold">{{ title }}</h2>
-      <span v-if="countLabel || count" class="shrink-0 whitespace-nowrap rounded-full px-2 py-0.5 text-xs font-medium" :class="countClass || 'bg-zinc-100 text-zinc-600'"
-            :title="countTitle" :aria-label="countTitle">{{ countLabel || count }}</span>
-      <span class="flex-1" />
+    <header class="flex items-center gap-3 px-5 pt-4" :class="open ? 'pb-2' : 'pb-4'">
+      <component :is="collapsible ? 'button' : 'div'" class="flex min-w-0 flex-1 items-center gap-3 text-left" v-bind="collapsible && { type: 'button', 'aria-expanded': open, 'aria-controls': bodyId }"
+                 @click="collapsible && (open = !open)">
+        <span :class="tint" class="grid size-8 shrink-0 place-items-center rounded-md"><i :class="icon" class="text-sm" /></span>
+        <h2 class="min-w-0 truncate font-semibold">{{ title }}</h2>
+        <span v-if="countLabel || count" class="shrink-0 whitespace-nowrap rounded-full px-2 py-0.5 text-xs font-medium" :class="countClass || 'bg-zinc-100 text-zinc-600'"
+              :title="countTitle" :aria-label="countTitle">{{ countLabel || count }}</span>
+        <span class="flex-1" />
+        <i v-if="collapsible" class="pi pi-chevron-down text-xs text-zinc-500 transition-transform" :class="open && 'rotate-180'" />
+      </component>
       <slot name="action" />
       <!-- Phones get just the arrow so the title keeps its line -->
       <RouterLink v-if="to" :to="to" :aria-label="`${t('overview.seeAll')}: ${title}`"
@@ -22,7 +32,7 @@ defineProps({ title: String, icon: String, tint: String, to: String, count: Numb
       </RouterLink>
     </header>
     <!-- `scroll`: the card keeps the height it's given and the body scrolls -->
-    <div class="flex-1 px-5 pb-4" :class="scroll && 'min-h-0 overflow-y-auto'">
+    <div v-show="open" :id="bodyId" class="flex-1 px-5 pb-4" :class="scroll && 'min-h-0 overflow-y-auto'">
       <slot />
     </div>
   </section>

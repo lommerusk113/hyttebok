@@ -26,6 +26,7 @@ import no.hyttebok.shopping.ShoppingItemController;
 import no.hyttebok.todo.Todo;
 import no.hyttebok.todo.TodoController;
 import no.hyttebok.weather.WeatherService;
+import no.hyttebok.wiki.WikiPageRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -58,6 +59,7 @@ public class ChatService {
     private static final int MAX_HISTORY = 20;
     private static final int RECENT_BOOKINGS = 5;
     private static final int WEATHER_DAYS = 45;
+    private static final int MAX_WIKI_CHARS = 60_000;
     // The API is busy now and then (5xx): wait a little and try again.
     private static final List<Duration> RETRY_AFTER = List.of(Duration.ofSeconds(1), Duration.ofSeconds(3));
 
@@ -71,6 +73,7 @@ public class ChatService {
     private final MaintenanceController maintenance;
     private final MaintenanceCompletionController completions;
     private final WeatherService weather;
+    private final WikiPageRepository wiki;
     private final JsonMapper json;
     private final HttpClient http = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(10)).build();
 
@@ -97,6 +100,7 @@ public class ChatService {
                        MaintenanceController maintenance,
                        MaintenanceCompletionController completions,
                        WeatherService weather,
+                       WikiPageRepository wiki,
                        JsonMapper json) {
         this.apiKey = apiKey;
         this.model = model;
@@ -108,6 +112,7 @@ public class ChatService {
         this.maintenance = maintenance;
         this.completions = completions;
         this.weather = weather;
+        this.wiki = wiki;
         this.json = json;
     }
 
@@ -166,7 +171,8 @@ public class ChatService {
             You are the assistant in Hyttebok, the family cabin app. Answer in %s, short and friendly, as plain text \
             (no markdown; start a line with "- " for a list).
             The person asking is %s. Today is %s.
-            Use only the data below; if something isn't there, say you don't know. Use the ids from the data, never invent them.
+            Use only the data below; if something isn't there, say you don't know. For how things work at the cabin \
+            (water, power, heating, keys, where things are, routines), look in the CABIN WIKI first. Use the ids from the data, never invent them.
             You can change things with the tools. For a booking, make sure you know who, the first day and the last day; \
             if anything is unclear (e.g. which weekend), ask before booking. If dates overlap an existing booking, say so.
             After using a tool, say briefly what you did. Talk about dates naturally (e.g. "fredag 16. oktober"), not as ISO.
@@ -174,7 +180,7 @@ public class ChatService {
             LocalDate.now(ZONE) + " (" + LocalDate.now(ZONE).getDayOfWeek().getDisplayName(TextStyle.FULL, Locale.ENGLISH) + ")");
     }
 
-    /** The cabin's data as compact text. Left out on purpose: WiFi password and notes. */
+    /** The cabin's data as compact text, with the wiki. Left out on purpose: WiFi password and notes. */
     private String context() {
 
         var today = LocalDate.now(ZONE);
@@ -196,6 +202,22 @@ public class ChatService {
         }
         if (!hidden.contains("wifi") && cabin.wifiName() != null) {
             out.append("\nWiFi network: ").append(cabin.wifiName()).append(" (password: see the WiFi card in the app)");
+        }
+
+        // ponytail: every page goes in, up to a cap; search the wiki with a tool instead if it outgrows this.
+        var pages = wiki.listOrderByTitle();
+        if (!pages.isEmpty()) {
+            out.append("\n\nCABIN WIKI (written by the family):");
+            var room = MAX_WIKI_CHARS;
+            for (var page : pages) {
+                var text = "\n## " + page.title() + "\n" + (page.content() == null ? "" : page.content().trim());
+                if (text.length() > room) {
+                    out.append("\n(more wiki pages left out: too long)");
+                    break;
+                }
+                out.append(text);
+                room -= text.length();
+            }
         }
 
         var all = bookings.list();

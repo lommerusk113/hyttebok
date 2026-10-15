@@ -4,6 +4,9 @@ import { api } from './api'
 // Shared so the hero updates when e.g. the photos tab picks a new cover image.
 export const cabin = ref(null)
 
+// Bump to open the cabin's edit panel (it lives on the home page; "Om hytta" has its own pencil too).
+export const editCabin = ref(0)
+
 export const INFO_TILES = [
   { key: 'arrivalInfo', icon: 'pi pi-sign-in', tint: 'bg-zinc-100 text-zinc-700' },
   { key: 'departureInfo', icon: 'pi pi-sign-out', tint: 'bg-zinc-100 text-zinc-700' },

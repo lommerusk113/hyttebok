@@ -602,5 +602,23 @@
       "sad": "Trist",
       "party": "Hurra"
     }
+  },
+  "wiki": {
+    "title": "Hyttewiki",
+    "new": "Ny side",
+    "search": "Søk i wikien",
+    "noMatch": "Ingen sider passer søket.",
+    "empty": "Ingen sider ennå. Skriv ned det folk lurer på: vann, strøm, varme, nøkler, hvor ting er.",
+    "chatHint": "Chatten bruker det som står her når den svarer på spørsmål om hytta.",
+    "titlePlaceholder": "F.eks. «Vann og pumpe»",
+    "pageTitle": "Tittel",
+    "content": "Innhold",
+    "contentPlaceholder": "Skriv det du vet …",
+    "formatHint": "Linjer som starter med «- » blir punktliste. Nettadresser blir lenker.",
+    "updatedBy": "Sist endret av {name} {time}",
+    "blank": "Siden er tom.",
+    "missing": "Siden finnes ikke lenger.",
+    "pick": "Velg en side, eller lag en ny.",
+    "deleteTitle": "Slette siden?"
   }
 }
