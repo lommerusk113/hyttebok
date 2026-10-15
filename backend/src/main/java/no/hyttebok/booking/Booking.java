@@ -4,6 +4,7 @@ import io.micronaut.core.annotation.Nullable;
 import io.micronaut.data.annotation.GeneratedValue;
 import io.micronaut.data.annotation.Id;
 import io.micronaut.data.annotation.MappedEntity;
+import io.micronaut.data.annotation.TenantId;
 import io.micronaut.serde.annotation.Serdeable;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -18,5 +19,6 @@ public record Booking(@Id @GeneratedValue @Nullable Long id,
                       @NotNull LocalDate startDate,
                       @NotNull LocalDate endDate,
                       @Nullable @Positive Integer guests,
-                      @Nullable String note) {
+                      @Nullable String note,
+                      @TenantId @Nullable Long cabinId) {
 }

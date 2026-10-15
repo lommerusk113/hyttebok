@@ -13,6 +13,7 @@ import { i18n, primeLocale, t } from './i18n'
 import { startSync } from './api'
 import { dataVersion } from './offline'
 import './install'
+import { inCabin, setCabin } from './hytte'
 
 // Ravnsmark: monochrome, black is the accent.
 const preset = definePreset(Aura, {
@@ -45,14 +46,23 @@ const router = createRouter({
     { path: '/app', component: () => import('./pages/AppPage.vue') },
     { path: '/invitasjon/:token', component: () => import('./pages/InvitePage.vue') },
     { path: '/nytt-passord/:token', component: () => import('./pages/ResetPasswordPage.vue') },
-    // The old "Lister" tab now lives under Vedlikehold; links in old notifications still work.
-    { path: '/lister/:sub?', redirect: to => ({ path: `/vedlikehold/${to.params.sub || ''}`, query: to.query }) },
-    // Older links and notifications: the shopping list used to live under Vedlikehold
-    { path: '/vedlikehold/handle', redirect: '/handleliste' },
-    { path: '/:tab(booking|hyttebok|vedlikehold|handleliste|tilgang)?/:sub?', component: () => import('./pages/HomePage.vue') },
+    // "Mine hytter": the cabins you belong to, a new cabin, and asking for access with a join code.
+    { path: '/', component: () => import('./pages/CabinsPage.vue') },
+    // One cabin: /h/<id>/<tab>/<section>. The id (not the name: names needn't be unique) picks the cabin.
+    { path: '/h/:cabinId(\\d+)/:tab(booking|hyttebok|vedlikehold|handleliste|tilgang)?/:sub?', component: () => import('./pages/HomePage.vue') },
+    // Links without a cabin (inside the app, and in notifications sent before there were several cabins)
+    // open in the cabin you're in. Older names first: "Lister" moved to Vedlikehold, the shopping list to its own tab.
+    { path: '/lister/:sub?', redirect: to => ({ path: inCabin(`/vedlikehold/${to.params.sub || ''}`), query: to.query }) },
+    { path: '/vedlikehold/handle', redirect: () => inCabin('/handleliste') },
+    { path: '/:tab(booking|hyttebok|vedlikehold|handleliste|tilgang)/:sub?', redirect: to => ({ path: inCabin(to.path), query: to.query }) },
     { path: '/:pathMatch(.*)*', redirect: '/' },
   ],
 
+})
+
+// The address decides the cabin; remember it so links without one, and the next visit, go back there.
+router.beforeEach(to => {
+  if (to.params.cabinId) setCabin(to.params.cabinId)
 })
 
 const app = createApp(App)

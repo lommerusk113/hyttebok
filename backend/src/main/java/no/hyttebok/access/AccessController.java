@@ -15,13 +15,12 @@ import io.micronaut.security.rules.SecurityRule;
 import io.micronaut.serde.annotation.Serdeable;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Pattern;
-import jakarta.validation.constraints.Size;
-import no.hyttebok.auth.AppUser;
 import no.hyttebok.auth.AppUserRepository;
 import no.hyttebok.auth.PasswordReset;
 import no.hyttebok.auth.PasswordResetRepository;
+import no.hyttebok.cabin.CabinContext;
 import no.hyttebok.cabin.CabinInfoRepository;
-import no.hyttebok.push.Notifier;
+import no.hyttebok.cabin.JoinCodes;
 
 import java.security.SecureRandom;
 import java.time.Duration;
@@ -29,19 +28,19 @@ import java.time.Instant;
 import java.util.Base64;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-import java.util.stream.StreamSupport;
 
 /**
- * Who has access: access requests, members and roles, invitation links, and (for system admins) every user
- * who has logged in. Logged-in non-members may only ask for access or accept an invitation.
+ * Who has access to the cabin of the request: access requests, members and roles, invitation links and the
+ * join code. Owners (and admins in admin mode) manage it. There is deliberately no list of all users or cabins:
+ * people get in through an invitation link (straight in) or the join code (asks the owners).
  */
 @Controller("/api/access")
 @Secured(SecurityRule.IS_AUTHENTICATED)
 public class AccessController {
 
-    private static final long CABIN_ID = 1L;
     private static final Duration INVITE_VALID = Duration.ofDays(14);
     private static final Duration RESET_VALID = Duration.ofDays(1);
     private static final int TOKEN_BYTES = 18;
@@ -53,12 +52,10 @@ public class AccessController {
     private final AccessRequestRepository requests;
     private final CabinInfoRepository cabins;
     private final PasswordResetRepository resets;
-    private final Notifier notifier;
     private final SecureRandom random = new SecureRandom();
 
-    public AccessController(AccessService access, AppUserRepository users, MembershipRepository memberships,
-                            InvitationRepository invitations, AccessRequestRepository requests, CabinInfoRepository cabins,
-                            PasswordResetRepository resets, Notifier notifier) {
+    public AccessController(AccessService access, AppUserRepository users, MembershipRepository memberships, InvitationRepository invitations,
+                            AccessRequestRepository requests, CabinInfoRepository cabins, PasswordResetRepository resets) {
         this.access = access;
         this.users = users;
         this.memberships = memberships;
@@ -66,11 +63,10 @@ public class AccessController {
         this.requests = requests;
         this.cabins = cabins;
         this.resets = resets;
-        this.notifier = notifier;
     }
 
     @Serdeable
-    public record Person(Long id, String name, String email, @Nullable String picture, @Nullable String role, boolean admin) {
+    public record Person(Long id, String name, String email, @Nullable String picture, @Nullable String role) {
     }
 
     @Serdeable
@@ -86,33 +82,28 @@ public class AccessController {
     }
 
     @Serdeable
-    public record RequestBody(@Nullable @Size(max = 500) String message) {
+    public record Accepted(Long cabinId) {
     }
 
     @Serdeable
     public record RoleBody(@Pattern(regexp = "OWNER|MEMBER") String role) {
     }
 
-    // ---- asking for access ----
-
-    @Post("/requests")
-    @io.micronaut.http.annotation.Status(HttpStatus.CREATED)
-    public void request(Authentication auth, @Body @Valid RequestBody body) {
-
-        var userId = AccessService.userId(auth);
-        if (memberships.existsById(userId) || requests.findFirstByUserIdAndStatus(userId, AccessRequest.PENDING).isPresent()) {
-            return; // already in, or already waiting
-        }
-        var message = body.message() == null || body.message().isBlank() ? null : body.message().trim();
-        var saved = requests.save(new AccessRequest(null, userId, message, AccessRequest.PENDING, Instant.now(), null, null));
-        notifier.accessRequested(saved.id(), userId, String.valueOf(auth.getAttributes().get("name")), message);
+    @Serdeable
+    public record Code(String code) {
     }
+
+    @Serdeable
+    public record ResetLink(String token, Instant expiresAt) {
+    }
+
+    // ---- requests (made with the join code, see CabinsController) ----
 
     @Get("/requests")
     public List<PendingRequest> pending(Authentication auth) {
 
         access.requireManager(auth);
-        var pending = requests.findByStatusOrderByCreatedAt(AccessRequest.PENDING);
+        var pending = requests.findByCabinIdAndStatusOrderByCreatedAt(CabinContext.require(), AccessRequest.PENDING);
         var people = people(pending.stream().map(AccessRequest::userId).toList());
 
         return pending.stream().filter(r -> people.containsKey(r.userId()))
@@ -132,10 +123,13 @@ public class AccessController {
     private void decide(Authentication auth, Long id, String status) {
 
         access.requireManager(auth);
-        var request = requests.findById(id).orElseThrow(() -> new HttpStatusException(HttpStatus.NOT_FOUND, "No such request"));
-        requests.update(new AccessRequest(request.id(), request.userId(), request.message(), status, request.createdAt(), AccessService.userId(auth), Instant.now()));
-        if ("APPROVED".equals(status) && !memberships.existsById(request.userId())) {
-            memberships.save(new Membership(request.userId(), Membership.MEMBER, Instant.now()));
+        var cabin = CabinContext.require();
+        var request = requests.findById(id).filter(r -> r.cabinId().equals(cabin))
+            .orElseThrow(() -> new HttpStatusException(HttpStatus.NOT_FOUND, "No such request"));
+        requests.update(new AccessRequest(request.id(), request.cabinId(), request.userId(), request.message(), status, request.createdAt(),
+            AccessService.userId(auth), Instant.now()));
+        if ("APPROVED".equals(status)) {
+            join(request.userId(), cabin, Membership.MEMBER);
         }
     }
 
@@ -145,7 +139,7 @@ public class AccessController {
     public List<Person> members(Authentication auth) {
 
         access.requireManager(auth);
-        var ids = StreamSupport.stream(memberships.findAll().spliterator(), false).map(Membership::userId).toList();
+        var ids = memberships.findByCabinId(CabinContext.require()).stream().map(Membership::userId).toList();
 
         return people(ids).values().stream().sorted((a, b) -> a.name().compareToIgnoreCase(b.name())).toList();
     }
@@ -154,50 +148,58 @@ public class AccessController {
     public void changeRole(Authentication auth, Long userId, @Body @Valid RoleBody body) {
 
         access.requireManager(auth);
-        var member = memberships.findById(userId).orElseThrow(() -> new HttpStatusException(HttpStatus.NOT_FOUND, "Not a member"));
-        memberships.update(new Membership(member.userId(), body.role(), member.createdAt()));
+        var member = memberships.findByUserIdAndCabinId(userId, CabinContext.require())
+            .orElseThrow(() -> new HttpStatusException(HttpStatus.NOT_FOUND, "Not a member"));
+        memberships.update(member.withRole(body.role()));
     }
 
     @Delete("/members/{userId}")
     public void removeMember(Authentication auth, Long userId) {
         access.requireManager(auth);
-        memberships.deleteById(userId);
+        memberships.deleteByUserIdAndCabinId(userId, CabinContext.require());
     }
 
-    /**
-     * System admins only, for themselves: how an admin gets into a cabin nobody has access to yet. There is
-     * deliberately no list of all users: access is given through requests and invitations.
-     */
+    /** System admins: give yourself owner access to the cabin of the request (e.g. one you're inspecting in admin mode). */
     @Post("/self")
     public void grantSelf(Authentication auth) {
 
         access.requireAdmin(auth);
-        var userId = AccessService.userId(auth);
-        memberships.findById(userId).ifPresentOrElse(
-            m -> memberships.update(new Membership(m.userId(), Membership.OWNER, m.createdAt())),
-            () -> memberships.save(new Membership(userId, Membership.OWNER, Instant.now())));
+        var cabin = CabinContext.require();
+        memberships.findByUserIdAndCabinId(AccessService.userId(auth), cabin).ifPresentOrElse(
+            m -> memberships.update(m.withRole(Membership.OWNER)),
+            () -> join(AccessService.userId(auth), cabin, Membership.OWNER));
+    }
+
+    // ---- join code ----
+
+    @Get("/code")
+    public Code code(Authentication auth) {
+        access.requireManager(auth);
+        return new Code(JoinCodes.display(cabins.findJoinCode(CabinContext.require()).orElseThrow()));
+    }
+
+    /** A new code; the old one stops working (e.g. if it was shared too widely). */
+    @Post("/code")
+    public Code newCode(Authentication auth) {
+
+        access.requireManager(auth);
+        var code = JoinCodes.generate();
+        cabins.updateJoinCode(CabinContext.require(), code);
+
+        return new Code(JoinCodes.display(code));
     }
 
     // ---- new password (no email service: the link is shared by hand) ----
 
-    @Serdeable
-    public record ResetLink(String token, Instant expiresAt) {
-    }
-
-    /** For members: a one-time link to set a new password, valid for a day. */
+    /** For members of this cabin: a one-time link to set a new password, valid for a day. */
     @Post("/users/{userId}/password-reset")
     public ResetLink passwordReset(Authentication auth, Long userId) {
 
-        if (!access.canManage(auth) || !memberships.existsById(userId)) {
-            throw new HttpStatusException(HttpStatus.FORBIDDEN, "Not allowed");
+        access.requireManager(auth);
+        if (!memberships.existsByUserIdAndCabinId(userId, CabinContext.require())) {
+            throw new HttpStatusException(HttpStatus.NOT_FOUND, "Not a member");
         }
-        if (users.findById(userId).isEmpty()) {
-            throw new HttpStatusException(HttpStatus.NOT_FOUND, "No such user");
-        }
-        var bytes = new byte[TOKEN_BYTES];
-        random.nextBytes(bytes);
-        var reset = resets.save(new PasswordReset(Base64.getUrlEncoder().withoutPadding().encodeToString(bytes), userId, AccessService.userId(auth),
-            Instant.now().plus(RESET_VALID), false));
+        var reset = resets.save(new PasswordReset(token(), userId, AccessService.userId(auth), Instant.now().plus(RESET_VALID), false));
 
         return new ResetLink(reset.token(), reset.expiresAt());
     }
@@ -209,8 +211,8 @@ public class AccessController {
 
         access.requireManager(auth);
         var now = Instant.now();
-        var active = invitations.findByRevokedFalseOrderByCreatedAtDesc().stream().filter(i -> i.usable(now)).toList();
-        var people = people(active.stream().map(Invitation::createdBy).filter(java.util.Objects::nonNull).toList());
+        var active = invitations.findByCabinIdAndRevokedFalseOrderByCreatedAtDesc(CabinContext.require()).stream().filter(i -> i.usable(now)).toList();
+        var people = people(active.stream().map(Invitation::createdBy).filter(Objects::nonNull).toList());
 
         return active.stream().map(i -> new Invite(i.id(), i.token(), i.createdBy() == null || !people.containsKey(i.createdBy()) ? null : people.get(i.createdBy()).name(),
             i.expiresAt(), i.uses())).toList();
@@ -220,11 +222,8 @@ public class AccessController {
     public Invite createInvite(Authentication auth) {
 
         access.requireManager(auth);
-        var bytes = new byte[TOKEN_BYTES];
-        random.nextBytes(bytes);
         var now = Instant.now();
-        var saved = invitations.save(new Invitation(null, Base64.getUrlEncoder().withoutPadding().encodeToString(bytes), AccessService.userId(auth),
-            now, now.plus(INVITE_VALID), false, 0));
+        var saved = invitations.save(new Invitation(null, CabinContext.require(), token(), AccessService.userId(auth), now, now.plus(INVITE_VALID), false, 0));
 
         return new Invite(saved.id(), saved.token(), String.valueOf(auth.getAttributes().get("name")), saved.expiresAt(), 0);
     }
@@ -233,7 +232,9 @@ public class AccessController {
     public void revokeInvite(Authentication auth, Long id) {
 
         access.requireManager(auth);
-        invitations.findById(id).ifPresent(i -> invitations.update(new Invitation(i.id(), i.token(), i.createdBy(), i.createdAt(), i.expiresAt(), true, i.uses())));
+        var cabin = CabinContext.require();
+        invitations.findById(id).filter(i -> i.cabinId().equals(cabin)).ifPresent(i -> invitations.update(
+            new Invitation(i.id(), i.cabinId(), i.token(), i.createdBy(), i.createdAt(), i.expiresAt(), true, i.uses())));
     }
 
     /** Shown before login on the invitation page: which cabin, and who invited you. */
@@ -241,25 +242,41 @@ public class AccessController {
     @Secured(SecurityRule.IS_ANONYMOUS)
     public InviteInfo inviteInfo(String token) {
 
-        var cabinName = cabins.findById(CABIN_ID).map(c -> c.name()).orElse("Hyttebok");
         var invite = invitations.findByToken(token).filter(i -> i.usable(Instant.now()));
+        var cabinName = invite.flatMap(i -> cabins.findById(i.cabinId())).map(c -> c.name()).orElse("Hyttebok");
         var invitedBy = invite.map(Invitation::createdBy).flatMap(users::findById).map(u -> u.name() == null ? u.email() : u.name()).orElse(null);
 
         return new InviteInfo(invite.isPresent(), cabinName, invitedBy);
     }
 
+    /** Joins the invitation's cabin (whatever cabin the app is showing) and says which one, so the app can go there. */
     @Post("/invites/{token}/accept")
-    public void accept(Authentication auth, String token) {
+    public Accepted accept(Authentication auth, String token) {
 
         var invite = invitations.findByToken(token).filter(i -> i.usable(Instant.now()))
             .orElseThrow(() -> new HttpStatusException(HttpStatus.GONE, "This invitation has expired or was revoked"));
         var userId = AccessService.userId(auth);
-        if (!memberships.existsById(userId)) {
-            memberships.save(new Membership(userId, Membership.MEMBER, Instant.now()));
-            invitations.update(new Invitation(invite.id(), invite.token(), invite.createdBy(), invite.createdAt(), invite.expiresAt(), false, invite.uses() + 1));
+        if (!memberships.existsByUserIdAndCabinId(userId, invite.cabinId())) {
+            join(userId, invite.cabinId(), Membership.MEMBER);
+            invitations.update(new Invitation(invite.id(), invite.cabinId(), invite.token(), invite.createdBy(), invite.createdAt(), invite.expiresAt(), false,
+                invite.uses() + 1));
         }
-        requests.findFirstByUserIdAndStatus(userId, AccessRequest.PENDING)
-            .ifPresent(r -> requests.update(new AccessRequest(r.id(), r.userId(), r.message(), "APPROVED", r.createdAt(), invite.createdBy(), Instant.now())));
+        requests.findFirstByCabinIdAndUserIdAndStatus(invite.cabinId(), userId, AccessRequest.PENDING)
+            .ifPresent(r -> requests.update(new AccessRequest(r.id(), r.cabinId(), r.userId(), r.message(), "APPROVED", r.createdAt(), invite.createdBy(), Instant.now())));
+
+        return new Accepted(invite.cabinId());
+    }
+
+    private void join(Long userId, Long cabinId, String role) {
+        if (!memberships.existsByUserIdAndCabinId(userId, cabinId)) {
+            memberships.save(new Membership(null, userId, cabinId, role, Instant.now()));
+        }
+    }
+
+    private String token() {
+        var bytes = new byte[TOKEN_BYTES];
+        random.nextBytes(bytes);
+        return Base64.getUrlEncoder().withoutPadding().encodeToString(bytes);
     }
 
     private Map<Long, Person> people(List<Long> ids) {
@@ -267,10 +284,10 @@ public class AccessController {
         if (ids.isEmpty()) {
             return Map.of();
         }
-        var roles = StreamSupport.stream(memberships.findAll().spliterator(), false).collect(Collectors.toMap(Membership::userId, Membership::role));
+        var roles = memberships.findByCabinId(CabinContext.require()).stream().collect(Collectors.toMap(Membership::userId, Membership::role));
 
         return users.findByIdIn(ids).stream()
-            .map(u -> new Person(u.id(), u.name() == null ? u.email() : u.name(), u.email(), u.picture(), roles.get(u.id()), u.emailVerified() && access.isAdmin(u.email())))
+            .map(u -> new Person(u.id(), u.name() == null ? u.email() : u.name(), u.email(), u.picture(), roles.get(u.id())))
             .collect(Collectors.toMap(Person::id, Function.identity()));
     }
 }

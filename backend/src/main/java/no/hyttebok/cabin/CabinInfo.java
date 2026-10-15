@@ -1,6 +1,7 @@
 package no.hyttebok.cabin;
 
 import io.micronaut.core.annotation.Nullable;
+import io.micronaut.data.annotation.GeneratedValue;
 import io.micronaut.data.annotation.Id;
 import io.micronaut.data.annotation.MappedEntity;
 import io.micronaut.data.annotation.TypeDef;
@@ -13,7 +14,7 @@ import java.util.List;
 
 @Serdeable
 @MappedEntity
-public record CabinInfo(@Id Long id,
+public record CabinInfo(@Id @GeneratedValue @Nullable Long id,
                         @NotBlank String name,
                         @Nullable String tagline,
                         @Nullable String description,

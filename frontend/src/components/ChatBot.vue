@@ -6,6 +6,7 @@ import Textarea from 'primevue/textarea'
 import RichText from './RichText.vue'
 import { userName } from '../user'
 import { dataVersion } from '../offline'
+import { cabinHeaders } from '../hytte'
 import { locale, t } from '../i18n'
 
 // Chat with the cabin (Gemini, via /api/chat). It can answer from the app's data and make changes
@@ -37,7 +38,7 @@ async function send(text = draft.value) {
     // Straight fetch, not api.post: a chat question shouldn't wait in the offline queue.
     const res = await fetch('/api/chat', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...cabinHeaders() },
       body: JSON.stringify({ messages: messages.value.map(({ role, text }) => ({ role, text })), name: userName.value || null, lang: locale.value }),
     })
     if (!res.ok) throw new Error(res.status === 503 ? 'chat.notSetUp' : res.status === 429 ? 'chat.quota' : 'chat.failed')

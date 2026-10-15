@@ -10,7 +10,9 @@ import java.util.Optional;
 @JdbcRepository(dialect = Dialect.POSTGRES)
 public interface AccessRequestRepository extends CrudRepository<AccessRequest, Long> {
 
-    List<AccessRequest> findByStatusOrderByCreatedAt(String status);
+    List<AccessRequest> findByCabinIdAndStatusOrderByCreatedAt(Long cabinId, String status);
 
-    Optional<AccessRequest> findFirstByUserIdAndStatus(Long userId, String status);
+    Optional<AccessRequest> findFirstByCabinIdAndUserIdAndStatus(Long cabinId, Long userId, String status);
+
+    List<AccessRequest> findByUserIdAndStatus(Long userId, String status);
 }

@@ -5,6 +5,9 @@ import jakarta.inject.Singleton;
 import no.hyttebok.maintenance.Maintenance;
 import no.hyttebok.maintenance.MaintenanceRepository;
 
+import no.hyttebok.cabin.CabinContext;
+import no.hyttebok.cabin.CabinInfoRepository;
+
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
@@ -23,14 +26,23 @@ public class MaintenanceReminderJob {
 
     private final MaintenanceRepository maintenance;
     private final Notifier notifier;
+    private final CabinInfoRepository cabins;
 
-    public MaintenanceReminderJob(MaintenanceRepository maintenance, Notifier notifier) {
+    public MaintenanceReminderJob(MaintenanceRepository maintenance, Notifier notifier, CabinInfoRepository cabins) {
         this.maintenance = maintenance;
         this.notifier = notifier;
+        this.cabins = cabins;
     }
 
     @Scheduled(cron = "0 0 8 * * *", zoneId = "Europe/Oslo")
     void run() {
+        for (var cabin : cabins.findAll()) {
+            CabinContext.runAs(cabin.id(), this::remind);
+        }
+    }
+
+    /** For the current cabin. */
+    private void remind() {
 
         var today = LocalDate.now(OSLO);
         var dueToday = new ArrayList<Maintenance>();

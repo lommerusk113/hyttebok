@@ -36,7 +36,7 @@ public class MaintenanceController {
 
         var saved = repository.save(maintenance);
         if (saved.lastCompleted() != null) {
-            completions.save(new MaintenanceCompletion(null, saved.id(), saved.lastCompleted(), null, null));
+            completions.save(new MaintenanceCompletion(null, saved.id(), saved.lastCompleted(), null, null, null));
         }
 
         return saved;
@@ -53,12 +53,12 @@ public class MaintenanceController {
         var latest = completions.findMaxCompletedOnByMaintenanceId(maintenance.id());
         var typed = maintenance.lastCompleted();
         if (typed != null && (latest == null || typed.isAfter(latest))) {
-            completions.save(new MaintenanceCompletion(null, maintenance.id(), typed, null, null));
+            completions.save(new MaintenanceCompletion(null, maintenance.id(), typed, null, null, null));
             latest = typed;
         }
 
         var updated = new Maintenance(maintenance.id(), maintenance.name(), maintenance.description(), maintenance.intervalValue(),
-            maintenance.intervalUnit(), latest, maintenance.createdAt());
+            maintenance.intervalUnit(), latest, maintenance.createdAt(), maintenance.cabinId());
 
         return repository.update(updated);
     }

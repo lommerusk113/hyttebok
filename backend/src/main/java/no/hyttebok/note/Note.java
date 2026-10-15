@@ -5,6 +5,7 @@ import io.micronaut.data.annotation.DateUpdated;
 import io.micronaut.data.annotation.GeneratedValue;
 import io.micronaut.data.annotation.Id;
 import io.micronaut.data.annotation.MappedEntity;
+import io.micronaut.data.annotation.TenantId;
 import io.micronaut.serde.annotation.Serdeable;
 import jakarta.validation.constraints.NotBlank;
 
@@ -17,5 +18,6 @@ public record Note(@Id @GeneratedValue @Nullable Long id,
                    @Nullable String content,
                    @NotBlank String color,
                    boolean pinned,
-                   @DateUpdated @Nullable Instant updatedAt) {
+                   @DateUpdated @Nullable Instant updatedAt,
+                   @TenantId @Nullable Long cabinId) {
 }

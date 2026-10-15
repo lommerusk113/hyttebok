@@ -15,6 +15,7 @@ import io.micronaut.serde.annotation.Serdeable;
 import no.hyttebok.access.AccessRequest;
 import no.hyttebok.access.AccessRequestRepository;
 import no.hyttebok.access.AccessService;
+import no.hyttebok.cabin.CabinContext;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
@@ -62,13 +63,13 @@ public class AuthController {
     }
 
     /**
-     * {@code role}: OWNER, MEMBER or null (no access); {@code canManage}: owner or admin (the "Tilgang" page);
-     * {@code waitingRequests}: access requests they can answer.
+     * For the cabin the app is showing: {@code role} (OWNER, MEMBER or null = no access), {@code canManage} (owner,
+     * or admin in admin mode: the "Tilgang" tab) and {@code waitingRequests}. {@code admin}: may switch on admin mode.
      */
     /** {@code googleEnabled}: show "Logg inn med Google" (GOOGLE_CLIENT_ID is set); email + password always works. */
     @Serdeable
     public record Me(boolean loginEnabled, boolean googleEnabled, @Nullable User user, @Nullable String role, boolean admin, boolean canManage,
-                     boolean requestPending, int waitingRequests) {
+                     boolean adminMode, int waitingRequests) {
     }
 
     @Get("/me")
@@ -79,13 +80,13 @@ public class AuthController {
         }
         var attributes = authentication.getAttributes();
         var user = new User(String.valueOf(attributes.get("name")), String.valueOf(attributes.get("email")), String.valueOf(attributes.getOrDefault("picture", "")));
+        // Role, manage rights and waiting requests are for the cabin the app is showing (X-Hytte), if any.
+        var cabin = CabinContext.current();
         var role = access.role(authentication);
-        var pending = role == null && requests.findFirstByUserIdAndStatus(AccessService.userId(authentication), AccessRequest.PENDING).isPresent();
+        var canManage = cabin.isPresent() && access.canManage(authentication);
+        var waiting = canManage ? requests.findByCabinIdAndStatusOrderByCreatedAt(cabin.get(), AccessRequest.PENDING).size() : 0;
 
-        var canManage = access.canManage(authentication);
-        var waiting = canManage ? requests.findByStatusOrderByCreatedAt(AccessRequest.PENDING).size() : 0;
-
-        return new Me(true, login.googleOn(), user, role, access.isAdmin(authentication), canManage, pending, waiting);
+        return new Me(true, login.googleOn(), user, role, access.isAdmin(authentication), canManage, access.adminMode(authentication), waiting);
     }
 
     /** New email + password account. It starts without access, like a Google login; the app then logs in via POST /login. */

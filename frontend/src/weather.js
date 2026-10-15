@@ -31,12 +31,17 @@ export async function loadWeatherDays(from, to) {
 /** After the cabin's location changed: drop everything and fetch for the new spot. */
 export const weatherVersion = ref(0)
 export function reloadWeather() {
+  forgetWeather()
+  return loadWeather()
+}
+
+/** Another cabin: drop this one's weather; the next page that shows weather fetches the new cabin's. */
+export function forgetWeather() {
   byDate.clear()
   loadedRanges.clear()
   loading = null
   weather.value = null
   weatherVersion.value++
-  return loadWeather()
 }
 
 export const dayWeather = iso => byDate.get(iso) ?? null

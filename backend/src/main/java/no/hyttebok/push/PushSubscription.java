@@ -30,7 +30,8 @@ public record PushSubscription(@Id @GeneratedValue @Nullable Long id,
                                @Pattern(regexp = "nb|en") String lang,
                                @NotNull @TypeDef(type = DataType.STRING_ARRAY) List<@Pattern(regexp = "BOOKING|POST|SUGGESTION|TODO|SHOPPING|MAINTENANCE|ACCESS") String> topics,
                                @DateCreated @Nullable Instant createdAt,
-                               @Nullable Long userId) {
+                               @Nullable Long userId,
+                               @Nullable Long cabinId) {
 
     boolean wants(Topic topic) {
         return topics.contains(topic.name());

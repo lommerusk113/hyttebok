@@ -9,6 +9,7 @@ import java.time.Instant;
 
 @MappedEntity
 public record Invitation(@Id @GeneratedValue @Nullable Long id,
+                         Long cabinId,
                          String token,
                          @Nullable Long createdBy,
                          Instant createdAt,

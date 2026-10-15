@@ -441,13 +441,13 @@
   },
   "access": {
     "title": "Access",
-    "noAccessTitle": "You don't have access yet",
-    "noAccessText": "Ask for access and the cabin's owners are told. If you got an invitation link, open that instead.",
+    "noAccessTitle": "You don't have access to this cabin",
+    "noAccessText": "Ask the owners for an invitation or the cabin's code, and use it under \"My cabins\".",
     "messagePlaceholder": "Message (optional), e.g. \"Hi, it's Kari!\"",
     "request": "Request access",
     "requestSent": "Request sent. An owner needs to approve it.",
     "checkAgain": "Check again",
-    "adminHint": "You're a system admin. Give yourself access as owner, then invite the others from Access.",
+    "adminHint": "You're a system admin and can give yourself access as owner.",
     "invitedTo": "You're invited to {cabin}",
     "invitedBy": "by {name}",
     "joining": "Joining …",
@@ -481,7 +481,13 @@
     "resetLink": "New-password link",
     "resetShareTitle": "New password for {name}",
     "waiting": "{n} waiting for an answer | {n} waiting for an answer",
-    "grantSelf": "Give me access as owner"
+    "grantSelf": "Give me access as owner",
+    "code": "Code to ask for access",
+    "codeHint": "Whoever has the code can ask for access under \"My cabins\". You approve it here. The cabin is never shown to anyone else.",
+    "codeCopied": "Code copied",
+    "newCode": "New code",
+    "newCodeTitle": "Make a new code?",
+    "newCodeMessage": "The old code stops working. Requests already sent are kept."
   },
   "checklist": {
     "title": "Checklist",
@@ -498,5 +504,27 @@
     "goThrough": "Go through the checklist",
     "expand": "Show the checklist",
     "collapse": "Hide the checklist"
+  },
+  "cabins": {
+    "title": "My cabins",
+    "new": "New cabin",
+    "none": "You don't have any cabins yet. Make a new one, or ask for access with a cabin's code.",
+    "haveCode": "Have a code?",
+    "codeHint": "A cabin's owners can give you its code. They're told and approve you.",
+    "code": "Code",
+    "codePlaceholder": "ABCD-2345",
+    "ask": "Request access",
+    "asked": "Your request was sent to the owners of {name}.",
+    "alreadyAsked": "You already asked for access to {name}. Waiting for an answer.",
+    "codeUnknown": "No cabin with that code. Check it's typed correctly.",
+    "tooManyCodes": "Too many wrong codes. Try again in an hour.",
+    "waitingFor": "Waiting for an answer from {name}",
+    "name": "What's the cabin called?",
+    "namePlaceholder": "E.g. Fjellro",
+    "newHint": "You'll be the owner and can invite the rest of the family.",
+    "create": "Create cabin",
+    "adminModeOn": "Admin mode is on: you see every cabin.",
+    "adminMode": "Admin mode",
+    "adminModeHint": "See every cabin, for troubleshooting"
   }
 }

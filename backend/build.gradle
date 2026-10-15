@@ -19,6 +19,8 @@ dependencies {
     implementation("io.micronaut:micronaut-management")
     implementation("io.micronaut.data:micronaut-data-jdbc")
     implementation("io.micronaut.flyway:micronaut-flyway")
+    // Several cabins in one database: Micronaut Data adds "cabin_id = ?" to every query on cabin data.
+    implementation("io.micronaut.multitenancy:micronaut-multitenancy")
     implementation("io.micronaut.security:micronaut-security-jwt")
     implementation("io.micronaut.security:micronaut-security-oauth2")
     // The OAuth client talks to Google (discovery, token exchange) with an HTTP client.

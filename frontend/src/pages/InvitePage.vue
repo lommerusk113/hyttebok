@@ -1,5 +1,5 @@
 <script setup>
-import { onMounted, ref, watch } from 'vue'
+import { onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { acceptInvite, auth, loadAuth, rememberInvite } from '../auth'
 import LoginForm from '../components/LoginForm.vue'
@@ -13,16 +13,16 @@ const token = route.params.token
 const info = ref(null)
 const failed = ref(false)
 
-// In as soon as there's access, whoever accepted the invitation (this page, or the login on its way back).
-watch(() => auth.value?.role, role => { if (role) router.replace('/') }, { immediate: true })
-
 onMounted(async () => {
   info.value = await (await fetch(`/api/access/invites/${encodeURIComponent(token)}/info`)).json()
-  if (!info.value.valid || auth.value?.role) return
+  if (!info.value.valid) return
   // Not logged in yet: whichever way they log in (Google or password), the invitation waits in this browser.
   if (!auth.value?.user) return rememberInvite(token)
-  if (await acceptInvite(token)) await loadAuth()
-  else if (!auth.value?.role) failed.value = true
+  // Logged in: join (or, if already a member, just go there) and open the invitation's cabin.
+  const joined = await acceptInvite(token)
+  if (!joined) return (failed.value = true)
+  await loadAuth()
+  router.replace(`/h/${joined}`)
 })
 
 </script>
@@ -40,7 +40,7 @@ onMounted(async () => {
       <template v-else>
         <h1 class="mt-5 text-xl font-semibold">{{ t('access.inviteInvalid') }}</h1>
         <p class="mt-1 text-zinc-600">{{ t('access.inviteInvalidHint') }}</p>
-        <RouterLink to="/" class="mt-6 inline-flex min-h-11 items-center font-medium underline underline-offset-4">{{ t('access.toStart') }}</RouterLink>
+        <RouterLink to="/?alle=1" class="mt-6 inline-flex min-h-11 items-center font-medium underline underline-offset-4">{{ t('access.toStart') }}</RouterLink>
       </template>
     </div>
   </div>

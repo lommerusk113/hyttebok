@@ -5,6 +5,9 @@ import jakarta.inject.Singleton;
 import no.hyttebok.shopping.ShoppingItem;
 import no.hyttebok.shopping.ShoppingItemRepository;
 
+import no.hyttebok.cabin.CabinContext;
+import no.hyttebok.cabin.CabinInfoRepository;
+
 import java.time.Instant;
 import java.util.List;
 
@@ -19,12 +22,14 @@ public class ShoppingDigestJob {
 
     private final ShoppingItemRepository items;
     private final Notifier notifier;
+    private final CabinInfoRepository cabins;
     // ponytail: in memory; items added right before a restart are simply not announced
     private Instant lastRun = Instant.now();
 
-    public ShoppingDigestJob(ShoppingItemRepository items, Notifier notifier) {
+    public ShoppingDigestJob(ShoppingItemRepository items, Notifier notifier, CabinInfoRepository cabins) {
         this.items = items;
         this.notifier = notifier;
+        this.cabins = cabins;
     }
 
     @Scheduled(fixedDelay = "5m", initialDelay = "1m")
@@ -32,6 +37,14 @@ public class ShoppingDigestJob {
 
         var since = lastRun;
         lastRun = Instant.now();
+        for (var cabin : cabins.findAll()) {
+            CabinContext.runAs(cabin.id(), () -> announce(since));
+        }
+    }
+
+    /** One digest per cabin, to the devices following it. */
+    private void announce(Instant since) {
+
         var added = items.findByCreatedAtGreaterThan(since);
         if (added.isEmpty()) {
             return;

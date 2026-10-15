@@ -1,5 +1,5 @@
 <script setup>
-import { computed, defineAsyncComponent, onMounted, ref, watch } from 'vue'
+import { computed, defineAsyncComponent, nextTick, onMounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { useToast } from 'primevue/usetoast'
 import Button from 'primevue/button'
@@ -66,11 +66,17 @@ const tab = computed(() => TABS.value.find(tb => tb.key === (route.params.tab ||
 const view = computed(() => tab.value.component)
 // New tab: if you'd scrolled past the cover, start the new content at its top (nothing above the tabs moves).
 const tabsNav = ref()
+// A tab bar wider than the phone (six tabs): keep the open tab in view.
+// (Also when the cabin has loaded: the bar only appears then.)
+watch([() => tab.value.key, cabin], async () => {
+  await nextTick()
+  tabsNav.value?.querySelector('[aria-current="page"]')?.scrollIntoView({ block: 'nearest', inline: 'nearest' })
+}, { immediate: true })
 watch(() => tab.value.key, () => {
   const top = tabsNav.value.getBoundingClientRect().top + scrollY - (window.innerWidth < 640 ? 56 : 64)
   if (scrollY > top) scrollTo({ top })
 })
-const tabLink = tb => (tb.key ? `/${tb.key}` : '/')
+const tabLink = tb => `/h/${route.params.cabinId}${tb.key ? `/${tb.key}` : ''}`
 
 const textareas = {}
 
@@ -168,7 +174,9 @@ async function save() {
 
     <!-- Tabs -->
     <nav ref="tabsNav" class="sticky top-14 z-20 -mx-4 bg-page/90 px-4 py-2 backdrop-blur mt-4 sm:top-16">
-      <div class="grid gap-1 rounded-lg border border-zinc-200 bg-surface p-1 shadow-sm" :style="{ gridTemplateColumns: `repeat(${TABS.length}, minmax(0, 1fr))` }">
+      <!-- Each tab keeps a readable width; on a narrow phone with six tabs (owners) the bar scrolls sideways -->
+      <div class="grid gap-1 overflow-x-auto rounded-lg border border-zinc-200 bg-surface p-1 shadow-sm [scrollbar-width:none]"
+           :style="{ gridTemplateColumns: `repeat(${TABS.length}, minmax(4.25rem, 1fr))` }">
         <RouterLink v-for="tb in TABS" :key="tb.key" :to="tabLink(tb)"
                     class="relative flex min-w-0 flex-col items-center gap-0.5 rounded-md px-1 py-1.5 text-[11px] sm:px-2 sm:text-xs font-medium text-zinc-500 transition hover:bg-zinc-100 hover:text-zinc-900 sm:flex-row sm:justify-center sm:gap-2 sm:text-sm"
                     :class="tab === tb && '!bg-zinc-950 !text-surface'">

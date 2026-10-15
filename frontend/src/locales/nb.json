@@ -441,13 +441,13 @@
   },
   "access": {
     "title": "Tilgang",
-    "noAccessTitle": "Du har ikke tilgang ennå",
-    "noAccessText": "Be om tilgang, så får eierne av hytta beskjed. Har du fått en invitasjonslenke, kan du åpne den i stedet.",
+    "noAccessTitle": "Du har ikke tilgang til denne hytta",
+    "noAccessText": "Be eierne om en invitasjon eller koden til hytta, og bruk den under «Mine hytter».",
     "messagePlaceholder": "Melding (valgfritt), f.eks. «Hei, det er Kari!»",
     "request": "Be om tilgang",
     "requestSent": "Forespørselen er sendt. En eier må godkjenne den.",
     "checkAgain": "Sjekk på nytt",
-    "adminHint": "Du er systemadministrator. Gi deg selv tilgang som eier, og inviter de andre fra Tilgang.",
+    "adminHint": "Du er systemadministrator og kan gi deg selv tilgang som eier.",
     "invitedTo": "Du er invitert til {cabin}",
     "invitedBy": "av {name}",
     "joining": "Blir med …",
@@ -481,7 +481,13 @@
     "resetLink": "Lenke for nytt passord",
     "resetShareTitle": "Nytt passord for {name}",
     "waiting": "{n} venter på svar | {n} venter på svar",
-    "grantSelf": "Gi meg tilgang som eier"
+    "grantSelf": "Gi meg tilgang som eier",
+    "code": "Kode for å be om tilgang",
+    "codeHint": "Den som har koden, kan be om tilgang under «Mine hytter». Dere godkjenner forespørselen her. Hytta vises aldri for andre.",
+    "codeCopied": "Koden er kopiert",
+    "newCode": "Ny kode",
+    "newCodeTitle": "Lage ny kode?",
+    "newCodeMessage": "Den gamle koden slutter å virke. Allerede sendte forespørsler beholdes."
   },
   "checklist": {
     "title": "Sjekkliste",
@@ -498,5 +504,27 @@
     "goThrough": "Gå gjennom sjekklista",
     "expand": "Vis sjekklista",
     "collapse": "Skjul sjekklista"
+  },
+  "cabins": {
+    "title": "Mine hytter",
+    "new": "Ny hytte",
+    "none": "Du har ingen hytter ennå. Lag en ny, eller be om tilgang med koden til en hytte.",
+    "haveCode": "Har du en kode?",
+    "codeHint": "Eierne av en hytte kan gi deg koden. De får beskjed og godkjenner deg.",
+    "code": "Kode",
+    "codePlaceholder": "ABCD-2345",
+    "ask": "Be om tilgang",
+    "asked": "Forespørselen er sendt til eierne av {name}.",
+    "alreadyAsked": "Du har allerede bedt om tilgang til {name}. Venter på svar.",
+    "codeUnknown": "Fant ingen hytte med den koden. Sjekk at den er skrevet riktig.",
+    "tooManyCodes": "For mange feil koder. Prøv igjen om en time.",
+    "waitingFor": "Venter på svar fra {name}",
+    "name": "Hva heter hytta?",
+    "namePlaceholder": "F.eks. Fjellro",
+    "newHint": "Du blir eier og kan invitere resten av familien.",
+    "create": "Lag hytta",
+    "adminModeOn": "Adminmodus er på: du ser alle hyttene.",
+    "adminMode": "Adminmodus",
+    "adminModeHint": "Se alle hytter, for feilsøking"
   }
 }

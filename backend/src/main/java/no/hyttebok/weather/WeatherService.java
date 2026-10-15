@@ -4,6 +4,7 @@ import io.micronaut.core.annotation.Nullable;
 import io.micronaut.json.JsonMapper;
 import io.micronaut.serde.annotation.Serdeable;
 import jakarta.inject.Singleton;
+import no.hyttebok.cabin.CabinContext;
 import no.hyttebok.cabin.CabinInfo;
 import no.hyttebok.cabin.CabinInfoRepository;
 import org.slf4j.Logger;
@@ -40,7 +41,6 @@ public class WeatherService {
 
     private static final Logger LOG = LoggerFactory.getLogger(WeatherService.class);
     private static final ZoneId ZONE = ZoneId.of("Europe/Oslo");
-    private static final long CABIN_ID = 1L;
     // MET asks clients to identify themselves; browsers can't set this, which is why weather goes via the backend.
     private static final String USER_AGENT = "Hyttebok/1.0 https://github.com/lommerusk113/hyttebok";
     private static final Duration FORECAST_TTL = Duration.ofMinutes(30);
@@ -53,8 +53,10 @@ public class WeatherService {
     private final JsonMapper json;
     private final HttpClient http = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(10)).followRedirects(HttpClient.Redirect.NORMAL).build();
 
-    private @Nullable Forecast forecast;
-    private @Nullable Climate climate;
+    // Per place (rounded coordinates + height), so several cabins don't push each other's weather out.
+    // ponytail: never shrinks; fine for a few dozen cabins.
+    private final Map<String, Forecast> forecasts = new HashMap<>();
+    private final Map<String, Climate> climates = new HashMap<>();
     private @Nullable String heightTriedFor;
     // ponytail: in memory, so a restart refetches; bounded by the months people browse (archive starts 1940).
     private final Map<String, ArchiveMonth> archive = new HashMap<>();
@@ -94,7 +96,7 @@ public class WeatherService {
 
     public synchronized DayWeather.Report report() {
 
-        var cabin = locate(cabins.findById(CABIN_ID).orElseThrow());
+        var cabin = locate(cabins.findById(CabinContext.require()).orElseThrow());
         if (cabin.latitude() == null || cabin.longitude() == null) {
             return new DayWeather.Report(null, null, null, null, List.of(), List.of(), false);
         }
@@ -102,6 +104,8 @@ public class WeatherService {
         var place = place(cabin);
         var stale = refreshForecast(place);
         refreshClimate(place);
+        var forecast = forecasts.get(place.key());
+        var climate = climates.get(place.key());
 
         var today = LocalDate.now(ZONE);
         var days = forecast == null ? List.<DayWeather>of() : forecast.days().stream().filter(d -> !d.date().isBefore(today)).toList();
@@ -136,6 +140,7 @@ public class WeatherService {
             }
         }
 
+        var climate = climates.get(place.key());
         var forecastByDate = new HashMap<LocalDate, DayWeather>();
         report.days().forEach(d -> forecastByDate.put(d.date(), d));
         for (var date = from.isBefore(today) ? today : from; !date.isAfter(to); date = date.plusDays(1)) {
@@ -178,7 +183,8 @@ public class WeatherService {
     /** @return true if serving an older forecast because both sources failed */
     private boolean refreshForecast(Spot place) {
 
-        if (forecast != null && forecast.key().equals(place.key()) && forecast.fetchedAt().plus(FORECAST_TTL).isAfter(Instant.now())) {
+        var forecast = forecasts.get(place.key());
+        if (forecast != null && forecast.fetchedAt().plus(FORECAST_TTL).isAfter(Instant.now())) {
             return false;
         }
 
@@ -200,7 +206,7 @@ public class WeatherService {
             return forecast != null;
         }
 
-        forecast = new Forecast(place.key(), Instant.now(), merge(met, openMeteo));
+        forecasts.put(place.key(), new Forecast(place.key(), Instant.now(), merge(met, openMeteo)));
         return false;
     }
 
@@ -222,14 +228,15 @@ public class WeatherService {
     private void refreshClimate(Spot place) {
 
         var year = LocalDate.now(ZONE).getYear();
-        if (climate != null && climate.key().equals(place.key()) && climate.year() == year) {
+        var climate = climates.get(place.key());
+        if (climate != null && climate.year() == year) {
             return;
         }
         try {
             var archive = get("https://archive-api.open-meteo.com/v1/archive?" + place.openMeteo()
                 + "&start_date=" + (year - CLIMATE_YEARS) + "-01-01&end_date=" + (year - 1) + "-12-31"
                 + "&daily=temperature_2m_max,temperature_2m_min,precipitation_sum&timezone=Europe%2FOslo", OpenMeteo.Response.class);
-            climate = new Climate(place.key(), year, OpenMeteo.climate(archive), OpenMeteo.normals(archive));
+            climates.put(place.key(), new Climate(place.key(), year, OpenMeteo.climate(archive), OpenMeteo.normals(archive)));
         } catch (Exception e) {
             LOG.warn("Open-Meteo archive failed: {}", e.toString()); // keep the previous averages, if any
         }

@@ -17,6 +17,7 @@ const confirm = useConfirm()
 const toast = useToast()
 const requests = ref([])
 const invites = ref([])
+const joinCode = ref('')
 const members = ref([])
 const loaded = ref(false)
 
@@ -24,7 +25,9 @@ const ROLES = computed(() => [{ value: 'OWNER', label: t('access.roles.OWNER') }
 const inviteUrl = token => `${location.origin}/invitasjon/${token}`
 
 async function load() {
-  ;[requests.value, invites.value, members.value] = await Promise.all(['/access/requests', '/access/invites', '/access/members'].map(api.get))
+  let code
+  ;[requests.value, invites.value, members.value, code] = await Promise.all(['/access/requests', '/access/invites', '/access/members', '/access/code'].map(api.get))
+  joinCode.value = code.code
   loaded.value = true
 }
 onMounted(load)
@@ -67,6 +70,25 @@ async function shareUrl(url, title) {
     // No clipboard (plain http, or the browser said no): show the link so it can be copied by hand.
     toast.add({ severity: 'info', summary: t('access.copyLink'), detail: url, life: 15000 })
   }
+}
+
+async function copyCode() {
+  try {
+    await navigator.clipboard.writeText(joinCode.value)
+    toast.add({ severity: 'success', summary: t('access.codeCopied'), life: 2000 })
+  } catch {
+    toast.add({ severity: 'info', summary: t('access.code'), detail: joinCode.value, life: 8000 })
+  }
+}
+
+function newCode() {
+  confirm.require({
+    header: t('access.newCodeTitle'),
+    message: t('access.newCodeMessage'),
+    acceptProps: { label: t('access.newCode') },
+    rejectProps: { label: t('common.cancel'), severity: 'secondary', text: true },
+    accept: async () => { joinCode.value = (await api.post('/access/code')).code },
+  })
 }
 
 async function revoke(invite) {
@@ -117,6 +139,16 @@ function remove(member) {
           </li>
         </ul>
         <p v-else class="py-1 text-sm text-zinc-500">{{ t('access.noRequests') }}</p>
+      </DashCard>
+
+      <!-- The code people type under "Mine hytter" to ask for access (owners approve above) -->
+      <DashCard :title="t('access.code')" icon="pi pi-key" tint="bg-violet-50 text-violet-700">
+        <p class="mb-3 text-sm text-zinc-500">{{ t('access.codeHint') }}</p>
+        <div class="flex flex-wrap items-center gap-2">
+          <span class="rounded-lg bg-zinc-100 px-4 py-2 font-mono text-lg font-semibold tracking-widest">{{ joinCode }}</span>
+          <Button icon="pi pi-copy" :label="t('common.copy')" size="small" outlined severity="secondary" @click="copyCode" />
+          <Button icon="pi pi-refresh" :label="t('access.newCode')" size="small" text severity="secondary" @click="newCode" />
+        </div>
       </DashCard>
 
       <!-- Links to share in the family chat -->

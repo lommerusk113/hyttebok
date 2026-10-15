@@ -23,8 +23,11 @@ without either, the app has no login and is open to everyone who can reach it.
    ```
 3. `docker compose up -d backend`
 
-Anyone with a Google account can log in, but only members see the cabin. System admins (`ADMIN_EMAILS`, comma-separated) open *Tilgang* and give access, their own included.
-Owners can then share invitation links (valid 14 days) and approve people who tap *Be om tilgang*.
+Anyone can log in and create cabins of their own (*Mine hytter*); everyone only sees the cabins they belong to.
+Each cabin lives under `/h/<id>/…`. Others get in through an invitation link (straight in) or the cabin's join code
+(shown on *Tilgang*; typed under *Mine hytter*, then approved by an owner). Cabins are never listed for anyone else.
+System admins (`ADMIN_EMAILS`) are ordinary users until they switch on *Adminmodus* in the menu: then they see every
+cabin and can give themselves access, for support. Invitation links are valid for 14 days.
 Sessions last 90 days; the signing key is generated on first start and kept in the database.
 Forgotten password: an owner or admin makes a one-day *new password* link on *Tilgang* (there is no email service).
 Admins must log in with Google at least once: a password account doesn't prove the email is theirs.

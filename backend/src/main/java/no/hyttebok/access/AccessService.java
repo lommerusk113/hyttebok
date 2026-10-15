@@ -3,9 +3,11 @@ package no.hyttebok.access;
 import io.micronaut.context.annotation.Value;
 import io.micronaut.core.annotation.Nullable;
 import io.micronaut.http.HttpStatus;
+import io.micronaut.http.context.ServerRequestContext;
 import io.micronaut.http.exceptions.HttpStatusException;
 import io.micronaut.security.authentication.Authentication;
 import jakarta.inject.Singleton;
+import no.hyttebok.cabin.CabinContext;
 
 import java.util.Arrays;
 import java.util.Locale;
@@ -13,11 +15,14 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
- * Who may do what. System admins come from ADMIN_EMAILS (comma-separated, Google-verified) and manage access,
- * but see the cabin only once they're a member too. Owners invite people and approve requests; members use the app.
+ * Who may do what, per cabin. Owners invite people and approve requests; members use the cabin.
+ * System admins (ADMIN_EMAILS, Google-verified) are ordinary users until they switch on admin mode
+ * (the app sends "X-Admin-Mode: on"); then they see every cabin and act as owner in any of them, for support.
  */
 @Singleton
 public class AccessService {
+
+    public static final String ADMIN_MODE_HEADER = "X-Admin-Mode";
 
     private final Set<String> adminEmails;
     private final MembershipRepository memberships;
@@ -44,18 +49,35 @@ public class AccessService {
         return adminEmails.contains(email.toLowerCase(Locale.ROOT));
     }
 
+    /** An admin who switched admin mode on for this request. */
+    public boolean adminMode(Authentication authentication) {
+        return isAdmin(authentication) && ServerRequestContext.currentRequest()
+            .map(r -> "on".equals(r.getHeaders().get(ADMIN_MODE_HEADER))).orElse(false);
+    }
+
+    /** OWNER, MEMBER or null in the given cabin. */
+    @Nullable
+    public String role(Authentication authentication, long cabinId) {
+        return memberships.findByUserIdAndCabinId(userId(authentication), cabinId).map(Membership::role).orElse(null);
+    }
+
+    /** Role in the cabin of the current request, or null. */
     @Nullable
     public String role(Authentication authentication) {
-        return memberships.findById(userId(authentication)).map(Membership::role).orElse(null);
+        return CabinContext.current().map(cabin -> role(authentication, cabin)).orElse(null);
+    }
+
+    public boolean canEnter(Authentication authentication, long cabinId) {
+        return adminMode(authentication) || role(authentication, cabinId) != null;
     }
 
     public boolean canManage(Authentication authentication) {
-        return isAdmin(authentication) || Membership.OWNER.equals(role(authentication));
+        return adminMode(authentication) || Membership.OWNER.equals(role(authentication));
     }
 
     void requireManager(Authentication authentication) {
         if (!canManage(authentication)) {
-            throw new HttpStatusException(HttpStatus.FORBIDDEN, "Only owners and admins can manage access");
+            throw new HttpStatusException(HttpStatus.FORBIDDEN, "Only owners can manage access");
         }
     }
 

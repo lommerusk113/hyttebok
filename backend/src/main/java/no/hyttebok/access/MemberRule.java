@@ -8,13 +8,14 @@ import io.micronaut.security.rules.ConfigurationInterceptUrlMapRule;
 import io.micronaut.security.rules.SecurityRule;
 import io.micronaut.security.rules.SecurityRuleResult;
 import jakarta.inject.Singleton;
+import no.hyttebok.cabin.CabinContext;
 import org.reactivestreams.Publisher;
 
 /**
- * The cabin's data (everything under /api without its own @Secured rule) is for members only. Logged in but
- * not a member = 403, checked on every request so access granted or removed counts immediately.
- * Runs after the @Secured rule (auth and access endpoints decide for themselves) and before the URL map,
- * which only knows "logged in".
+ * A cabin's data (everything under /api without its own @Secured rule) is only for members of that cabin: the
+ * request must name a cabin (X-Hytte) and the user must belong to it (or be an admin in admin mode). Checked on
+ * every request, so access granted or removed counts immediately. Runs after the @Secured rule (auth, access and
+ * cabin endpoints decide for themselves) and before the URL map, which only knows "logged in".
  */
 @Singleton
 public class MemberRule implements SecurityRule<HttpRequest<?>> {
@@ -31,8 +32,12 @@ public class MemberRule implements SecurityRule<HttpRequest<?>> {
         if (request == null || authentication == null || !request.getPath().startsWith("/api/")) {
             return Publishers.just(SecurityRuleResult.UNKNOWN);
         }
+        var cabin = CabinContext.fromRequest(request);
 
-        return Publishers.just(access.role(authentication) != null ? SecurityRuleResult.UNKNOWN : SecurityRuleResult.REJECTED);
+        var adminMode = access.isAdmin(authentication) && "on".equals(request.getHeaders().get(AccessService.ADMIN_MODE_HEADER));
+        var allowed = cabin.isPresent() && (adminMode || access.role(authentication, cabin.get()) != null);
+
+        return Publishers.just(allowed ? SecurityRuleResult.UNKNOWN : SecurityRuleResult.REJECTED);
     }
 
     @Override

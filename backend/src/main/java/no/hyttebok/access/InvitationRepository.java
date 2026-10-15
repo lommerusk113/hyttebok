@@ -12,5 +12,5 @@ public interface InvitationRepository extends CrudRepository<Invitation, Long> {
 
     Optional<Invitation> findByToken(String token);
 
-    List<Invitation> findByRevokedFalseOrderByCreatedAtDesc();
+    List<Invitation> findByCabinIdAndRevokedFalseOrderByCreatedAtDesc(Long cabinId);
 }

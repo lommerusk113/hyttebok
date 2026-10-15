@@ -10,6 +10,7 @@ import no.hyttebok.access.MembershipRepository;
 import no.hyttebok.auth.AppUser;
 import no.hyttebok.auth.AppUserRepository;
 import no.hyttebok.booking.Booking;
+import no.hyttebok.cabin.CabinContext;
 import no.hyttebok.log.LogEntry;
 import no.hyttebok.suggestion.Suggestion;
 import no.hyttebok.todo.Todo;
@@ -52,19 +53,28 @@ public class Notifier {
     public record Message(String title, String body, String url, String tag) {
     }
 
-    /** {@code messageFor} returns null to skip a device (e.g. nothing relevant for that person). */
+    /**
+     * Tells the devices following the current cabin (the request's, or the job's) that asked for {@code topic}.
+     * {@code messageFor} returns null to skip a device (e.g. nothing relevant for that person).
+     */
     public void notify(Topic topic, Function<PushSubscription, Message> messageFor) {
+        var cabinId = CabinContext.require(); // read now: the sending thread below is no longer in the request
         Thread.startVirtualThread(() -> {
-            for (var subscription : subscriptions.findAll()) {
+            for (var subscription : subscriptions.findByCabinId(cabinId)) {
                 if (!subscription.wants(topic)) {
                     continue;
                 }
                 var message = messageFor.apply(subscription);
                 if (message != null) {
-                    deliver(subscription, message);
+                    deliver(subscription, inCabin(message, cabinId));
                 }
             }
         });
+    }
+
+    /** Links open the right cabin ("/booking?id=3" → "/h/2/booking?id=3"); tags keep cabins apart on the phone. */
+    static Message inCabin(Message message, long cabinId) {
+        return new Message(message.title(), message.body(), "/h/" + cabinId + message.url(), "c" + cabinId + "-" + message.tag());
     }
 
     public void deliver(PushSubscription subscription, Message message) {
@@ -86,23 +96,23 @@ public class Notifier {
      * Someone asked for access: tell the devices of everyone who can approve it (owners and system admins)
      * and switched on "Forespørsler om tilgang" (ACCESS, only offered to them in the app).
      */
-    public void accessRequested(Long requestId, Long requesterId, String name, @Nullable String message) {
+    public void accessRequested(Long cabinId, Long requestId, Long requesterId, String name, @Nullable String message) {
         Thread.startVirtualThread(() -> {
-            for (var subscription : subscriptions.findAll()) {
+            for (var subscription : subscriptions.findByCabinId(cabinId)) {
                 if (!subscription.wants(Topic.ACCESS) || subscription.userId() == null || subscription.userId().equals(requesterId)
-                    || !canApprove(subscription.userId())) {
+                    || !canApprove(subscription.userId(), cabinId)) {
                     continue;
                 }
                 var quote = message == null ? "" : ": «" + message + "»";
-                deliver(subscription, en(subscription)
+                deliver(subscription, inCabin(en(subscription)
                     ? new Message("Access request", name + " is asking for access" + quote, "/tilgang", "access-" + requestId)
-                    : new Message("Forespørsel om tilgang", name + " ber om tilgang" + quote, "/tilgang", "access-" + requestId));
+                    : new Message("Forespørsel om tilgang", name + " ber om tilgang" + quote, "/tilgang", "access-" + requestId), cabinId));
             }
         });
     }
 
-    private boolean canApprove(Long userId) {
-        return memberships.findById(userId).map(m -> Membership.OWNER.equals(m.role())).orElse(false)
+    private boolean canApprove(Long userId, Long cabinId) {
+        return memberships.findByUserIdAndCabinId(userId, cabinId).map(m -> Membership.OWNER.equals(m.role())).orElse(false)
             || users.findById(userId).filter(AppUser::emailVerified).map(u -> access.isAdmin(u.email())).orElse(false);
     }
 

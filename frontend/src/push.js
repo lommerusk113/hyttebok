@@ -1,5 +1,6 @@
 import { ref } from 'vue'
 import { api } from './api'
+import { cabinId } from './hytte'
 import { installed, isIos } from './install'
 
 // Push notifications for this device. The server keeps one subscription per device with the
@@ -17,9 +18,10 @@ export const topics = ref([])
 export const lostTopics = ref([])
 
 // What the person chose, kept on the device, so a reset by the phone can be told apart from turning it off.
-const KEY = 'hyttebok.pushTopics'
-const chosen = () => { try { return JSON.parse(localStorage.getItem(KEY)) || [] } catch { return [] } }
-const remember = list => { try { localStorage.setItem(KEY, JSON.stringify(list)) } catch { /* private mode */ } }
+// Per cabin: each cabin has its own topics on the same device.
+const key = () => `hyttebok.pushTopics.${cabinId.value}`
+const chosen = () => { try { return JSON.parse(localStorage.getItem(key())) || [] } catch { return [] } }
+const remember = list => { try { localStorage.setItem(key(), JSON.stringify(list)) } catch { /* private mode */ } }
 
 /** The user may have changed it in the phone's settings meanwhile; call when showing the settings. */
 export function refreshPermission() {
@@ -32,6 +34,8 @@ const query = endpoint => `/push/subscription?endpoint=${encodeURIComponent(endp
 
 export async function loadPushState(profile) {
 
+  topics.value = [] // another cabin's choices don't carry over
+  lostTopics.value = []
   if (!supported || needsInstall) return
   const subscription = await currentSubscription()
   if (subscription) {
@@ -78,12 +82,15 @@ export async function forgetLostTopics() {
   remember([])
   const subscription = await currentSubscription()
   if (subscription) {
+    // Only this cabin: the device's subscription may still serve other cabins.
     await api.del(query(subscription.endpoint)).catch(() => {})
-    await subscription.unsubscribe()
   }
 }
 
-/** Saves the chosen topics for this device; turning everything off unsubscribes. Must start from a tap. */
+/**
+ * Saves the chosen topics for this device in the current cabin; turning everything off stops this cabin's
+ * notifications (the device stays subscribed for other cabins). Must start from a tap.
+ */
 export async function setTopics(next, { name, lang }) {
 
   // Ask first, while we're still inside the tap: Safari ignores the request after other awaits.
@@ -97,10 +104,7 @@ export async function setTopics(next, { name, lang }) {
 
   let subscription = await currentSubscription()
   if (!next.length) {
-    if (subscription) {
-      await api.del(query(subscription.endpoint))
-      await subscription.unsubscribe()
-    }
+    if (subscription) await api.del(query(subscription.endpoint))
     topics.value = []
     remember([])
     return

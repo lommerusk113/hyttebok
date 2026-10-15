@@ -5,6 +5,7 @@ import io.micronaut.data.annotation.DateCreated;
 import io.micronaut.data.annotation.GeneratedValue;
 import io.micronaut.data.annotation.Id;
 import io.micronaut.data.annotation.MappedEntity;
+import io.micronaut.data.annotation.TenantId;
 import io.micronaut.serde.annotation.Serdeable;
 import jakarta.validation.constraints.NotBlank;
 
@@ -19,5 +20,6 @@ public record Todo(@Id @GeneratedValue @Nullable Long id,
                    @Nullable String doneBy,
                    @Nullable Instant doneAt,
                    @Nullable String createdBy,
-                   @DateCreated @Nullable Instant createdAt) {
+                   @DateCreated @Nullable Instant createdAt,
+                   @TenantId @Nullable Long cabinId) {
 }

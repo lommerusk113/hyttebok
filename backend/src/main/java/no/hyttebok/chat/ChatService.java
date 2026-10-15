@@ -15,6 +15,7 @@ import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import no.hyttebok.booking.Booking;
 import no.hyttebok.booking.BookingController;
+import no.hyttebok.cabin.CabinContext;
 import no.hyttebok.cabin.CabinInfoRepository;
 import no.hyttebok.maintenance.MaintenanceCompletion;
 import no.hyttebok.maintenance.MaintenanceCompletionController;
@@ -53,7 +54,6 @@ public class ChatService {
 
     private static final Logger LOG = LoggerFactory.getLogger(ChatService.class);
     private static final ZoneId ZONE = ZoneId.of("Europe/Oslo");
-    private static final long CABIN_ID = 1L;
     private static final int MAX_TOOL_ROUNDS = 5;
     private static final int MAX_HISTORY = 20;
     private static final int RECENT_BOOKINGS = 5;
@@ -182,7 +182,7 @@ public class ChatService {
         var today = LocalDate.now(ZONE);
         var out = new StringBuilder();
 
-        var cabin = cabins.findById(CABIN_ID).orElseThrow();
+        var cabin = cabins.findById(CabinContext.require()).orElseThrow();
         var hidden = cabin.hiddenSections();
         out.append("CABIN: ").append(cabin.name());
         append(out, " – ", cabin.tagline());
@@ -254,27 +254,27 @@ public class ChatService {
         switch (tool) {
             case ChatTools.ADD_SHOPPING -> {
                 var name = ChatTools.text(args, "name");
-                var saved = shopping.create(new ShoppingItem(null, name, ChatTools.optionalText(args, "quantity"), false, null, null, user, null));
+                var saved = shopping.create(new ShoppingItem(null, name, ChatTools.optionalText(args, "quantity"), false, null, null, user, null, null));
                 actions.add(english ? "Added “" + name + "” to the shopping list" : "La til «" + name + "» på handlelista");
                 return Map.of("ok", true, "id", saved.id());
             }
             case ChatTools.MARK_BOUGHT -> {
                 var id = ChatTools.id(args);
                 var item = shopping.list().stream().filter(i -> i.id().equals(id)).findFirst().orElseThrow(() -> new IllegalArgumentException("No shopping item " + id));
-                shopping.update(new ShoppingItem(item.id(), item.name(), item.quantity(), true, user, Instant.now(), item.addedBy(), item.createdAt()));
+                shopping.update(new ShoppingItem(item.id(), item.name(), item.quantity(), true, user, Instant.now(), item.addedBy(), item.createdAt(), item.cabinId()));
                 actions.add(english ? "Marked “" + item.name() + "” as bought" : "Krysset av «" + item.name() + "» som kjøpt");
                 return Map.of("ok", true);
             }
             case ChatTools.ADD_TODO -> {
                 var title = ChatTools.text(args, "title");
-                var saved = todos.create(new Todo(null, title, ChatTools.optionalText(args, "description"), false, null, null, user, null));
+                var saved = todos.create(new Todo(null, title, ChatTools.optionalText(args, "description"), false, null, null, user, null, null));
                 actions.add(english ? "Added the to-do “" + title + "”" : "La til gjøremålet «" + title + "»");
                 return Map.of("ok", true, "id", saved.id());
             }
             case ChatTools.COMPLETE_TODO -> {
                 var id = ChatTools.id(args);
                 var todo = todos.list().stream().filter(x -> x.id().equals(id)).findFirst().orElseThrow(() -> new IllegalArgumentException("No to-do " + id));
-                todos.update(new Todo(todo.id(), todo.title(), todo.description(), true, user, Instant.now(), todo.createdBy(), todo.createdAt()));
+                todos.update(new Todo(todo.id(), todo.title(), todo.description(), true, user, Instant.now(), todo.createdBy(), todo.createdAt(), todo.cabinId()));
                 actions.add(english ? "Marked “" + todo.title() + "” as done" : "Markerte «" + todo.title() + "» som utført");
                 return Map.of("ok", true);
             }
@@ -286,7 +286,7 @@ public class ChatService {
                 }
                 var guest = ChatTools.text(args, "guestName");
                 var overlaps = bookings.list().stream().filter(b -> !b.startDate().isAfter(end) && !b.endDate().isBefore(start)).map(ChatService::booking).toList();
-                var saved = bookings.create(new Booking(null, guest, start, end, ChatTools.optionalInt(args, "guests"), ChatTools.optionalText(args, "note")));
+                var saved = bookings.create(new Booking(null, guest, start, end, ChatTools.optionalInt(args, "guests"), ChatTools.optionalText(args, "note"), null));
                 actions.add(english ? "Booked " + start + " – " + end + " for " + guest : "Booket " + start + " – " + end + " for " + guest);
                 return Map.of("ok", true, "id", saved.id(), "overlapsWith", overlaps);
             }
@@ -294,7 +294,7 @@ public class ChatService {
                 var id = ChatTools.id(args);
                 var task = maintenance.list().stream().filter(m -> m.id().equals(id)).findFirst().orElseThrow(() -> new IllegalArgumentException("No maintenance task " + id));
                 var date = ChatTools.optionalText(args, "date");
-                completions.create(new MaintenanceCompletion(null, id, date == null ? today : LocalDate.parse(date), user, null));
+                completions.create(new MaintenanceCompletion(null, id, date == null ? today : LocalDate.parse(date), user, null, null));
                 actions.add(english ? "Marked “" + task.name() + "” as done" : "Markerte «" + task.name() + "» som utført");
                 return Map.of("ok", true);
             }

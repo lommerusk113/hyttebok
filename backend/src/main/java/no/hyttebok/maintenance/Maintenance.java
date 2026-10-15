@@ -5,6 +5,7 @@ import io.micronaut.data.annotation.DateCreated;
 import io.micronaut.data.annotation.GeneratedValue;
 import io.micronaut.data.annotation.Id;
 import io.micronaut.data.annotation.MappedEntity;
+import io.micronaut.data.annotation.TenantId;
 import io.micronaut.serde.annotation.Serdeable;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
@@ -25,5 +26,6 @@ public record Maintenance(@Id @GeneratedValue @Nullable Long id,
                           @Positive int intervalValue,
                           @Pattern(regexp = "DAYS|WEEKS|MONTHS|YEARS") String intervalUnit,
                           @Nullable LocalDate lastCompleted,
-                          @DateCreated @Nullable Instant createdAt) {
+                          @DateCreated @Nullable Instant createdAt,
+                          @TenantId @Nullable Long cabinId) {
 }

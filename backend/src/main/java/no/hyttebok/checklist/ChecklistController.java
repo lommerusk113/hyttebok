@@ -25,7 +25,7 @@ public class ChecklistController {
 
     @Post
     public ChecklistItem create(@Body @Valid ChecklistItem item) {
-        return repository.save(new ChecklistItem(null, item.name().trim(), null));
+        return repository.save(new ChecklistItem(null, item.name().trim(), null, null));
     }
 
     @Delete("/{id}")

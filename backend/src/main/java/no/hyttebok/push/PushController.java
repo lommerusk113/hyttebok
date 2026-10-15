@@ -10,6 +10,7 @@ import io.micronaut.http.annotation.Put;
 import io.micronaut.core.annotation.Nullable;
 import io.micronaut.security.authentication.Authentication;
 import no.hyttebok.access.AccessService;
+import no.hyttebok.cabin.CabinContext;
 import io.micronaut.http.annotation.QueryValue;
 import io.micronaut.http.exceptions.HttpStatusException;
 import io.micronaut.serde.annotation.Serdeable;
@@ -38,7 +39,7 @@ public class PushController {
 
     @Get("/subscription")
     public PushSubscription get(@QueryValue String endpoint) {
-        return repository.findByEndpoint(endpoint).orElseThrow(() -> new HttpStatusException(HttpStatus.NOT_FOUND, "Not subscribed"));
+        return repository.findByEndpointAndCabinId(endpoint, CabinContext.require()).orElseThrow(() -> new HttpStatusException(HttpStatus.NOT_FOUND, "Not subscribed"));
     }
 
     /** Create or update this device's subscription. */
@@ -49,17 +50,19 @@ public class PushController {
             throw new HttpStatusException(HttpStatus.BAD_REQUEST, "Not a known push service");
         }
 
-        var existing = repository.findByEndpoint(subscription.endpoint());
+        // One subscription per device and cabin: each cabin has its own topics.
+        var cabinId = CabinContext.require();
+        var existing = repository.findByEndpointAndCabinId(subscription.endpoint(), cabinId);
         var toSave = new PushSubscription(existing.map(PushSubscription::id).orElse(null), subscription.endpoint(), subscription.p256dh(),
             subscription.auth(), subscription.name(), subscription.lang(), subscription.topics(), existing.map(PushSubscription::createdAt).orElse(null),
-            authentication == null ? null : AccessService.userId(authentication));
+            authentication == null ? null : AccessService.userId(authentication), cabinId);
 
         return existing.isPresent() ? repository.update(toSave) : repository.save(toSave);
     }
 
     @Delete("/subscription")
     public void delete(@QueryValue String endpoint) {
-        repository.deleteByEndpoint(endpoint);
+        repository.deleteByEndpointAndCabinId(endpoint, CabinContext.require());
     }
 
     @Serdeable

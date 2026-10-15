@@ -5,6 +5,7 @@ import io.micronaut.data.annotation.DateCreated;
 import io.micronaut.data.annotation.GeneratedValue;
 import io.micronaut.data.annotation.Id;
 import io.micronaut.data.annotation.MappedEntity;
+import io.micronaut.data.annotation.TenantId;
 import io.micronaut.data.annotation.TypeDef;
 import io.micronaut.data.model.DataType;
 import io.micronaut.serde.annotation.Serdeable;
@@ -24,5 +25,6 @@ public record Suggestion(@Id @GeneratedValue @Nullable Long id,
                          @Nullable String author,
                          @NotNull @TypeDef(type = DataType.STRING_ARRAY) List<String> voters,
                          boolean done,
-                         @DateCreated @Nullable Instant createdAt) {
+                         @DateCreated @Nullable Instant createdAt,
+                         @TenantId @Nullable Long cabinId) {
 }

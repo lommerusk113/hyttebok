@@ -22,7 +22,9 @@ import { locale, primeLocale, t } from './i18n'
 import { online, pending } from './offline'
 import LoginPage from './components/LoginPage.vue'
 import NoAccessPage from './components/NoAccessPage.vue'
-import { auth, loadAuth, needsLogin, noAccess } from './auth'
+import { auth, authReady, loadAuth, needsLogin, noAccess } from './auth'
+import { cabinId } from './hytte'
+import { forgetWeather } from './weather'
 
 const primevue = usePrimeVue()
 
@@ -41,8 +43,18 @@ const menuOpen = ref(false)
 const menuPopover = ref()
 const notificationsOpen = ref(false)
 
+// Login state, push settings and the weather belong to the cabin on screen: (re)load them when it changes.
 // Push state needs the API, so only once we know the user is let in.
-loadAuth().then(() => { if (!needsLogin.value && !noAccess.value) loadPushState({ name: userName.value, lang: locale.value }) })
+async function enterCabin() {
+  await loadAuth()
+  if (!needsLogin.value && !noAccess.value && cabinId.value) loadPushState({ name: userName.value, lang: locale.value })
+}
+enterCabin()
+watch(cabinId, (now, before) => {
+  if (!before) return enterCabin() // first cabin of the visit: nothing cached for another one yet
+  forgetWeather()
+  enterCabin()
+})
 // The server uses the name to leave out your own changes, and the language for the texts.
 watch([userName, locale], ([name, lang]) => syncProfile({ name, lang }))
 const confirm = useConfirm()
@@ -86,7 +98,6 @@ function saveName(name = draftName.value) {
   <!-- Invitation and new-password links work before login and before access: the pages handle both -->
   <main v-else-if="route.path.startsWith('/invitasjon/') || route.path.startsWith('/nytt-passord/')" class="px-4"><RouterView /></main>
   <LoginPage v-else-if="needsLogin && route.path !== '/app'" />
-  <NoAccessPage v-else-if="noAccess" />
   <div v-else class="min-h-screen">
     <header class="sticky top-0 z-30 border-b border-zinc-200 bg-surface/85 text-zinc-950 backdrop-blur">
       <div class="mx-auto flex h-14 max-w-6xl items-center justify-between gap-4 px-4 sm:h-16">
@@ -140,7 +151,9 @@ function saveName(name = draftName.value) {
     </div>
 
     <main class="mx-auto max-w-6xl px-4 pb-12 pt-4">
-      <RouterView />
+      <NoAccessPage v-if="noAccess" />
+      <!-- A new cabin gets fresh pages (nothing left over from the one before) -->
+      <RouterView v-else-if="!route.params.cabinId || authReady" :key="route.params.cabinId || 'home'" />
     </main>
 
     <Drawer v-model:visible="notificationsOpen" position="right" :header="t('push.title')" class="!w-full sm:!w-[26rem]">

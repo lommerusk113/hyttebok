@@ -47,8 +47,9 @@ export async function enqueue(item) {
 }
 
 // Show not-yet-synced changes in data read from the server (or the service worker's cache).
-export function applyPending(url, data) {
+export function applyPending(url, data, cabin) {
   for (const item of queue) {
+    if (item.cabin && item.cabin !== cabin) continue // made in another cabin
     const [base, id, sub] = item.url.slice(1).split('/')
     if (`/${base}` !== url) continue
     if (item.method === 'POST' && !id && Array.isArray(data)) data = [item.optimistic, ...data]
@@ -60,7 +61,7 @@ export function applyPending(url, data) {
   // A queued "done" also moves the task's last-completed date (the server does that when it syncs).
   if (url === '/maintenance' && Array.isArray(data)) {
     for (const item of queue) {
-      if (item.method !== 'POST' || item.url !== '/maintenance-completions') continue
+      if (item.method !== 'POST' || item.url !== '/maintenance-completions' || (item.cabin && item.cabin !== cabin)) continue
       const { maintenanceId, completedOn } = item.body
       data = data.map(m => (m.id === maintenanceId && !(m.lastCompleted >= completedOn) ? { ...m, lastCompleted: completedOn } : m))
     }
@@ -115,7 +116,7 @@ export async function sync(send) {
 
       let result
       try {
-        result = await send(item.method, item.url, body, item.key)
+        result = await send(item.method, item.url, body, item.key, item.cabin)
       } catch (err) {
         // Network/server trouble or not logged in (401): keep it and retry later; never drop a change over a login.
         if (!err.status || err.status >= 500 || err.status === 401) break

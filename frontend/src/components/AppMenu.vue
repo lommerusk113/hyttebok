@@ -10,9 +10,17 @@ import { initials, colorFor } from '../utils'
 import { t } from '../i18n'
 import { install, installPrompt, installed, isIos } from '../install'
 import { auth, logout } from '../auth'
+import ToggleSwitch from 'primevue/toggleswitch'
+import { adminMode, setAdminMode } from '../hytte'
 
 // Everything personal in one place: the ☰ drawer on phones, the dropdown under your name on wide screens.
 const emit = defineEmits(['close', 'notifications'])
+
+// Admin mode changes what the server shows everywhere; start over from "Mine hytter" with it.
+function toggleAdminMode(on) {
+  setAdminMode(on)
+  location.href = '/?alle=1'
+}
 const toast = useToast()
 
 async function installNow() {
@@ -43,6 +51,21 @@ async function installNow() {
     <label class="flex min-h-14 cursor-pointer items-center justify-between gap-3 px-2">
       <span class="text-sm font-medium">{{ t('app.darkMode') }}</span>
       <ThemeSwitch />
+    </label>
+
+    <!-- Your cabins: switch, make a new one, or ask for access with a code -->
+    <RouterLink to="/?alle=1" class="flex min-h-14 items-center justify-between gap-3 px-2" @click="emit('close')">
+      <span class="flex items-center gap-2 text-sm font-medium"><i class="pi pi-home" />{{ t('cabins.title') }}</span>
+      <i class="pi pi-chevron-right text-xs text-zinc-500" />
+    </RouterLink>
+
+    <!-- System admins only: see every cabin, for troubleshooting -->
+    <label v-if="auth?.admin" class="flex min-h-14 cursor-pointer items-center justify-between gap-3 px-2">
+      <span class="text-sm">
+        <span class="flex items-center gap-2 font-medium"><i class="pi pi-shield" />{{ t('cabins.adminMode') }}</span>
+        <span class="block text-xs text-zinc-500">{{ t('cabins.adminModeHint') }}</span>
+      </span>
+      <ToggleSwitch :model-value="adminMode" @update:model-value="toggleAdminMode" />
     </label>
 
     <!-- Logged in with Google: whose account, and the way out -->

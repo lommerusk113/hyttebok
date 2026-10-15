@@ -9,6 +9,7 @@ import java.time.Instant;
 
 @MappedEntity
 public record AccessRequest(@Id @GeneratedValue @Nullable Long id,
+                            Long cabinId,
                             Long userId,
                             @Nullable String message,
                             String status,

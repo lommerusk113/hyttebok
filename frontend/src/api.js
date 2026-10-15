@@ -1,5 +1,6 @@
 import { applyPending, enqueue, hasQueue, localPhotoUrl, online, sync, tempId, watchConnection } from './offline'
 import { accessChanged, sessionEnded } from './auth'
+import { cabinHeaders, cabinId } from './hytte'
 
 class ApiError extends Error {
   constructor(message, status) {
@@ -8,7 +9,8 @@ class ApiError extends Error {
   }
 }
 
-async function send(method, url, body, key) {
+// `cabin`: which cabin the request is about; queued offline changes keep the cabin they were made in.
+async function send(method, url, body, key, cabin = cabinId.value) {
 
   const isForm = body instanceof FormData
   const res = await fetch('/api' + url, {
@@ -17,6 +19,7 @@ async function send(method, url, body, key) {
     headers: {
       ...(body && !isForm && { 'Content-Type': 'application/json' }),
       ...(key && { 'Idempotency-Key': key }),
+      ...cabinHeaders(cabin),
     },
   })
   const text = await res.text()
@@ -58,6 +61,7 @@ async function queueChange(method, url, body, key) {
   const result = plain(optimistic(method, body, id))
   await enqueue({
     key,
+    cabin: cabinId.value,
     method,
     url,
     tempId: id,
@@ -72,7 +76,7 @@ async function queueChange(method, url, body, key) {
 async function request(method, url, body) {
 
   if (method === 'GET') {
-    return applyPending(url, await send(method, url))
+    return applyPending(url, await send(method, url), cabinId.value)
   }
 
   // Waiting changes go first, so a new change is queued behind them to keep the order.
@@ -96,7 +100,8 @@ export const api = {
   del: url => request('DELETE', url),
 }
 
-export const photoUrl = id => localPhotoUrl(id) || `/api/photos/${id}/file`
+// The browser loads images itself (no X-Hytte header), so the cabin goes in the address.
+export const photoUrl = id => localPhotoUrl(id) || `/api/photos/${id}/file?hytte=${cabinId.value}`
 
 export function uploadPhoto(file, caption, uploadedBy, logEntryId) {
   const form = new FormData()

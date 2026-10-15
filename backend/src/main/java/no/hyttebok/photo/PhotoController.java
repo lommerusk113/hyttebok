@@ -55,7 +55,7 @@ public class PhotoController {
         var fileName = UUID.randomUUID().toString();
         Files.write(uploadDir.resolve(fileName), file.getBytes());
 
-        return repository.save(new Photo(null, fileName, contentType, caption, uploadedBy, logEntryId, null));
+        return repository.save(new Photo(null, fileName, contentType, caption, uploadedBy, logEntryId, null, null));
     }
 
     /**
@@ -66,7 +66,7 @@ public class PhotoController {
 
         var photo = findOrThrow(id);
         var updated = new Photo(photo.id(), photo.fileName(), photo.contentType(), body.caption(),
-            photo.uploadedBy(), photo.logEntryId(), photo.createdAt());
+            photo.uploadedBy(), photo.logEntryId(), photo.createdAt(), photo.cabinId());
 
         return repository.update(updated);
     }
