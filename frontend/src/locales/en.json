@@ -420,7 +420,8 @@
     "offline": "You're offline. The chat needs a connection.",
     "noAnswer": "I couldn't find an answer to that.",
     "busy": "The AI service isn't answering right now. Try again in a moment.",
-    "off": "The chat isn't turned on for this cabin."
+    "off": "The chat isn't turned on for this cabin.",
+    "newChat": "New chat"
   },
   "login": {
     "intro": "Log in to see bookings, lists and the cabin book.",

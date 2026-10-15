@@ -78,6 +78,13 @@ function onKey(e) {
   </button>
 
   <Drawer v-model:visible="open" position="right" :header="t('chat.title')" class="chat-drawer !w-full sm:!w-[28rem]" :pt="{ content: { class: '!p-0 flex flex-col' } }">
+    <template #header>
+      <span class="flex flex-1 items-center gap-2">
+        <span class="text-lg font-semibold">{{ t('chat.title') }}</span>
+        <span class="flex-1" />
+        <Button v-if="messages.length" :label="t('chat.newChat')" icon="pi pi-plus" size="small" text severity="secondary" :disabled="busy" @click="messages = []" />
+      </span>
+    </template>
     <div ref="list" class="flex-1 space-y-3 overflow-y-auto px-5 py-4">
       <div v-if="!messages.length" class="space-y-3">
         <p class="text-sm text-zinc-600">{{ t('chat.intro') }}</p>

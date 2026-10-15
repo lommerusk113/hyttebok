@@ -420,7 +420,8 @@
     "offline": "Du er frakoblet. Chatten trenger nett.",
     "noAnswer": "Jeg fant ikke noe svar på det.",
     "busy": "KI-tjenesten svarer ikke akkurat nå. Prøv igjen om litt.",
-    "off": "Chatten er ikke slått på for denne hytta."
+    "off": "Chatten er ikke slått på for denne hytta.",
+    "newChat": "Ny samtale"
   },
   "login": {
     "intro": "Logg inn for å se bookinger, lister og hytteboka.",

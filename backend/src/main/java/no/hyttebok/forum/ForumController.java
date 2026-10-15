@@ -52,7 +52,7 @@ public class ForumController {
     public record FeedPost(Long id, @Nullable String title, @Nullable String body, @Nullable String author, Instant createdAt,
                            @Nullable Instant editedAt, List<Reaction> reactions, List<Comment> comments) {
 
-        Instant lastActivity() {
+        public Instant lastActivity() {
             return comments.isEmpty() ? createdAt : comments.getLast().createdAt();
         }
     }

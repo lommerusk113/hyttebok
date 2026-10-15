@@ -17,12 +17,15 @@ import no.hyttebok.booking.Booking;
 import no.hyttebok.booking.BookingController;
 import no.hyttebok.cabin.CabinContext;
 import no.hyttebok.cabin.CabinInfoRepository;
+import no.hyttebok.forum.ForumController;
+import no.hyttebok.log.LogEntryController;
 import no.hyttebok.maintenance.MaintenanceCompletion;
 import no.hyttebok.maintenance.MaintenanceCompletionController;
 import no.hyttebok.maintenance.MaintenanceController;
 import no.hyttebok.push.MaintenanceReminderJob;
 import no.hyttebok.shopping.ShoppingItem;
 import no.hyttebok.shopping.ShoppingItemController;
+import no.hyttebok.suggestion.SuggestionController;
 import no.hyttebok.todo.Todo;
 import no.hyttebok.todo.TodoController;
 import no.hyttebok.weather.WeatherService;
@@ -31,10 +34,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -44,6 +49,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * The cabin chatbot. Each question goes to OpenAI (gpt-5-nano by default) together with a summary of the cabin's data
@@ -60,6 +66,12 @@ public class ChatService {
     private static final int RECENT_BOOKINGS = 5;
     private static final int WEATHER_DAYS = 45;
     private static final int MAX_WIKI_CHARS = 60_000;
+    private static final int FORUM_DAYS = 60;
+    private static final int FORUM_POSTS = 20;
+    private static final int LOGBOOK_ENTRIES = 10;
+    private static final int SNIPPET = 400;
+    // How to use the app: the same for every cabin, so it lives here rather than in each cabin's wiki.
+    private static final String APP_GUIDE = resource("/chat/app-guide.txt");
     // The API is busy now and then (5xx): wait a little and try again.
     private static final List<Duration> RETRY_AFTER = List.of(Duration.ofSeconds(1), Duration.ofSeconds(3));
 
@@ -74,6 +86,9 @@ public class ChatService {
     private final MaintenanceCompletionController completions;
     private final WeatherService weather;
     private final WikiPageRepository wiki;
+    private final ForumController forum;
+    private final LogEntryController logbook;
+    private final SuggestionController suggestions;
     private final JsonMapper json;
     private final HttpClient http = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(10)).build();
 
@@ -101,6 +116,9 @@ public class ChatService {
                        MaintenanceCompletionController completions,
                        WeatherService weather,
                        WikiPageRepository wiki,
+                       ForumController forum,
+                       LogEntryController logbook,
+                       SuggestionController suggestions,
                        JsonMapper json) {
         this.apiKey = apiKey;
         this.model = model;
@@ -113,6 +131,9 @@ public class ChatService {
         this.completions = completions;
         this.weather = weather;
         this.wiki = wiki;
+        this.forum = forum;
+        this.logbook = logbook;
+        this.suggestions = suggestions;
         this.json = json;
     }
 
@@ -137,7 +158,8 @@ public class ChatService {
         var actions = new ArrayList<String>();
         for (int round = 0; round < MAX_TOOL_ROUNDS; round++) {
             // The data is rebuilt each round, so a follow-up question sees what the tools just changed.
-            messages.set(0, Map.of("role", "system", "content", instructions(user, english) + "\n\n" + context()));
+            messages.set(0, Map.of("role", "system", "content", instructions(user, english) + "\n\nAPP GUIDE (how Hyttebok works):\n" + APP_GUIDE
+                + "\n\n" + context()));
             var message = generate(Map.of("model", model, "reasoning_effort", "low", "messages", messages, "tools", ChatTools.DECLARATIONS));
             if (message == null) {
                 break;
@@ -172,7 +194,8 @@ public class ChatService {
             (no markdown; start a line with "- " for a list).
             The person asking is %s. Today is %s.
             Use only the data below; if something isn't there, say you don't know. For how things work at the cabin \
-            (water, power, heating, keys, where things are, routines), look in the CABIN WIKI first. Use the ids from the data, never invent them.
+            (water, power, heating, keys, where things are, routines), look in the CABIN WIKI first. For how to use the \
+            app itself (booking, inviting, installing, notifications), use the APP GUIDE (it is in Norwegian; translate if needed). Use the ids from the data, never invent them. The ids are only for the tools: never show or mention them to the person.
             You can change things with the tools. For a booking, make sure you know who, the first day and the last day; \
             if anything is unclear (e.g. which weekend), ask before booking. If dates overlap an existing booking, say so.
             After using a tool, say briefly what you did. Talk about dates naturally (e.g. "fredag 16. oktober"), not as ISO.
@@ -228,21 +251,57 @@ public class ChatService {
             .forEach(b -> out.append('\n').append(booking(b)));
 
         out.append("\n\nSHOPPING LIST (to buy):");
-        shopping.list().stream().filter(i -> !i.bought()).forEach(i -> out.append("\n- id ").append(i.id()).append(": ").append(i.name())
-            .append(i.quantity() == null ? "" : " (" + i.quantity() + ")").append(i.addedBy() == null ? "" : ", added by " + i.addedBy()));
+        shopping.list().stream().filter(i -> !i.bought()).forEach(i -> out.append("\n- ").append(i.name())
+            .append(i.quantity() == null ? "" : " (" + i.quantity() + ")").append(i.addedBy() == null ? "" : ", added by " + i.addedBy()).append(id(i.id())));
 
         out.append("\n\nONE-OFF TASKS (open; shown with the recurring ones under Vedlikehold):");
-        todos.list().stream().filter(x -> !x.done()).forEach(x -> out.append("\n- id ").append(x.id()).append(": ").append(x.title())
-            .append(x.description() == null ? "" : " – " + x.description()).append(x.createdBy() == null ? "" : ", added by " + x.createdBy()));
+        todos.list().stream().filter(x -> !x.done()).forEach(x -> out.append("\n- ").append(x.title())
+            .append(x.description() == null ? "" : " – " + x.description()).append(x.createdBy() == null ? "" : ", added by " + x.createdBy()).append(id(x.id())));
 
         out.append("\n\nRECURRING MAINTENANCE (monthly/yearly tasks are due within their month):");
         for (var m : maintenance.list()) {
             var dueBy = MaintenanceReminderJob.dueBy(m);
-            out.append("\n- id ").append(m.id()).append(": ").append(m.name()).append(", every ").append(m.intervalValue()).append(' ')
+            out.append("\n- ").append(m.name()).append(", every ").append(m.intervalValue()).append(' ')
                 .append(m.intervalUnit().toLowerCase(Locale.ROOT)).append(", last done ").append(m.lastCompleted() == null ? "never" : m.lastCompleted())
                 .append(", next due ").append(MaintenanceReminderJob.byMonth(m) ? MaintenanceReminderJob.nextDue(m).toString().substring(0, 7) : MaintenanceReminderJob.nextDue(m))
-                .append(dueBy.isBefore(today) ? " (OVERDUE)" : "");
+                .append(dueBy.isBefore(today) ? " (OVERDUE)" : "").append(id(m.id()));
         }
+
+        // What was done this year, with who took part and what they wrote (the "Utført i år" list).
+        out.append("\n\nDONE THIS YEAR (newest first):");
+        var names = maintenance.list().stream().collect(Collectors.toMap(m -> m.id(), m -> m.name()));
+        var done = new ArrayList<Map.Entry<LocalDate, String>>();
+        for (var c : completions.list()) {
+            if (c.completedOn().getYear() == today.getYear() && names.containsKey(c.maintenanceId())) {
+                done.add(Map.entry(c.completedOn(), names.get(c.maintenanceId()) + " (recurring)" + who(c.participants(), c.completedBy()) + note(c.note())));
+            }
+        }
+        for (var x : todos.list()) {
+            if (x.done() && x.doneAt() != null && x.doneAt().atZone(ZONE).getYear() == today.getYear()) {
+                done.add(Map.entry(x.doneAt().atZone(ZONE).toLocalDate(), x.title() + " (one-off)" + who(x.doneWith(), x.doneBy()) + note(x.doneNote())));
+            }
+        }
+        done.sort(Map.Entry.<LocalDate, String>comparingByKey().reversed());
+        done.forEach(d -> out.append("\n- ").append(d.getKey()).append(": ").append(d.getValue()));
+
+        out.append("\n\nOPEN SUGGESTIONS (ideas; DO = something to do, BUY = something to buy):");
+        suggestions.list().stream().filter(s -> !s.done()).forEach(s -> out.append("\n- ").append(s.title()).append(" (").append(s.category()).append(", ")
+            .append(s.voters().size()).append(" votes").append(s.author() == null ? "" : ", by " + s.author()).append(")").append(text(": ", s.description())));
+
+        out.append("\n\nCABIN BOOK (the latest stories from stays, newest first):");
+        logbook.list().stream().limit(LOGBOOK_ENTRIES).forEach(e -> out.append("\n- ").append(e.title())
+            .append(e.startDate() == null ? "" : " (" + e.startDate() + (e.endDate() == null || e.endDate().equals(e.startDate()) ? "" : " to " + e.endDate()) + ")")
+            .append(", by ").append(e.author()).append(e.participants().isEmpty() ? "" : ", with " + String.join(", ", e.participants()))
+            .append(text(": ", e.content())));
+
+        out.append("\n\nFORUM (posts with activity in the last " + FORUM_DAYS + " days, latest activity first):");
+        var since = Instant.now().minus(Duration.ofDays(FORUM_DAYS));
+        forum.list(null, "active").stream().filter(p -> !p.lastActivity().isBefore(since)).limit(FORUM_POSTS).forEach(p -> {
+            out.append("\n- ").append(p.createdAt().atZone(ZONE).toLocalDate()).append(" ").append(p.author()).append(": ")
+                .append(p.title() == null ? "" : p.title() + " – ").append(shorten(p.body())).append(reactions(p.reactions().size()));
+            p.comments().forEach(c -> out.append("\n  - comment ").append(c.createdAt().atZone(ZONE).toLocalDate()).append(" ").append(c.author())
+                .append(": ").append(shorten(c.body())).append(reactions(c.reactions().size())));
+        });
 
         out.append("\n\nWEATHER at the cabin (date: max/min °C, mm; source FORECAST, or NORMAL = usual for the date, no forecast yet):");
         try {
@@ -257,9 +316,37 @@ public class ChatService {
         return out.toString();
     }
 
+    private static String who(@Nullable List<String> participants, @Nullable String by) {
+        return participants != null && !participants.isEmpty() ? ", by " + String.join(", ", participants) : by == null ? "" : ", by " + by;
+    }
+
+    private static String note(@Nullable String note) {
+        return text(" – note: ", note);
+    }
+
+    private static String text(String label, @Nullable String value) {
+        return value == null || value.isBlank() ? "" : label + shorten(value);
+    }
+
+    private static String shorten(@Nullable String text) {
+
+        var flat = text == null ? "" : text.replace('\n', ' ').trim();
+
+        return flat.length() <= SNIPPET ? flat : flat.substring(0, SNIPPET) + "…";
+    }
+
+    private static String reactions(int count) {
+        return count == 0 ? "" : " (" + count + " reactions)";
+    }
+
+    /** At the end of a line, so lists copied into an answer don't start with it (the person never sees ids). */
+    private static String id(Long id) {
+        return " [id " + id + "]";
+    }
+
     private static String booking(Booking b) {
-        return "- id " + b.id() + ": " + b.guestName() + ", " + b.startDate() + " to " + b.endDate()
-            + (b.guests() == null ? "" : ", " + b.guests() + " people") + (b.note() == null || b.note().isBlank() ? "" : ", note: " + b.note());
+        return "- " + b.guestName() + ", " + b.startDate() + " to " + b.endDate()
+            + (b.guests() == null ? "" : ", " + b.guests() + " people") + (b.note() == null || b.note().isBlank() ? "" : ", note: " + b.note()) + id(b.id());
     }
 
     private static void append(StringBuilder out, String label, @Nullable String value) {
@@ -399,6 +486,19 @@ public class ChatService {
             return json.writeValueAsString(value);
         } catch (IOException e) {
             throw new IllegalStateException(e);
+        }
+    }
+
+    private static String resource(String path) {
+
+        var in = ChatService.class.getResourceAsStream(path);
+        if (in == null) {
+            throw new IllegalStateException("Missing " + path);
+        }
+        try (in) {
+            return new String(in.readAllBytes(), StandardCharsets.UTF_8).trim();
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
         }
     }
 }

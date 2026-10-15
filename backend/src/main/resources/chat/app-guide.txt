@@ -1,0 +1,65 @@
+Slik booker du hytta:
+- Gå til fanen Booking.
+- Trykk på første dag i kalenderen, så på siste dag (eller trykk «Ny booking»).
+- Skriv hvem som kommer, antall personer og gjerne et notat (f.eks. ankomsttid).
+- Overlapper datoene med noen andre, får du beskjed. Du kan lagre likevel, men avtal det gjerne med dem.
+- Trykk på en booking for å endre eller slette den.
+- Du kan også be chatten booke, f.eks. «Book for Kari fra fredag til søndag, 4 personer».
+
+Slik inviterer du noen:
+- Bare eiere av hytta kan invitere. Gå til fanen Tilgang.
+- Under «Invitasjonslenker», trykk «Ny lenke» og del den (f.eks. i familiechatten).
+- Den som åpner lenken og logger inn, blir medlem med en gang. Lenken gjelder i 14 dager.
+- Alternativt: del koden under «Kode for å be om tilgang». Den som har koden, skriver den inn under «Mine hytter», og en eier må godkjenne forespørselen under Tilgang.
+- Eiere kan endre rolle (eier/medlem), lage lenke for nytt passord eller fjerne tilgang under «Medlemmer».
+
+Innlogging:
+- Logg inn med Google, eller med e-post og passord.
+- Har du glemt passordet, kan en eier av hytta lage en lenke for nytt passord til deg under Tilgang → Medlemmer.
+
+Slik installerer du appen på mobilen:
+- iPhone: Åpne siden i Safari, trykk Del-knappen nederst, velg «Legg til på Hjem-skjerm» og trykk «Legg til».
+- Android: Åpne siden i Chrome og velg «Installer appen» i menyen (☰), eller «Installer»/«Legg til på startskjermen» i Chrome-menyen.
+- Den installerte appen åpnes fra hjemskjermen og fungerer også på hytta uten dekning. Endringer sendes når du får nett igjen.
+
+Slik får du varsler:
+- Åpne menyen (☰ eller navnet ditt øverst) og velg Varsler.
+- Velg hva du vil ha beskjed om: ny booking, nytt i hytteboka, forslag, oppgaver, handlelisten, vedlikehold og forumet.
+- På iPhone må appen være installert på hjemskjermen før varsler kan slås på.
+- Du får ikke varsel om det du gjør selv.
+
+Handlelisten:
+- Skriv det som mangler under Handleliste og trykk «Legg til». Kryss av når det er kjøpt.
+- Sjekklisten viser faste ting hytta alltid skal ha. Trykk «Mangler» for å legge det rett på handlelisten.
+- Forslag til innkjøp kan få hjerter; de mest populære vises på Oversikt.
+
+Vedlikehold:
+- Faste oppgaver (f.eks. feie pipa hvert år) viser når de skal gjøres neste gang, og blir røde når de er på overtid.
+- Engangsoppgaver er ting som må fikses én gang.
+- Trykk «Utført» når noe er gjort. Velg hvem som var med og skriv gjerne en kort beskrivelse.
+- «Utført i år» viser alt som er gjort i løpet av året, og Årsoversikten viser hva som er gjort og planlagt måned for måned.
+
+Hytteboka:
+- Skriv om oppholdet ditt under Hyttebok: hvem som var der, hva som skjedde, og legg gjerne til bilder.
+
+Forumet:
+- Skriv et innlegg øverst i Forum. Andre kan kommentere og reagere (hold inne «Liker» for flere reaksjoner).
+- Du kan søke og sortere innleggene.
+
+Hyttewiki:
+- Åpnes fra «Hyttewiki» i kortet «Om hytta» på Oversikt.
+- Alle med tilgang kan skrive og endre sider om hvordan ting fungerer på hytta. Chatten leser wikien.
+- Informasjon om hytta (beskrivelse, ankomst, avreise, WiFi, adresse) endres med blyanten på «Om hytta» eller på forsidebildet.
+
+Mine hytter, navn og innstillinger:
+- Har du tilgang til flere hytter, bytter du under «Mine hytter» i menyen. Der kan du også lage en ny hytte.
+- Navnet andre ser når du booker eller krysser av, endres under «Visningsnavn» i menyen.
+- Språk (norsk/engelsk) og mørk modus velges i menyen.
+
+Chatten:
+- Trykk på den runde knappen nederst til høyre for å spørre om hytta, og «Ny samtale» for å begynne på nytt.
+- Den svarer ut fra wikien, bookinger, handlelisten, oppgaver, vedlikehold og været for hytta du er i.
+- Den kan legge til på handlelisten, krysse av kjøpt, legge til og fullføre oppgaver, booke og markere vedlikehold som utført. Den sletter aldri noe.
+
+Nedetid:
+- Appen kjører på en egen maskin og kan være nede innimellom. Prøv igjen litt senere hvis den ikke svarer.
