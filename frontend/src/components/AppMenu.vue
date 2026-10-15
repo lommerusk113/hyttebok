@@ -16,10 +16,11 @@ import { adminMode, setAdminMode } from '../hytte'
 // Everything personal in one place: the ☰ drawer on phones, the dropdown under your name on wide screens.
 const emit = defineEmits(['close', 'notifications'])
 
-// Admin mode changes what the server shows everywhere; start over from "Mine hytter" with it.
+// Admin mode changes what the server shows everywhere: reload the page you're on with it (switching it off in
+// a cabin you're not a member of shows "no access" there, with the way back to your cabins).
 function toggleAdminMode(on) {
   setAdminMode(on)
-  location.href = '/?alle=1'
+  location.reload()
 }
 const toast = useToast()
 

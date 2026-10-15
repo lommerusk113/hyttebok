@@ -1,12 +1,12 @@
 <script setup>
-import { nextTick, ref } from 'vue'
+import { nextTick, ref, watch } from 'vue'
 import Button from 'primevue/button'
 import Drawer from 'primevue/drawer'
 import Textarea from 'primevue/textarea'
 import RichText from './RichText.vue'
 import { userName } from '../user'
 import { dataVersion } from '../offline'
-import { cabinHeaders } from '../hytte'
+import { cabinHeaders, cabinId } from '../hytte'
 import { locale, t } from '../i18n'
 
 // Chat with the cabin (OpenAI, via /api/chat). It can answer from the app's data and make changes
@@ -17,6 +17,12 @@ const messages = ref([]) // { role: 'user' | 'model', text, actions? }
 const draft = ref('')
 const busy = ref(false)
 const list = ref()
+
+// A conversation belongs to one cabin: another cabin starts a new one, so nothing about this cabin is sent along there.
+watch(cabinId, () => {
+  messages.value = []
+  busy.value = false
+})
 
 const EXAMPLES = ['chat.example1', 'chat.example2', 'chat.example3']
 
@@ -34,6 +40,7 @@ async function send(text = draft.value) {
   busy.value = true
   scrollDown()
 
+  const asked = cabinId.value
   try {
     // Straight fetch, not api.post: a chat question shouldn't wait in the offline queue.
     const res = await fetch('/api/chat', {
@@ -43,9 +50,11 @@ async function send(text = draft.value) {
     })
     if (!res.ok) throw new Error(res.status === 403 ? 'chat.off' : res.status === 503 ? 'chat.notSetUp' : res.status === 429 ? 'chat.quota' : res.status === 502 ? 'chat.busy' : 'chat.failed')
     const reply = await res.json()
+    if (asked !== cabinId.value) return // switched cabin while waiting: that conversation is gone
     messages.value.push({ role: 'model', text: reply.text || t('chat.noAnswer'), actions: reply.actions })
     if (reply.actions.length) dataVersion.value++ // show the changes in the app right away
   } catch (err) {
+    if (asked !== cabinId.value) return
     messages.value.push({ role: 'model', text: t(err.message.startsWith('chat.') ? err.message : navigator.onLine ? 'chat.failed' : 'chat.offline'), error: true })
   } finally {
     busy.value = false
