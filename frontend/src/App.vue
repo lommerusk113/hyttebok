@@ -1,5 +1,5 @@
 <script setup>
-import { defineAsyncComponent, ref, watch } from 'vue'
+import { computed, defineAsyncComponent, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { usePrimeVue } from 'primevue/config'
 import Toast from 'primevue/toast'
@@ -27,15 +27,17 @@ import { forgetWeather } from './weather'
 
 const primevue = usePrimeVue()
 
-// Feature toggle: ?chatbot=true turns the chat on for this device (remembered), ?chatbot=false turns it off.
+// The chat is on for everyone when the server has an AI key; ?chatbot=false hides it on this device (remembered),
+// ?chatbot=true shows it again.
 const ChatBot = defineAsyncComponent(() => import('./components/ChatBot.vue'))
-const CHAT_KEY = 'hyttebok.chatbot'
+const CHAT_OFF = 'hyttebok.chatbot.off'
 const chatParam = new URLSearchParams(location.search).get('chatbot')
 try {
-  if (chatParam === 'true') localStorage.setItem(CHAT_KEY, '1')
-  if (chatParam === 'false') localStorage.removeItem(CHAT_KEY)
+  if (chatParam === 'false') localStorage.setItem(CHAT_OFF, '1')
+  if (chatParam === 'true') localStorage.removeItem(CHAT_OFF)
 } catch { /* private mode: the param still works for this visit */ }
-const chatEnabled = chatParam === 'true' || (() => { try { return localStorage.getItem(CHAT_KEY) === '1' } catch { return false } })()
+const chatHidden = chatParam === 'false' || (() => { try { return localStorage.getItem(CHAT_OFF) === '1' } catch { return false } })()
+const chatEnabled = computed(() => !!auth.value?.chatEnabled && !chatHidden)
 // The install page (/app) is often someone's first visit; don't ask for a name there.
 const route = useRoute()
 const menuOpen = ref(false)

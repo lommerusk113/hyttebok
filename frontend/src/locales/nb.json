@@ -419,7 +419,8 @@
     "failed": "Noe gikk galt. Prøv igjen.",
     "offline": "Du er frakoblet. Chatten trenger nett.",
     "noAnswer": "Jeg fant ikke noe svar på det.",
-    "busy": "KI-tjenesten svarer ikke akkurat nå. Prøv igjen om litt."
+    "busy": "KI-tjenesten svarer ikke akkurat nå. Prøv igjen om litt.",
+    "off": "Chatten er ikke slått på for denne hytta."
   },
   "login": {
     "intro": "Logg inn for å se bookinger, lister og hytteboka.",
@@ -507,7 +508,11 @@
     "codeCopied": "Koden er kopiert",
     "newCode": "Ny kode",
     "newCodeTitle": "Lage ny kode?",
-    "newCodeMessage": "Den gamle koden slutter å virke. Allerede sendte forespørsler beholdes."
+    "newCodeMessage": "Den gamle koden slutter å virke. Allerede sendte forespørsler beholdes.",
+    "adminTools": "Systemadmin",
+    "chatToggle": "KI-chat for denne hytta",
+    "chatHint": "Alle med tilgang til hytta får chat-knappen. Bare systemadministratorer ser denne bryteren.",
+    "chatNoKey": "Serveren mangler OPENAI_API_KEY, så chatten virker ikke ennå selv om den er slått på."
   },
   "checklist": {
     "title": "Sjekkliste",

@@ -10,8 +10,8 @@ import java.util.List;
 import java.util.Optional;
 
 /**
- * Cabins. The join code is a column the entity doesn't carry (so it never reaches the app with the cabin info);
- * these queries read and change it on purpose.
+ * Cabins. The join code and the chat switch are columns the entity doesn't carry (so they never reach the app
+ * with the cabin info, and nobody changes them by saving the cabin); these queries read and change them on purpose.
  */
 @JdbcRepository(dialect = Dialect.POSTGRES)
 public interface CabinInfoRepository extends CrudRepository<CabinInfo, Long> {
@@ -28,4 +28,10 @@ public interface CabinInfoRepository extends CrudRepository<CabinInfo, Long> {
 
     @Query("SELECT id FROM cabin_info WHERE join_code = :code")
     Optional<Long> findIdByJoinCode(String code);
+
+    @Query("SELECT chat_enabled FROM cabin_info WHERE id = :id")
+    Optional<Boolean> findChatEnabled(Long id);
+
+    @Query("UPDATE cabin_info SET chat_enabled = :enabled WHERE id = :id")
+    void updateChatEnabled(Long id, boolean enabled);
 }

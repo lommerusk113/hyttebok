@@ -1,5 +1,6 @@
 package no.hyttebok.auth;
 
+import io.micronaut.context.annotation.Value;
 import io.micronaut.core.annotation.Nullable;
 import io.micronaut.http.HttpStatus;
 import io.micronaut.http.annotation.Body;
@@ -16,6 +17,7 @@ import no.hyttebok.access.AccessRequest;
 import no.hyttebok.access.AccessRequestRepository;
 import no.hyttebok.access.AccessService;
 import no.hyttebok.cabin.CabinContext;
+import no.hyttebok.cabin.CabinInfoRepository;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
@@ -36,13 +38,18 @@ public class AuthController {
     private final AccessRequestRepository requests;
     private final AppUserRepository users;
     private final PasswordResetRepository resets;
+    private final CabinInfoRepository cabins;
+    private final boolean chatOn;
 
-    public AuthController(LoginOffRule login, AccessService access, AccessRequestRepository requests, AppUserRepository users, PasswordResetRepository resets) {
+    public AuthController(LoginOffRule login, AccessService access, AccessRequestRepository requests, AppUserRepository users, PasswordResetRepository resets,
+                          CabinInfoRepository cabins, @Value("${hyttebok.chat.api-key:}") String chatKey) {
         this.login = login;
         this.access = access;
         this.requests = requests;
         this.users = users;
         this.resets = resets;
+        this.cabins = cabins;
+        this.chatOn = !chatKey.isBlank();
     }
 
     @Serdeable
@@ -69,14 +76,14 @@ public class AuthController {
     /** {@code googleEnabled}: show "Logg inn med Google" (GOOGLE_CLIENT_ID is set); email + password always works. */
     @Serdeable
     public record Me(boolean loginEnabled, boolean googleEnabled, @Nullable User user, @Nullable String role, boolean admin, boolean canManage,
-                     boolean adminMode, int waitingRequests) {
+                     boolean adminMode, int waitingRequests, boolean chatEnabled) {
     }
 
     @Get("/me")
     public Me me(@Nullable Authentication authentication) {
 
         if (authentication == null) {
-            return new Me(login.loginOn(), login.googleOn(), null, null, false, false, false, 0);
+            return new Me(login.loginOn(), login.googleOn(), null, null, false, false, false, 0, !login.loginOn() && chatOn(CabinContext.current().orElse(null)));
         }
         var attributes = authentication.getAttributes();
         var user = new User(String.valueOf(attributes.get("name")), String.valueOf(attributes.get("email")), String.valueOf(attributes.getOrDefault("picture", "")));
@@ -86,7 +93,12 @@ public class AuthController {
         var canManage = cabin.isPresent() && access.canManage(authentication);
         var waiting = canManage ? requests.findByCabinIdAndStatusOrderByCreatedAt(cabin.get(), AccessRequest.PENDING).size() : 0;
 
-        return new Me(true, login.googleOn(), user, role, access.isAdmin(authentication), canManage, access.adminMode(authentication), waiting);
+        return new Me(true, login.googleOn(), user, role, access.isAdmin(authentication), canManage, access.adminMode(authentication), waiting, chatOn(cabin.orElse(null)));
+    }
+
+    /** The AI chat is shown in a cabin when the server has a key and a system admin turned it on there. */
+    private boolean chatOn(@Nullable Long cabinId) {
+        return chatOn && cabinId != null && cabins.findChatEnabled(cabinId).orElse(false);
     }
 
     /** New email + password account. It starts without access, like a Google login; the app then logs in via POST /login. */

@@ -419,7 +419,8 @@
     "failed": "Something went wrong. Try again.",
     "offline": "You're offline. The chat needs a connection.",
     "noAnswer": "I couldn't find an answer to that.",
-    "busy": "The AI service isn't answering right now. Try again in a moment."
+    "busy": "The AI service isn't answering right now. Try again in a moment.",
+    "off": "The chat isn't turned on for this cabin."
   },
   "login": {
     "intro": "Log in to see bookings, lists and the cabin book.",
@@ -507,7 +508,11 @@
     "codeCopied": "Code copied",
     "newCode": "New code",
     "newCodeTitle": "Make a new code?",
-    "newCodeMessage": "The old code stops working. Requests already sent are kept."
+    "newCodeMessage": "The old code stops working. Requests already sent are kept.",
+    "adminTools": "System admin",
+    "chatToggle": "AI chat for this cabin",
+    "chatHint": "Everyone with access to the cabin gets the chat button. Only system admins see this switch.",
+    "chatNoKey": "The server has no OPENAI_API_KEY, so the chat won't work yet even when switched on."
   },
   "checklist": {
     "title": "Checklist",

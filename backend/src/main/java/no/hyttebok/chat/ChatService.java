@@ -116,6 +116,9 @@ public class ChatService {
         if (apiKey.isBlank()) {
             throw new HttpStatusException(HttpStatus.SERVICE_UNAVAILABLE, "Chat is not set up (OPENAI_API_KEY)");
         }
+        if (!cabins.findChatEnabled(CabinContext.require()).orElse(false)) {
+            throw new HttpStatusException(HttpStatus.FORBIDDEN, "Chat is not turned on for this cabin");
+        }
 
         var english = "en".equals(request.lang());
         var user = request.name() == null || request.name().isBlank() ? null : request.name().trim();

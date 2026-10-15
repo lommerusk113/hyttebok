@@ -5,6 +5,7 @@ import { useToast } from 'primevue/usetoast'
 import Avatar from 'primevue/avatar'
 import Button from 'primevue/button'
 import Select from 'primevue/select'
+import ToggleSwitch from 'primevue/toggleswitch'
 import DashCard from '../components/DashCard.vue'
 import { api } from '../api'
 import { auth, loadAuth } from '../auth'
@@ -20,6 +21,7 @@ const invites = ref([])
 const joinCode = ref('')
 const members = ref([])
 const loaded = ref(false)
+const chat = ref(null) // { enabled, configured }; only fetched for system admins
 
 const ROLES = computed(() => [{ value: 'OWNER', label: t('access.roles.OWNER') }, { value: 'MEMBER', label: t('access.roles.MEMBER') }])
 const inviteUrl = token => `${location.origin}/invitasjon/${token}`
@@ -31,6 +33,13 @@ async function load() {
   loaded.value = true
 }
 onMounted(load)
+onMounted(async () => { if (auth.value.admin) chat.value = await api.get('/access/chat') })
+
+// System admins only: the AI chat for everyone in this cabin (it costs money per question).
+async function setChat(enabled) {
+  chat.value = await api.put('/access/chat', { enabled, configured: chat.value.configured })
+  await loadAuth() // the chat button follows right away
+}
 
 // Your own access may have changed (e.g. you gave yourself access): refresh what the app lets you see.
 async function changed() {
@@ -167,6 +176,18 @@ function remove(member) {
             <Button icon="pi pi-times" text rounded severity="secondary" :aria-label="t('access.revoke')" v-tooltip.left="t('access.revoke')" @click="revoke(i)" />
           </li>
         </ul>
+      </DashCard>
+
+      <!-- System admins only (ADMIN_EMAILS): owners and members never see this -->
+      <DashCard v-if="chat" :title="t('access.adminTools')" icon="pi pi-shield" tint="bg-zinc-100 text-zinc-700">
+        <label class="flex items-center gap-4">
+          <span class="min-w-0 flex-1">
+            <span class="block text-sm font-medium">{{ t('access.chatToggle') }}</span>
+            <span class="block text-xs text-zinc-500">{{ t('access.chatHint') }}</span>
+          </span>
+          <ToggleSwitch :model-value="chat.enabled" @update:model-value="setChat" />
+        </label>
+        <p v-if="!chat.configured" class="mt-3 rounded-lg bg-amber-50 p-3 text-sm text-amber-800">{{ t('access.chatNoKey') }}</p>
       </DashCard>
 
       <!-- Who has access -->

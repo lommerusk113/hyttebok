@@ -1,5 +1,6 @@
 package no.hyttebok.access;
 
+import io.micronaut.context.annotation.Value;
 import io.micronaut.core.annotation.Nullable;
 import io.micronaut.http.HttpStatus;
 import io.micronaut.http.annotation.Body;
@@ -52,10 +53,12 @@ public class AccessController {
     private final AccessRequestRepository requests;
     private final CabinInfoRepository cabins;
     private final PasswordResetRepository resets;
+    private final boolean chatConfigured;
     private final SecureRandom random = new SecureRandom();
 
     public AccessController(AccessService access, AppUserRepository users, MembershipRepository memberships, InvitationRepository invitations,
-                            AccessRequestRepository requests, CabinInfoRepository cabins, PasswordResetRepository resets) {
+                            AccessRequestRepository requests, CabinInfoRepository cabins, PasswordResetRepository resets,
+                            @Value("${hyttebok.chat.api-key:}") String chatKey) {
         this.access = access;
         this.users = users;
         this.memberships = memberships;
@@ -63,6 +66,7 @@ public class AccessController {
         this.requests = requests;
         this.cabins = cabins;
         this.resets = resets;
+        this.chatConfigured = !chatKey.isBlank();
     }
 
     @Serdeable
@@ -95,6 +99,11 @@ public class AccessController {
 
     @Serdeable
     public record ResetLink(String token, Instant expiresAt) {
+    }
+
+    /** {@code configured}: the server has an AI key (without one, the switch does nothing yet). */
+    @Serdeable
+    public record ChatSetting(boolean enabled, boolean configured) {
     }
 
     // ---- requests (made with the join code, see CabinsController) ----
@@ -168,6 +177,23 @@ public class AccessController {
         memberships.findByUserIdAndCabinId(AccessService.userId(auth), cabin).ifPresentOrElse(
             m -> memberships.update(m.withRole(Membership.OWNER)),
             () -> join(AccessService.userId(auth), cabin, Membership.OWNER));
+    }
+
+    // ---- AI chat (system admins only: it costs money per question) ----
+
+    @Get("/chat")
+    public ChatSetting chat(Authentication auth) {
+        access.requireAdmin(auth);
+        return new ChatSetting(cabins.findChatEnabled(CabinContext.require()).orElse(false), chatConfigured);
+    }
+
+    @Put("/chat")
+    public ChatSetting setChat(Authentication auth, @Body ChatSetting body) {
+
+        access.requireAdmin(auth);
+        cabins.updateChatEnabled(CabinContext.require(), body.enabled());
+
+        return new ChatSetting(body.enabled(), chatConfigured);
     }
 
     // ---- join code ----
