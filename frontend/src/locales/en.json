@@ -426,7 +426,7 @@
     "email": "Email",
     "password": "Password",
     "repeatPassword": "Repeat password",
-    "passwordHint": "At least {n} characters.",
+    "passwordHint": "At least {n} characters. Ordinary letters and numbers are fine.",
     "createAccount": "Create account",
     "emailTaken": "There is already an account with this email. Log in instead (or with Google).",
     "signupFailed": "That didn't work. Check the fields and try again.",
@@ -440,7 +440,15 @@
     "toLogin": "Log in",
     "passwordsDiffer": "The passwords don't match.",
     "resetInvalid": "This link is no longer valid",
-    "passwordPrompt": "Enter a password"
+    "passwordPrompt": "Enter a password",
+    "errors": {
+      "nameMissing": "Enter your name.",
+      "emailMissing": "Enter your email address.",
+      "emailInvalid": "That doesn't look like an email address (e.g. name{'@'}gmail.com).",
+      "emailTaken": "There is already an account with this email. Choose \"Log in\" instead, or log in with Google.",
+      "passwordMissing": "Enter your password.",
+      "passwordShort": "The password needs at least {n} characters."
+    }
   },
   "access": {
     "title": "Access",

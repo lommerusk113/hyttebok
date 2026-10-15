@@ -13,7 +13,7 @@ import java.util.Base64;
  */
 public final class Passwords {
 
-    public static final int MIN_LENGTH = 10;
+    public static final int MIN_LENGTH = 6;
     public static final int MAX_LENGTH = 200;
     // OWASP's recommendation for PBKDF2-HMAC-SHA256.
     private static final int ITERATIONS = 600_000;

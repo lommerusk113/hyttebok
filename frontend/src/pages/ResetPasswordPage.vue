@@ -6,7 +6,7 @@ import Password from 'primevue/password'
 import { t } from '../i18n'
 
 // /nytt-passord/<token>: a one-time link from an owner or admin. Works without being logged in.
-const MIN_PASSWORD = 10
+const MIN_PASSWORD = 6
 const token = useRoute().params.token
 const info = ref(null)
 const password = ref('')
@@ -20,6 +20,10 @@ onMounted(async () => {
 
 async function save() {
   error.value = null
+  if (password.value.length < MIN_PASSWORD) {
+    error.value = 'login.errors.passwordShort'
+    return
+  }
   if (password.value !== repeat.value) {
     error.value = 'login.passwordsDiffer'
     return
@@ -43,15 +47,15 @@ async function save() {
       <template v-else-if="info.valid">
         <h1 class="mt-5 text-center text-xl font-semibold">{{ t('login.newPassword') }}</h1>
         <p class="mt-1 text-center text-sm text-zinc-500">{{ info.email }}</p>
-        <form class="mt-6 flex flex-col gap-3" @submit.prevent="save">
+        <form class="mt-6 flex flex-col gap-3" novalidate @submit.prevent="save">
           <label class="flex flex-col gap-1.5 text-sm font-medium">{{ t('login.password') }}
-            <Password v-model="password" :feedback="false" toggle-mask required :minlength="MIN_PASSWORD" :input-props="{ autocomplete: 'new-password' }" class="w-full" input-class="w-full" />
+            <Password v-model="password" :feedback="false" toggle-mask :input-props="{ autocomplete: 'new-password' }" class="w-full" input-class="w-full" />
             <span class="text-xs font-normal text-zinc-500">{{ t('login.passwordHint', { n: MIN_PASSWORD }) }}</span>
           </label>
           <label class="flex flex-col gap-1.5 text-sm font-medium">{{ t('login.repeatPassword') }}
             <Password v-model="repeat" :feedback="false" toggle-mask required :input-props="{ autocomplete: 'new-password' }" class="w-full" input-class="w-full" />
           </label>
-          <p v-if="error" class="rounded-lg bg-amber-50 p-3 text-sm text-amber-800" role="alert">{{ t(error) }}</p>
+          <p v-if="error" class="rounded-lg bg-amber-50 p-3 text-sm text-amber-800" role="alert">{{ t(error, { n: MIN_PASSWORD }) }}</p>
           <Button type="submit" :label="t('login.savePassword')" />
         </form>
       </template>

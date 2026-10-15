@@ -426,7 +426,7 @@
     "email": "E-post",
     "password": "Passord",
     "repeatPassword": "Gjenta passordet",
-    "passwordHint": "Minst {n} tegn.",
+    "passwordHint": "Minst {n} tegn. Vanlige bokstaver og tall holder.",
     "createAccount": "Opprett bruker",
     "emailTaken": "Det finnes allerede en bruker med denne e-posten. Logg inn i stedet (eller med Google).",
     "signupFailed": "Det gikk ikke. Sjekk feltene og prøv igjen.",
@@ -440,7 +440,15 @@
     "toLogin": "Logg inn",
     "passwordsDiffer": "Passordene er ikke like.",
     "resetInvalid": "Lenken gjelder ikke lenger",
-    "passwordPrompt": "Skriv inn et passord"
+    "passwordPrompt": "Skriv inn et passord",
+    "errors": {
+      "nameMissing": "Skriv navnet ditt.",
+      "emailMissing": "Skriv e-postadressen din.",
+      "emailInvalid": "Det ser ikke ut som en e-postadresse (f.eks. navn{'@'}gmail.com).",
+      "emailTaken": "Det finnes allerede en bruker med denne e-posten. Velg «Logg inn» i stedet, eller logg inn med Google.",
+      "passwordMissing": "Skriv passordet ditt.",
+      "passwordShort": "Passordet må ha minst {n} tegn."
+    }
   },
   "access": {
     "title": "Tilgang",

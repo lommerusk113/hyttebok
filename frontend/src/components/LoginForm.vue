@@ -1,5 +1,5 @@
 <script setup>
-import { ref } from 'vue'
+import { ref, watch } from 'vue'
 import Button from 'primevue/button'
 import InputText from 'primevue/inputtext'
 import Password from 'primevue/password'
@@ -9,12 +9,47 @@ import { t } from '../i18n'
 
 // Log in or sign up with email + password, or with Google (when it's set up). Used on the login page and on
 // invitation links. A new account starts without access, like a first Google login.
-const MIN_PASSWORD = 10
+// What's wrong is shown under the field it's about, checked here first and again by the server.
+const MIN_PASSWORD = 6
+const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 const mode = ref('login')
 const form = ref({ name: '', email: '', password: '' })
-const error = ref(null)
+const fieldErrors = ref({}) // name / email / password -> text key
+const error = ref(null) // about the whole form (wrong password, no connection)
 const busy = ref(false)
 const showForgot = ref(false)
+
+// Typing in a field clears its message; switching between log in and sign up clears all.
+watch(() => ({ ...form.value }), (now, before) => {
+  for (const field of Object.keys(now)) if (now[field] !== before[field]) delete fieldErrors.value[field]
+})
+watch(mode, () => { fieldErrors.value = {}; error.value = null })
+
+function check() {
+  const errors = {}
+  const { name, email, password } = form.value
+  if (mode.value === 'signup' && !name.trim()) errors.name = 'login.errors.nameMissing'
+  if (!email.trim()) errors.email = 'login.errors.emailMissing'
+  else if (!EMAIL.test(email.trim())) errors.email = 'login.errors.emailInvalid'
+  if (!password) errors.password = 'login.errors.passwordMissing'
+  else if (mode.value === 'signup' && password.length < MIN_PASSWORD) errors.password = 'login.errors.passwordShort'
+  fieldErrors.value = errors
+  return !Object.keys(errors).length
+}
+
+// The server names the field ("body.password: size must be ..."); show it in our words under that field.
+const SERVER_FIELD = { name: 'login.errors.nameMissing', email: 'login.errors.emailInvalid', password: 'login.errors.passwordShort' }
+async function serverErrors(res) {
+  try {
+    const errors = {}
+    for (const e of (await res.json())._embedded.errors) {
+      const field = e.message.match(/^body\.(\w+):/)?.[1]
+      if (SERVER_FIELD[field]) errors[field] = SERVER_FIELD[field]
+    }
+    if (Object.keys(errors).length) return (fieldErrors.value = errors)
+  } catch { /* not the usual error body */ }
+  error.value = 'login.signupFailed'
+}
 
 async function passwordLogin() {
   // The backend answers with a redirect: to "/" when it worked, to "/?login=failed" when not.
@@ -29,6 +64,7 @@ async function passwordLogin() {
 async function submit() {
 
   error.value = null
+  if (!check()) return
   busy.value = true
   try {
     if (mode.value === 'signup') {
@@ -37,10 +73,11 @@ async function submit() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name: form.value.name.trim(), email: form.value.email.trim(), password: form.value.password }),
       })
-      if (!res.ok) {
-        error.value = res.status === 409 ? 'login.emailTaken' : 'login.signupFailed'
+      if (res.status === 409) {
+        fieldErrors.value = { email: 'login.errors.emailTaken' }
         return
       }
+      if (!res.ok) return serverErrors(res)
     }
     if (!(await passwordLogin())) {
       error.value = 'login.wrongPassword'
@@ -77,17 +114,21 @@ async function submit() {
       <template #option="{ option }">{{ t(`login.${option}`) }}</template>
     </SelectButton>
 
-    <form class="flex flex-col gap-3" @submit.prevent="submit">
+    <!-- novalidate: our own messages in the app's language instead of the browser's pop-ups -->
+    <form class="flex flex-col gap-3" novalidate @submit.prevent="submit">
       <label v-if="mode === 'signup'" class="flex flex-col gap-1.5 text-sm font-medium">{{ t('login.name') }}
-        <InputText v-model="form.name" required autocomplete="name" maxlength="80" />
+        <InputText v-model="form.name" autocomplete="name" maxlength="80" :invalid="!!fieldErrors.name" aria-describedby="login-name-error" />
+        <span v-if="fieldErrors.name" id="login-name-error" class="text-xs font-normal text-rose-700" role="alert">{{ t(fieldErrors.name) }}</span>
       </label>
       <label class="flex flex-col gap-1.5 text-sm font-medium">{{ t('login.email') }}
-        <InputText v-model="form.email" type="email" required autocomplete="email" inputmode="email" />
+        <InputText v-model="form.email" type="email" autocomplete="email" inputmode="email" :invalid="!!fieldErrors.email" aria-describedby="login-email-error" />
+        <span v-if="fieldErrors.email" id="login-email-error" class="text-xs font-normal text-rose-700" role="alert">{{ t(fieldErrors.email) }}</span>
       </label>
       <label class="flex flex-col gap-1.5 text-sm font-medium">{{ t('login.password') }}
-        <Password v-model="form.password" :feedback="false" toggle-mask required :minlength="mode === 'signup' ? MIN_PASSWORD : undefined"
-                  :input-props="{ autocomplete: mode === 'signup' ? 'new-password' : 'current-password' }" class="w-full" input-class="w-full" />
-        <span v-if="mode === 'signup'" class="text-xs font-normal text-zinc-500">{{ t('login.passwordHint', { n: MIN_PASSWORD }) }}</span>
+        <Password v-model="form.password" :feedback="false" toggle-mask :invalid="!!fieldErrors.password"
+                  :input-props="{ autocomplete: mode === 'signup' ? 'new-password' : 'current-password', 'aria-describedby': 'login-password-note' }" class="w-full" input-class="w-full" />
+        <span v-if="fieldErrors.password" id="login-password-note" class="text-xs font-normal text-rose-700" role="alert">{{ t(fieldErrors.password, { n: MIN_PASSWORD }) }}</span>
+        <span v-else-if="mode === 'signup'" id="login-password-note" class="text-xs font-normal text-zinc-500">{{ t('login.passwordHint', { n: MIN_PASSWORD }) }}</span>
       </label>
 
       <p v-if="error" class="rounded-lg bg-amber-50 p-3 text-sm text-amber-800" role="alert">{{ t(error) }}</p>
