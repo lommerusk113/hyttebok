@@ -569,23 +569,32 @@
       "active": "Siste aktivitet",
       "new": "Nyeste først",
       "old": "Eldste først",
-      "replies": "Flest svar"
+      "replies": "Flest kommentarer"
     },
-    "by": "{name}, {date}",
-    "lastReply": "siste svar fra {name} {time}",
-    "replyCount": "Ingen svar | {n} svar | {n} svar",
-    "empty": "Ingen innlegg ennå. Start en tråd: spør om noe, del et tips eller en idé.",
+    "empty": "Ingen innlegg ennå. Del noe: et spørsmål, et tips eller en idé.",
     "noMatch": "Fant ingen innlegg som passer søket.",
     "missing": "Innlegget finnes ikke lenger.",
     "title": "Tittel",
-    "titlePlaceholder": "Hva handler det om?",
     "body": "Tekst",
-    "bodyPlaceholder": "Skriv mer her (valgfritt)",
     "publish": "Publiser",
-    "reply": "Svar",
-    "replyPlaceholder": "Skriv et svar …",
     "deleteTitle": "Slette?",
     "edited": "endret",
-    "editPost": "Endre innlegg"
+    "editPost": "Endre innlegg",
+    "whatsUp": "Hva vil du dele, {name}?",
+    "whatsUpAnon": "Hva vil du dele?",
+    "comment": "Kommenter",
+    "commentPlaceholder": "Skriv en kommentar …",
+    "send": "Send",
+    "commentCount": "Ingen kommentarer | 1 kommentar | {n} kommentarer",
+    "showEarlier": "Vis tidligere kommentar | Vis 1 tidligere kommentar | Vis {n} tidligere kommentarer",
+    "reactedBy": "Reaksjoner: {names}",
+    "reactions": {
+      "like": "Liker",
+      "love": "Elsker",
+      "haha": "Haha",
+      "wow": "Wow",
+      "sad": "Trist",
+      "party": "Hurra"
+    }
   }
 }

@@ -142,22 +142,31 @@ public class Notifier {
 
     public void forumPostCreated(ForumPost post) {
         notify(Topic.FORUM, s -> s.isFrom(post.author()) ? null : new Message(
-            en(s) ? "New in the forum" : "Nytt i forumet", by(post.author()) + post.title(), "/forum/" + post.id(), "forum-" + post.id()));
+            en(s) ? "New in the forum" : "Nytt i forumet", by(post.author()) + label(post), "/forum/" + post.id(), "forum-" + post.id()));
     }
 
     /** Only to those in the thread (who wrote the post or replied before), so a busy forum doesn't buzz everyone. */
     public void forumReplied(ForumPost post, ForumReply reply, List<String> earlier) {
         notify(Topic.FORUM, s -> s.isFrom(reply.author()) || (!s.isFrom(post.author()) && earlier.stream().noneMatch(s::isFrom)) ? null : new Message(
-            (en(s) ? "Reply: " : "Svar: ") + post.title(), by(reply.author()) + shorten(reply.body()), "/forum/" + post.id(), "forum-" + post.id()));
+            (en(s) ? "Comment: " : "Kommentar: ") + label(post), by(reply.author()) + shorten(reply.body()), "/forum/" + post.id(), "forum-" + post.id()));
     }
 
     static boolean en(PushSubscription subscription) {
         return "en".equals(subscription.lang());
     }
 
+    /** What a forum post is called in a notification: its title, or the start of its text. */
+    private static String label(ForumPost post) {
+        return post.title() != null ? post.title() : shorten(post.body() == null ? "" : post.body().replace('\n', ' '), 60);
+    }
+
     /** Push messages have a size limit (about 4 kB), and a phone shows a couple of lines anyway. */
     private static String shorten(String text) {
-        return text.length() <= 140 ? text : text.substring(0, 139) + "…";
+        return shorten(text, 140);
+    }
+
+    private static String shorten(String text, int max) {
+        return text.length() <= max ? text : text.substring(0, max - 1) + "…";
     }
 
     private static String by(@Nullable String person) {

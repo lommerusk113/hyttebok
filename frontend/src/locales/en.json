@@ -569,23 +569,32 @@
       "active": "Latest activity",
       "new": "Newest first",
       "old": "Oldest first",
-      "replies": "Most replies"
+      "replies": "Most comments"
     },
-    "by": "{name}, {date}",
-    "lastReply": "last reply from {name} {time}",
-    "replyCount": "No replies | {n} reply | {n} replies",
-    "empty": "No posts yet. Start a thread: ask something, share a tip or an idea.",
+    "empty": "No posts yet. Share something: a question, a tip or an idea.",
     "noMatch": "No posts match your search.",
     "missing": "This post no longer exists.",
     "title": "Title",
-    "titlePlaceholder": "What is it about?",
     "body": "Text",
-    "bodyPlaceholder": "Write more here (optional)",
     "publish": "Publish",
-    "reply": "Reply",
-    "replyPlaceholder": "Write a reply …",
     "deleteTitle": "Delete?",
     "edited": "edited",
-    "editPost": "Edit post"
+    "editPost": "Edit post",
+    "whatsUp": "What would you like to share, {name}?",
+    "whatsUpAnon": "What would you like to share?",
+    "comment": "Comment",
+    "commentPlaceholder": "Write a comment …",
+    "send": "Send",
+    "commentCount": "No comments | 1 comment | {n} comments",
+    "showEarlier": "Show earlier comment | Show 1 earlier comment | Show {n} earlier comments",
+    "reactedBy": "Reactions: {names}",
+    "reactions": {
+      "like": "Like",
+      "love": "Love",
+      "haha": "Haha",
+      "wow": "Wow",
+      "sad": "Sad",
+      "party": "Hooray"
+    }
   }
 }
