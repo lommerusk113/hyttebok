@@ -267,14 +267,14 @@ public class ChatService {
             }
             case ChatTools.ADD_TODO -> {
                 var title = ChatTools.text(args, "title");
-                var saved = todos.create(new Todo(null, title, ChatTools.optionalText(args, "description"), false, null, null, user, null, null));
+                var saved = todos.create(new Todo(null, title, ChatTools.optionalText(args, "description"), false, null, null, user, null, null, null, null));
                 actions.add(english ? "Added the to-do “" + title + "”" : "La til gjøremålet «" + title + "»");
                 return Map.of("ok", true, "id", saved.id());
             }
             case ChatTools.COMPLETE_TODO -> {
                 var id = ChatTools.id(args);
                 var todo = todos.list().stream().filter(x -> x.id().equals(id)).findFirst().orElseThrow(() -> new IllegalArgumentException("No to-do " + id));
-                todos.update(new Todo(todo.id(), todo.title(), todo.description(), true, user, Instant.now(), todo.createdBy(), todo.createdAt(), todo.cabinId()));
+                todos.update(new Todo(todo.id(), todo.title(), todo.description(), true, user, Instant.now(), todo.createdBy(), todo.createdAt(), todo.doneWith(), todo.doneNote(), todo.cabinId()));
                 actions.add(english ? "Marked “" + todo.title() + "” as done" : "Markerte «" + todo.title() + "» som utført");
                 return Map.of("ok", true);
             }
@@ -294,7 +294,7 @@ public class ChatService {
                 var id = ChatTools.id(args);
                 var task = maintenance.list().stream().filter(m -> m.id().equals(id)).findFirst().orElseThrow(() -> new IllegalArgumentException("No maintenance task " + id));
                 var date = ChatTools.optionalText(args, "date");
-                completions.create(new MaintenanceCompletion(null, id, date == null ? today : LocalDate.parse(date), user, null, null));
+                completions.create(new MaintenanceCompletion(null, id, date == null ? today : LocalDate.parse(date), user, null, null, null, null));
                 actions.add(english ? "Marked “" + task.name() + "” as done" : "Markerte «" + task.name() + "» som utført");
                 return Map.of("ok", true);
             }

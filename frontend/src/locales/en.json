@@ -319,8 +319,11 @@
       "recurring": "Recurring",
       "once": "One-off"
     },
-    "seeCompleted": "See completed ({n})",
-    "noneInFilter": "Nothing here."
+    "seeCompleted": "Done this year ({n})",
+    "noneInFilter": "Nothing here.",
+    "kindRecurring": "Recurring task",
+    "doneOn": "done {date}",
+    "noneInYear": "Nothing done in {year}."
   },
   "push": {
     "title": "Notifications",
@@ -541,5 +544,16 @@
     "inviteHint": "Got an invitation link from someone? Open it and you go straight into their cabin.",
     "codeInstead": "Have a code instead?",
     "codeOtherCabin": "Have a code for another cabin?"
+  },
+  "done": {
+    "title": "Done: {task}",
+    "who": "Who took part?",
+    "nobody": "Nobody chosen",
+    "remove": "Remove {name}",
+    "addName": "Add a name",
+    "add": "Add",
+    "note": "Description (optional)",
+    "notePlaceholder": "E.g. \"Replaced two batteries, the one in the hall was empty\"",
+    "save": "Save as done"
   }
 }

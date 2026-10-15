@@ -319,8 +319,11 @@
       "recurring": "Faste",
       "once": "Engang"
     },
-    "seeCompleted": "Se fullførte ({n})",
-    "noneInFilter": "Ingenting her."
+    "seeCompleted": "Utført i år ({n})",
+    "noneInFilter": "Ingenting her.",
+    "kindRecurring": "Fast oppgave",
+    "doneOn": "utført {date}",
+    "noneInYear": "Ingenting utført i {year}."
   },
   "push": {
     "title": "Varsler",
@@ -541,5 +544,16 @@
     "inviteHint": "Har du fått en invitasjonslenke fra noen? Åpne den, så kommer du rett inn i hytta deres.",
     "codeInstead": "Har du en kode i stedet?",
     "codeOtherCabin": "Har du en kode til en annen hytte?"
+  },
+  "done": {
+    "title": "Utført: {task}",
+    "who": "Hvem var med?",
+    "nobody": "Ingen valgt",
+    "remove": "Ta bort {name}",
+    "addName": "Legg til et navn",
+    "add": "Legg til",
+    "note": "Beskrivelse (valgfritt)",
+    "notePlaceholder": "F.eks. «Byttet to batterier, det i gangen var tomt»",
+    "save": "Lagre som utført"
   }
 }

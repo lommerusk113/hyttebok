@@ -13,10 +13,11 @@ import Textarea from 'primevue/textarea'
 import ToggleSwitch from 'primevue/toggleswitch'
 import DashCard from '../components/DashCard.vue'
 import EmptyState from '../components/EmptyState.vue'
+import DoneDialog from '../components/DoneDialog.vue'
 import SuggestionList from '../components/SuggestionList.vue'
 import { api } from '../api'
 import { askName, userName } from '../user'
-import { toggleTodo, undoToast } from '../actions'
+import { undoToast } from '../actions'
 import { formatDate, parseIsoDate, toIsoDate } from '../utils'
 import { nextDue, status, UNITS, yearEntries } from '../maintenance'
 import { dueLabel, dueText, overdueBadge, STATUS_STYLE } from '../maintenanceLabels'
@@ -48,6 +49,7 @@ onUnmounted(() => document.removeEventListener('visibilitychange', refreshToday)
 
 onMounted(async () => {
   [tasks.value, completions.value, todos.value] = await Promise.all(['/maintenance', '/maintenance-completions', '/todos'].map(api.get))
+  people.value = await api.get('/cabin/people').catch(() => [])
   const query = takeQuery()
   if (query.new === 'vedlikehold' || query.new === 'gjoremal') openForm()
   if (query.id) showTask(`m-${query.id}`)
@@ -59,6 +61,24 @@ onMounted(async () => {
 // instead of making it jump while you look at it.
 const openTodos = computed(() => todos.value.filter(x => !x.done))
 const doneTodos = computed(() => todos.value.filter(x => x.done).sort((a, b) => (b.doneAt || '').localeCompare(a.doneAt || '')))
+
+// "Fullført": everything done in a year, recurring tasks (each time they were done) and one-off jobs, newest
+// first. Opens on this year; ‹ › goes back and forth. Recurring tasks also stay in the list with their next date.
+const doneYear = ref(Number(toIsoDate(new Date()).slice(0, 4)))
+const doneIn = year => {
+  const y = String(year)
+  const byId = new Map(tasks.value.map(m => [m.id, m]))
+  return [
+    ...completions.value.filter(c => c.completedOn.startsWith(y) && byId.has(c.maintenanceId))
+      .map(c => ({ key: `c${c.id}`, date: c.completedOn, name: byId.get(c.maintenanceId).name, by: c.completedBy, with: c.participants, note: c.note,
+        task: byId.get(c.maintenanceId), completion: c })),
+    ...doneTodos.value.filter(x => (x.doneAt || '').startsWith(y))
+      .map(x => ({ key: `t${x.id}`, date: x.doneAt.slice(0, 10), name: x.title, by: x.doneBy, with: x.doneWith, note: x.doneNote, todo: x })),
+  ].sort((a, b) => b.date.localeCompare(a.date))
+}
+const doneInYear = computed(() => doneIn(doneYear.value))
+const doneThisYear = computed(() => doneIn(thisYear.value).length)
+const anythingDone = computed(() => completions.value.length > 0 || doneTodos.value.length > 0)
 const allRows = computed(() => [
   ...tasks.value.map(m => ({ key: `m-${m.id}`, m, kind: status(m, today.value).kind, label: dueLabel(m, today.value) })),
   ...openTodos.value.map(x => ({ key: `t-${x.id}`, x, kind: 'once' })),
@@ -113,15 +133,29 @@ async function showTask(key) {
 
 // ---- actions ----
 
-async function complete(m) {
+// "Utført" first asks who was there and what was done (DoneDialog); `doing` is the task being completed.
+const doing = ref(null) // { m } recurring, or { x } one-off
+const people = ref([])
 
+function complete(m) {
   if (!userName.value) {
     askName.value = true
     return
   }
+  doing.value = { m }
+}
+
+async function saveDone({ participants, note }) {
+  const { m, x } = doing.value
+  doing.value = null
+  if (m) await recordCompletion(m, participants, note)
+  else await finishOnce(x, participants, note)
+}
+
+async function recordCompletion(m, participants, note) {
 
   const completedOn = toIsoDate(new Date())
-  const saved = await api.post('/maintenance-completions', { maintenanceId: m.id, completedOn, completedBy: userName.value })
+  const saved = await api.post('/maintenance-completions', { maintenanceId: m.id, completedOn, completedBy: userName.value, participants, note })
   completions.value = [saved, ...completions.value]
   tasks.value = tasks.value.map(x => (x.id === m.id ? { ...x, lastCompleted: completedOn } : x))
   showTask(`m-${m.id}`)
@@ -137,12 +171,29 @@ async function undo(completion) {
 }
 
 // One-off job done (or undone). Done ones move to "Fullført"; the toast can bring it straight back.
+// One-off job: done asks who and what first (like recurring ones); undone goes straight back to the list.
 async function toggleOnce(todo) {
-  const updated = await toggleTodo(todo)
-  if (!updated) return
+
+  if (!userName.value) {
+    askName.value = true
+    return
+  }
+  if (!todo.done) {
+    doing.value = { x: todo }
+    return
+  }
+  const updated = await api.put('/todos', { ...todo, done: false, doneBy: null, doneAt: null, doneWith: null, doneNote: null })
   todos.value = todos.value.map(x => (x.id === updated.id ? updated : x))
-  if (updated.done) undoToast(toast, t('todo.doneToast', { name: updated.title }), () => toggleOnce(updated))
 }
+
+async function finishOnce(todo, participants, note) {
+  const updated = await api.put('/todos', { ...todo, done: true, doneBy: userName.value, doneAt: new Date().toISOString(), doneWith: participants, doneNote: note })
+  todos.value = todos.value.map(x => (x.id === updated.id ? updated : x))
+  undoToast(toast, t('todo.doneToast', { name: updated.title }), () => toggleOnce(updated))
+}
+
+// "Kari og Ola", in the app's language
+const names = list => new Intl.ListFormat(localeTag(), { type: 'conjunction' }).format(list)
 
 // A suggested job someone said yes to becomes a one-off task.
 async function acceptSuggestion(s) {
@@ -256,8 +307,8 @@ function remove(item) {
 
       <div class="mb-3 flex flex-wrap items-center justify-between gap-2">
         <SelectButton v-model="filter" :options="FILTERS" :option-label="f => t(`maintenance.filter.${f}`)" :allow-empty="false" />
-        <Button v-if="doneTodos.length" :label="t('maintenance.seeCompleted', { n: doneTodos.length })" text size="small" severity="secondary"
-                class="!min-h-11" @click="doneOpen = true" />
+        <Button v-if="anythingDone" :label="t('maintenance.seeCompleted', { n: doneThisYear })" text size="small" severity="secondary"
+                class="!min-h-11" @click="doneYear = thisYear; doneOpen = true" />
       </div>
 
       <ul v-if="shownRows.length" class="-mx-5 divide-y divide-zinc-100 border-t border-zinc-100">
@@ -341,17 +392,34 @@ function remove(item) {
   </div>
 
   <!-- Finished one-off jobs (recurring tasks keep their history in the year overview) -->
+  <DoneDialog :task="doing ? (doing.m?.name || doing.x?.title) : null" :people="people" @save="saveDone" @cancel="doing = null" />
+
   <Drawer v-model:visible="doneOpen" position="right" :header="t('maintenance.completed')" class="!w-full sm:!w-[26rem]">
-    <ul v-if="doneTodos.length" class="-mx-5 divide-y divide-zinc-100">
-      <li v-for="x in doneTodos" :key="x.id" class="flex items-center gap-3 py-2.5 pl-5 pr-4">
-        <button class="min-w-0 flex-1 text-left" @click="openForm(x)">
-          <span class="block text-zinc-500 line-through">{{ x.title }}</span>
-          <span class="block text-xs text-zinc-500">{{ t('todo.doneBy', { name: x.doneBy, date: formatDate(x.doneAt) }) }}</span>
+    <div class="-mt-2 mb-3 flex items-center justify-between">
+      <Button icon="pi pi-chevron-left" text rounded severity="secondary" class="!size-11" :aria-label="t('maintenance.prevYear')" @click="doneYear--" />
+      <span class="font-semibold tabular-nums">{{ doneYear }}</span>
+      <Button icon="pi pi-chevron-right" text rounded severity="secondary" class="!size-11" :aria-label="t('maintenance.nextYear')" :disabled="doneYear >= thisYear" @click="doneYear++" />
+    </div>
+    <button v-if="doneYear !== thisYear" class="mb-2 inline-flex min-h-11 items-center text-sm font-medium underline underline-offset-4" @click="doneYear = thisYear">
+      {{ t('maintenance.backToThisYear') }}
+    </button>
+
+    <ul v-if="doneInYear.length" class="-mx-5 divide-y divide-zinc-100 border-t border-zinc-100">
+      <li v-for="d in doneInYear" :key="d.key" class="flex items-center gap-3 py-2.5 pl-5 pr-4">
+        <i :class="d.task ? 'pi pi-refresh text-zinc-500' : 'pi pi-check text-emerald-600'" class="shrink-0 text-xs" :title="d.task ? t('maintenance.kindRecurring') : t('maintenance.once')" />
+        <button class="min-w-0 flex-1 text-left" @click="openForm(d.task || d.todo)">
+          <span class="block truncate font-medium">{{ d.name }}</span>
+          <span class="block text-xs text-zinc-500">
+            {{ d.task ? t('maintenance.kindRecurring') : t('maintenance.once') }} ·
+            {{ d.with?.length || d.by ? t('todo.doneBy', { name: d.with?.length ? names(d.with) : d.by, date: formatDate(d.date) }) : t('maintenance.doneOn', { date: formatDate(d.date) }) }}
+          </span>
+          <span v-if="d.note" class="mt-0.5 block whitespace-pre-line text-sm text-zinc-600">{{ d.note }}</span>
         </button>
-        <Button :label="t('maintenance.undo')" text size="small" severity="secondary" class="!min-h-11 shrink-0" @click="toggleOnce(x)" />
+        <Button :label="t('maintenance.undo')" text size="small" severity="secondary" class="!min-h-11 shrink-0"
+                @click="d.completion ? undo(d.completion) : toggleOnce(d.todo)" />
       </li>
     </ul>
-    <EmptyState v-else icon="pi pi-inbox" :text="t('maintenance.noneCompleted')" />
+    <EmptyState v-else icon="pi pi-inbox" :text="t('maintenance.noneInYear', { year: doneYear })" />
   </Drawer>
 
   <Dialog dismissable-mask v-model:visible="formOpen" modal :header="form.id ? t('maintenance.edit') : t('maintenance.new')" class="w-[30rem] max-w-[calc(100vw-2rem)]">

@@ -5,6 +5,10 @@ import io.micronaut.http.annotation.Controller;
 import io.micronaut.http.annotation.Get;
 import io.micronaut.http.annotation.Put;
 import jakarta.validation.Valid;
+import no.hyttebok.access.MembershipRepository;
+import no.hyttebok.auth.AppUserRepository;
+
+import java.util.List;
 
 /** The info (name, routines, address, ...) of the cabin the app is showing (X-Hytte). Members only (MemberRule). */
 @Controller("/api/cabin")
@@ -12,9 +16,29 @@ public class CabinInfoController {
 
 
     private final CabinInfoRepository repository;
+    private final MembershipRepository memberships;
+    private final AppUserRepository users;
 
-    public CabinInfoController(CabinInfoRepository repository) {
+    public CabinInfoController(CabinInfoRepository repository, MembershipRepository memberships, AppUserRepository users) {
         this.repository = repository;
+        this.memberships = memberships;
+        this.users = users;
+    }
+
+    /**
+     * First names of the cabin's members, for "who was there" when something is done. Members only (MemberRule);
+     * with login switched off there are no accounts, so the list is empty and names are typed.
+     */
+    @Get("/people")
+    public List<String> people() {
+
+        var ids = memberships.findByCabinId(CabinContext.require()).stream().map(m -> m.userId()).toList();
+        if (ids.isEmpty()) {
+            return List.of();
+        }
+
+        return users.findByIdIn(ids).stream().map(u -> u.name() == null ? u.email() : u.name().trim().split("\\s+")[0])
+            .distinct().sorted(String.CASE_INSENSITIVE_ORDER).toList();
     }
 
     @Get
