@@ -20,6 +20,9 @@ import { initials, colorFor } from './utils'
 import { api } from './api'
 import { locale, primeLocale, t } from './i18n'
 import { online, pending } from './offline'
+import LoginPage from './components/LoginPage.vue'
+import NoAccessPage from './components/NoAccessPage.vue'
+import { auth, loadAuth, needsLogin, noAccess } from './auth'
 
 const primevue = usePrimeVue()
 
@@ -38,7 +41,8 @@ const menuOpen = ref(false)
 const menuPopover = ref()
 const notificationsOpen = ref(false)
 
-loadPushState({ name: userName.value, lang: locale.value })
+// Push state needs the API, so only once we know the user is let in.
+loadAuth().then(() => { if (!needsLogin.value && !noAccess.value) loadPushState({ name: userName.value, lang: locale.value }) })
 // The server uses the name to leave out your own changes, and the language for the texts.
 watch([userName, locale], ([name, lang]) => syncProfile({ name, lang }))
 const confirm = useConfirm()
@@ -52,8 +56,8 @@ watch(locale, () => { primevue.config.locale = primeLocale() })
 
 // Names already in use, so the same person doesn't end up as both "Joakim" and "joakim".
 const knownNames = ref([])
-watch(askName, async open => {
-  if (!open) return
+watch([askName, needsLogin, auth], async ([open, locked]) => {
+  if (!open || locked || !auth.value || noAccess.value) return
   draftName.value = userName.value
   const [bookings, log, todos] = await Promise.all(['/bookings', '/log', '/todos'].map(api.get))
   knownNames.value = [...new Set([...bookings.map(b => b.guestName), ...log.flatMap(e => [e.author, ...e.participants]), ...todos.map(x => x.doneBy)]
@@ -77,7 +81,13 @@ function saveName(name = draftName.value) {
 </script>
 
 <template>
-  <div class="min-h-screen">
+  <!-- Nothing until we know whether a login is needed, so the app doesn't flash before the login page -->
+  <template v-if="!auth" />
+  <!-- Invitation and new-password links work before login and before access: the pages handle both -->
+  <main v-else-if="route.path.startsWith('/invitasjon/') || route.path.startsWith('/nytt-passord/')" class="px-4"><RouterView /></main>
+  <LoginPage v-else-if="needsLogin && route.path !== '/app'" />
+  <NoAccessPage v-else-if="noAccess && route.path !== '/tilgang'" />
+  <div v-else class="min-h-screen">
     <header class="sticky top-0 z-30 border-b border-zinc-200 bg-surface/85 text-zinc-950 backdrop-blur">
       <div class="mx-auto flex h-14 max-w-6xl items-center justify-between gap-4 px-4 sm:h-16">
         <RouterLink to="/" class="flex min-h-11 items-center gap-2.5">
@@ -101,10 +111,13 @@ function saveName(name = draftName.value) {
             <Avatar :label="initials(userName)" shape="circle" :class="[colorFor(userName).bg, colorFor(userName).text]" class="!text-xs !font-semibold" />
             <span class="text-sm font-medium">{{ userName || t('app.whoAreYou') }}</span>
             <i class="pi pi-chevron-down text-xs text-zinc-500" />
+            <!-- Someone is waiting for access (owners and admins) -->
+            <span v-if="auth?.waitingRequests" class="-ml-1 size-2 rounded-full bg-rose-500" :aria-label="t('access.waiting', auth.waitingRequests)" />
           </button>
-          <button class="-mr-2 grid size-11 place-items-center rounded-full transition hover:bg-zinc-100 sm:hidden"
+          <button class="relative -mr-2 grid size-11 place-items-center rounded-full transition hover:bg-zinc-100 sm:hidden"
                   :aria-label="t('app.menu')" :aria-expanded="menuOpen" @click="menuOpen = true">
             <i class="pi pi-bars text-lg" />
+            <span v-if="auth?.waitingRequests" class="absolute right-2 top-2 size-2 rounded-full bg-rose-500" :aria-label="t('access.waiting', auth.waitingRequests)" />
           </button>
         </div>
       </div>
@@ -151,7 +164,7 @@ function saveName(name = draftName.value) {
     <ConfirmDialog :pt="confirmPt" />
     <ChatBot v-if="chatEnabled && route.path !== '/app'" />
 
-    <Dialog dismissable-mask :visible="askName && route.path !== '/app'" @update:visible="askName = $event" modal :header="t('app.whoAreYou')" class="w-[26rem] max-w-[calc(100vw-2rem)]">
+    <Dialog dismissable-mask :visible="askName && route.path !== '/app' && !needsLogin && !noAccess" @update:visible="askName = $event" modal :header="t('app.whoAreYou')" class="w-[26rem] max-w-[calc(100vw-2rem)]">
       <p class="mb-4 text-sm text-zinc-500">{{ t('app.nameHint') }}</p>
       <div v-if="knownNames.length" class="mb-4">
         <p class="mb-2 text-sm font-medium">{{ t('app.knownNames') }}</p>

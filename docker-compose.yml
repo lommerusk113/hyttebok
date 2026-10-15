@@ -21,6 +21,11 @@ services:
       UPLOAD_DIR: /data/uploads
       # Put GEMINI_API_KEY=... in a .env file next to this one (not committed) to turn on the chatbot.
       GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      # Google login: set both in .env. Without GOOGLE_CLIENT_ID the app has no login.
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
+      # System admins, comma-separated emails (e.g. you@gmail.com): manage access on the "Tilgang" page.
+      ADMIN_EMAILS: ${ADMIN_EMAILS:-}
     volumes:
       - uploads:/data/uploads
     depends_on:

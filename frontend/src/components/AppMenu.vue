@@ -9,6 +9,7 @@ import { userName, askName } from '../user'
 import { initials, colorFor } from '../utils'
 import { t } from '../i18n'
 import { install, installPrompt, installed, isIos } from '../install'
+import { auth, logout } from '../auth'
 
 // Everything personal in one place: the ☰ drawer on phones, the dropdown under your name on wide screens.
 const emit = defineEmits(['close', 'notifications'])
@@ -43,6 +44,22 @@ async function installNow() {
       <span class="text-sm font-medium">{{ t('app.darkMode') }}</span>
       <ThemeSwitch />
     </label>
+
+    <!-- Owners and system admins: who has access, invitations, requests -->
+    <RouterLink v-if="auth?.canManage" to="/tilgang" class="flex min-h-14 items-center justify-between gap-3 px-2" @click="emit('close')">
+      <span class="flex items-center gap-2 text-sm font-medium"><i class="pi pi-users" />{{ t('access.title') }}</span>
+      <span class="flex items-center gap-2">
+        <span v-if="auth.waitingRequests" class="rounded-full bg-rose-500 px-2 py-0.5 text-xs font-semibold text-white" :aria-label="t('access.waiting', auth.waitingRequests)">{{ auth.waitingRequests }}</span>
+        <i class="pi pi-chevron-right text-xs text-zinc-500" />
+      </span>
+    </RouterLink>
+
+    <!-- Logged in with Google: whose account, and the way out -->
+    <div v-if="auth?.user" class="mt-2 flex items-center gap-3 border-t border-zinc-200 px-2 pt-4">
+      <img v-if="auth.user.picture" :src="auth.user.picture" alt="" referrerpolicy="no-referrer" class="size-8 rounded-full">
+      <span class="min-w-0 flex-1 truncate text-xs text-zinc-500">{{ t('login.signedInAs') }}<br><span class="text-sm text-zinc-800">{{ auth.user.email }}</span></span>
+      <Button :label="t('login.logout')" icon="pi pi-sign-out" size="small" text severity="secondary" @click="logout" />
+    </div>
 
     <!-- iPhones always go to the instructions: only Safari's Share menu can install there -->
     <Button v-if="installPrompt && !isIos" icon="pi pi-download" :label="t('app.install')" class="mt-2" @click="installNow" />

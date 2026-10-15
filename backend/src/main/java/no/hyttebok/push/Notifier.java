@@ -4,6 +4,11 @@ import io.micronaut.core.annotation.Nullable;
 import io.micronaut.json.JsonMapper;
 import io.micronaut.serde.annotation.Serdeable;
 import jakarta.inject.Singleton;
+import no.hyttebok.access.AccessService;
+import no.hyttebok.access.Membership;
+import no.hyttebok.access.MembershipRepository;
+import no.hyttebok.auth.AppUser;
+import no.hyttebok.auth.AppUserRepository;
 import no.hyttebok.booking.Booking;
 import no.hyttebok.log.LogEntry;
 import no.hyttebok.suggestion.Suggestion;
@@ -29,11 +34,18 @@ public class Notifier {
     private final PushSubscriptionRepository subscriptions;
     private final WebPushSender sender;
     private final JsonMapper json;
+    private final MembershipRepository memberships;
+    private final AppUserRepository users;
+    private final AccessService access;
 
-    public Notifier(PushSubscriptionRepository subscriptions, WebPushSender sender, JsonMapper json) {
+    public Notifier(PushSubscriptionRepository subscriptions, WebPushSender sender, JsonMapper json,
+                    MembershipRepository memberships, AppUserRepository users, AccessService access) {
         this.subscriptions = subscriptions;
         this.sender = sender;
         this.json = json;
+        this.memberships = memberships;
+        this.users = users;
+        this.access = access;
     }
 
     @Serdeable
@@ -69,6 +81,29 @@ public class Notifier {
     }
 
     // ---- events (actors are left out: you don't get notified about your own changes) ----
+
+    /**
+     * Someone asked for access: tell the devices of everyone who can approve it (owners and system admins).
+     * Not tied to a topic: it's a question only they can answer, and they'd otherwise never see it.
+     */
+    public void accessRequested(Long requestId, Long requesterId, String name, @Nullable String message) {
+        Thread.startVirtualThread(() -> {
+            for (var subscription : subscriptions.findAll()) {
+                if (subscription.userId() == null || subscription.userId().equals(requesterId) || !canApprove(subscription.userId())) {
+                    continue;
+                }
+                var quote = message == null ? "" : ": «" + message + "»";
+                deliver(subscription, en(subscription)
+                    ? new Message("Access request", name + " is asking for access" + quote, "/tilgang", "access-" + requestId)
+                    : new Message("Forespørsel om tilgang", name + " ber om tilgang" + quote, "/tilgang", "access-" + requestId));
+            }
+        });
+    }
+
+    private boolean canApprove(Long userId) {
+        return memberships.findById(userId).map(m -> Membership.OWNER.equals(m.role())).orElse(false)
+            || users.findById(userId).filter(AppUser::emailVerified).map(u -> access.isAdmin(u.email())).orElse(false);
+    }
 
     public void bookingCreated(Booking booking) {
         notify(Topic.BOOKING, s -> s.isFrom(booking.guestName()) ? null : en(s)

@@ -21,6 +21,12 @@ html {
   scrollbar-gutter: stable;
 }
 
+/* Tailwind v4 no longer gives buttons a pointer cursor; everything clickable should show one. */
+button:not(:disabled),
+[role="button"]:not([aria-disabled="true"]) {
+  cursor: pointer;
+}
+
 html:has(.p-dialog-mask, .p-drawer-mask, [role="dialog"][aria-modal="true"]) {
   overflow: hidden;
 }

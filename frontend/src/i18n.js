@@ -39,5 +39,7 @@ export function primeLocale() {
     accept: t('common.yes'),
     reject: t('common.no'),
     dateFormat: 'dd.mm.yy',
+    // Read out by screen readers on password fields
+    passwordPrompt: t('login.passwordPrompt'),
   }
 }

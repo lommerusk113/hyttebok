@@ -138,6 +138,11 @@ function copy(text) {
             </dl>
             <RichText v-else-if="cabin[shownInfo]" :text="cabin[shownInfo]" class="text-zinc-700" />
             <p v-else class="text-sm text-zinc-500">{{ t('overview.notFilled') }}</p>
+            <!-- Leaving: note what's running out while you're still there -->
+            <RouterLink v-if="shownInfo === 'departureInfo'" to="/handleliste/sjekkliste"
+                        class="mt-3 inline-flex min-h-11 items-center gap-2 text-sm font-medium underline-offset-4 hover:underline">
+              <i class="pi pi-list-check text-xs" />{{ t('checklist.goThrough') }}
+            </RouterLink>
           </div>
         </div>
       </div>

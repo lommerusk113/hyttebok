@@ -17,7 +17,8 @@ import java.util.List;
 
 /**
  * A device that turned on notifications. {@code name} is the person using it, so they aren't
- * notified about their own changes; {@code lang} picks the language of the texts.
+ * notified about their own changes; {@code lang} picks the language of the texts. {@code userId} is the
+ * logged-in user (set by the server, not the device), used for messages meant for owners and admins.
  */
 @Serdeable
 @MappedEntity
@@ -28,7 +29,8 @@ public record PushSubscription(@Id @GeneratedValue @Nullable Long id,
                                @Nullable String name,
                                @Pattern(regexp = "nb|en") String lang,
                                @NotNull @TypeDef(type = DataType.STRING_ARRAY) List<@Pattern(regexp = "BOOKING|POST|SUGGESTION|TODO|SHOPPING|MAINTENANCE") String> topics,
-                               @DateCreated @Nullable Instant createdAt) {
+                               @DateCreated @Nullable Instant createdAt,
+                               @Nullable Long userId) {
 
     boolean wants(Topic topic) {
         return topics.contains(topic.name());

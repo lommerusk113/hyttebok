@@ -92,8 +92,8 @@ function swapTempId(from, to) {
 let syncing = false
 
 /**
- * Sends queued changes in order. Stops at the first network/server error and retries later;
- * a 4xx (e.g. the item was deleted on the server meanwhile) drops that change.
+ * Sends queued changes in order. Stops at the first network/server error (or missing login) and retries later;
+ * any other 4xx (e.g. the item was deleted on the server meanwhile) drops that change.
  * Returns { sent, dropped }.
  */
 export async function sync(send) {
@@ -117,7 +117,8 @@ export async function sync(send) {
       try {
         result = await send(item.method, item.url, body, item.key)
       } catch (err) {
-        if (!err.status || err.status >= 500) break
+        // Network/server trouble or not logged in (401): keep it and retry later; never drop a change over a login.
+        if (!err.status || err.status >= 500 || err.status === 401) break
         dropped++
       }
 

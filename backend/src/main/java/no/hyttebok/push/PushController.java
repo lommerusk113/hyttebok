@@ -7,6 +7,9 @@ import io.micronaut.http.annotation.Delete;
 import io.micronaut.http.annotation.Get;
 import io.micronaut.http.annotation.Post;
 import io.micronaut.http.annotation.Put;
+import io.micronaut.core.annotation.Nullable;
+import io.micronaut.security.authentication.Authentication;
+import no.hyttebok.access.AccessService;
 import io.micronaut.http.annotation.QueryValue;
 import io.micronaut.http.exceptions.HttpStatusException;
 import io.micronaut.serde.annotation.Serdeable;
@@ -40,7 +43,7 @@ public class PushController {
 
     /** Create or update this device's subscription. */
     @Put("/subscription")
-    public PushSubscription save(@Body @Valid PushSubscription subscription) {
+    public PushSubscription save(@Body @Valid PushSubscription subscription, @Nullable Authentication authentication) {
 
         if (!WebPushSender.isPushService(subscription.endpoint())) {
             throw new HttpStatusException(HttpStatus.BAD_REQUEST, "Not a known push service");
@@ -48,7 +51,8 @@ public class PushController {
 
         var existing = repository.findByEndpoint(subscription.endpoint());
         var toSave = new PushSubscription(existing.map(PushSubscription::id).orElse(null), subscription.endpoint(), subscription.p256dh(),
-            subscription.auth(), subscription.name(), subscription.lang(), subscription.topics(), existing.map(PushSubscription::createdAt).orElse(null));
+            subscription.auth(), subscription.name(), subscription.lang(), subscription.topics(), existing.map(PushSubscription::createdAt).orElse(null),
+            authentication == null ? null : AccessService.userId(authentication));
 
         return existing.isPresent() ? repository.update(toSave) : repository.save(toSave);
     }

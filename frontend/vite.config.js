@@ -31,7 +31,8 @@ export default defineConfig({
         // App shell is precached; any route opens offline.
         globPatterns: ['**/*.{js,css,html,png,woff2}'],
         navigateFallback: '/index.html',
-        navigateFallbackDenylist: [/^\/api\//],
+        // Login and logout must reach the server, not the cached app shell.
+        navigateFallbackDenylist: [/^\/api\//, /^\/oauth\//, /^\/logout/],
         // Push notifications: show them and open the right page on tap.
         importScripts: ['/push-sw.js'],
         runtimeCaching: [
@@ -62,5 +63,5 @@ export default defineConfig({
       },
     }),
   ],
-  server: { proxy: { '/api': 'http://localhost:8080' } },
+  server: { proxy: { '/api': 'http://localhost:8080', '/oauth': 'http://localhost:8080', '/login': 'http://localhost:8080', '/logout': 'http://localhost:8080' } },
 })

@@ -32,7 +32,7 @@ const tasks = ref([])
 const completions = ref([])
 const todos = ref([])
 const filter = ref('all')
-const FILTERS = ['all', 'recurring', 'once', 'suggestions']
+const FILTERS = ['all', 'recurring', 'once']
 const doneOpen = ref(false)
 const formOpen = ref(false)
 const form = ref({})
@@ -73,7 +73,8 @@ watch(() => allRows.value.map(r => r.key).join(), () => {
     : [...allRows.value].sort((a, b) => RANK[a.kind] - RANK[b.kind] || sortKey(a).localeCompare(sortKey(b))).map(r => r.key)
 })
 const rows = computed(() => order.value.map(k => allRows.value.find(r => r.key === k)).filter(Boolean))
-const shownRows = computed(() => ({ all: rows.value, recurring: rows.value.filter(r => r.m), once: rows.value.filter(r => !r.m), suggestions: [] })[filter.value])
+const shownRows = computed(() => ({ all: rows.value, recurring: rows.value.filter(r => r.m), once: rows.value.filter(r => !r.m) })[filter.value])
+const ideas = ref()
 const overdueCount = computed(() => rows.value.filter(r => r.kind === 'overdue').length)
 const ONCE_STYLE = { bar: 'bg-sky-400', text: 'text-sky-700' }
 
@@ -259,43 +260,40 @@ function remove(item) {
                 class="!min-h-11" @click="doneOpen = true" />
       </div>
 
-      <template v-if="filter !== 'suggestions'">
-        <ul v-if="shownRows.length" class="-mx-5 divide-y divide-zinc-100 border-t border-zinc-100">
-          <li v-for="r in shownRows" :id="`task-${r.key}`" :key="r.key" class="flex scroll-mt-40 items-center gap-3 py-2.5 pl-3 pr-4 transition-colors duration-700"
-              :class="highlighted === r.key && 'bg-amber-50'">
-            <span :class="(r.m ? STATUS_STYLE[r.kind] : ONCE_STYLE).bar" class="w-1 self-stretch rounded-full" />
-            <!-- The whole name area opens the task; the chevron says so -->
-            <button class="group flex min-h-11 min-w-0 flex-1 items-center gap-2 text-left" @click="openForm(r.m || r.x)">
-              <span v-if="r.m" class="min-w-0 flex-1">
-                <span class="block font-medium group-hover:underline">{{ r.m.name }}</span>
-                <span v-if="r.kind !== 'later'" class="block text-sm font-medium" :class="STATUS_STYLE[r.kind].text">{{ r.label }}</span>
-                <span class="block text-xs text-zinc-500">
-                  <template v-if="r.kind === 'later'">{{ r.label }} · </template>{{ intervalText(r.m) }} · {{ lastText(r.m) }}
-                </span>
+      <ul v-if="shownRows.length" class="-mx-5 divide-y divide-zinc-100 border-t border-zinc-100">
+        <li v-for="r in shownRows" :id="`task-${r.key}`" :key="r.key" class="flex scroll-mt-40 items-center gap-3 py-2.5 pl-3 pr-4 transition-colors duration-700"
+            :class="highlighted === r.key && 'bg-amber-50'">
+          <span :class="(r.m ? STATUS_STYLE[r.kind] : ONCE_STYLE).bar" class="w-1 self-stretch rounded-full" />
+          <!-- The whole name area opens the task; the chevron says so -->
+          <button class="group flex min-h-11 min-w-0 flex-1 items-center gap-2 text-left" @click="openForm(r.m || r.x)">
+            <span v-if="r.m" class="min-w-0 flex-1">
+              <span class="block font-medium group-hover:underline">{{ r.m.name }}</span>
+              <span v-if="r.kind !== 'later'" class="block text-sm font-medium" :class="STATUS_STYLE[r.kind].text">{{ r.label }}</span>
+              <span class="block text-xs text-zinc-500">
+                <template v-if="r.kind === 'later'">{{ r.label }} · </template>{{ intervalText(r.m) }} · {{ lastText(r.m) }}
               </span>
-              <span v-else class="min-w-0 flex-1">
-                <span class="block font-medium group-hover:underline">{{ r.x.title }}</span>
-                <span v-if="r.x.description" class="block line-clamp-1 text-sm text-zinc-500">{{ r.x.description }}</span>
-                <span class="block text-xs text-zinc-500">{{ t('maintenance.once') }}<template v-if="r.x.createdBy"> · {{ t('todo.addedBy', { name: r.x.createdBy }) }}</template></span>
-              </span>
-              <i class="pi pi-chevron-right shrink-0 text-xs text-zinc-400" />
-            </button>
-            <!-- Always outlined: testers read a borderless "Utført" as plain text -->
-            <Button :label="t('maintenance.done')" icon="pi pi-check" size="small" severity="secondary" class="max-sm:!min-h-11 shrink-0"
-                    outlined @click="r.m ? complete(r.m) : toggleOnce(r.x)" />
-          </li>
-        </ul>
-        <EmptyState v-else-if="!rows.length" icon="pi pi-wrench" :text="t('maintenance.empty')">
-          <Button :label="t('maintenance.new')" icon="pi pi-plus" size="small" @click="openForm()" />
-        </EmptyState>
-        <p v-else class="py-2 text-sm text-zinc-500">{{ t('maintenance.noneInFilter') }}</p>
-      </template>
-
-      <SuggestionList v-if="filter === 'all' || filter === 'suggestions'" id="lists-forslag" category="DO" class="mt-4 scroll-mt-36" @accept="acceptSuggestion" />
+            </span>
+            <span v-else class="min-w-0 flex-1">
+              <span class="block font-medium group-hover:underline">{{ r.x.title }}</span>
+              <span v-if="r.x.description" class="block line-clamp-1 text-sm text-zinc-500">{{ r.x.description }}</span>
+              <span class="block text-xs text-zinc-500">{{ t('maintenance.once') }}<template v-if="r.x.createdBy"> · {{ t('todo.addedBy', { name: r.x.createdBy }) }}</template></span>
+            </span>
+            <i class="pi pi-chevron-right shrink-0 text-xs text-zinc-400" />
+          </button>
+          <!-- Always outlined: testers read a borderless "Utført" as plain text -->
+          <Button :label="t('maintenance.done')" icon="pi pi-check" size="small" severity="secondary" class="max-sm:!min-h-11 shrink-0"
+                  outlined @click="r.m ? complete(r.m) : toggleOnce(r.x)" />
+        </li>
+      </ul>
+      <EmptyState v-else-if="!rows.length" icon="pi pi-wrench" :text="t('maintenance.empty')">
+        <Button :label="t('maintenance.new')" icon="pi pi-plus" size="small" @click="openForm()" />
+      </EmptyState>
+      <p v-else class="py-2 text-sm text-zinc-500">{{ t('maintenance.noneInFilter') }}</p>
     </DashCard>
 
-    <!-- Year overview -->
-    <DashCard scroll class="lg:h-[40rem]" :title="t('maintenance.year')" icon="pi pi-calendar" tint="bg-zinc-100 text-zinc-700">
+    <!-- Right column: year overview above ideas, together exactly as tall as the task list; each scrolls on its own -->
+    <div class="flex flex-col gap-6 lg:h-[40rem]">
+    <DashCard scroll class="lg:min-h-0 lg:flex-[3]" :title="t('maintenance.year')" icon="pi pi-calendar" tint="bg-zinc-100 text-zinc-700">
       <template #action>
         <div class="flex items-center">
           <Button icon="pi pi-chevron-left" text rounded severity="secondary" class="!size-11" :aria-label="t('maintenance.prevYear')" @click="year--" />
@@ -331,6 +329,15 @@ function remove(item) {
         </div>
       </div>
     </DashCard>
+
+    <!-- Ideas for things to do at the cabin; "Godta" turns one into a task -->
+    <DashCard id="lists-forslag" scroll class="scroll-mt-36 lg:min-h-0 lg:flex-[2]" :title="t('suggestions.title')" icon="pi pi-lightbulb" tint="bg-amber-50 text-amber-700">
+      <template #action>
+        <Button :label="t('suggestions.propose')" icon="pi pi-lightbulb" size="small" outlined severity="secondary" @click="ideas.openForm()" />
+      </template>
+      <SuggestionList ref="ideas" category="DO" :titled="false" @accept="acceptSuggestion" />
+    </DashCard>
+    </div>
   </div>
 
   <!-- Finished one-off jobs (recurring tasks keep their history in the year overview) -->

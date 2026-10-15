@@ -1,4 +1,5 @@
 import { applyPending, enqueue, hasQueue, localPhotoUrl, online, sync, tempId, watchConnection } from './offline'
+import { accessChanged, sessionEnded } from './auth'
 
 class ApiError extends Error {
   constructor(message, status) {
@@ -19,6 +20,8 @@ async function send(method, url, body, key) {
     },
   })
   const text = await res.text()
+  if (res.status === 401) sessionEnded()
+  if (res.status === 403) accessChanged()
   if (!res.ok) {
     let message = text || res.statusText
     try { message = JSON.parse(text)._embedded.errors[0].message } catch { message = `${res.status} ${res.statusText}` }

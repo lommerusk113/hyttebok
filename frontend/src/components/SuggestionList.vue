@@ -14,7 +14,8 @@ import { useDeepLink } from '../deepLink'
 // Ideas nobody has agreed to yet, shown inside the list they belong to: DO under Vedlikehold, BUY on the
 // shopping list. People vote with hearts; "Godta" hands it to `onAccept` (which adds the real task/item)
 // and marks the suggestion done.
-const props = defineProps({ category: String, onAccept: Function })
+// `titled`: false when the list has its own card (whose header already says "Forslag").
+const props = defineProps({ category: String, onAccept: Function, titled: { type: Boolean, default: true } })
 
 const confirm = useConfirm()
 const takeQuery = useDeepLink()
@@ -79,11 +80,14 @@ function remove(s) {
     },
   })
 }
+
+defineExpose({ openForm })
 </script>
 
 <template>
   <section>
-    <div class="flex items-center justify-between gap-2">
+    <!-- In its own card the card header has the title and the "Foreslå" button (via openForm) -->
+    <div v-if="titled" class="flex items-center justify-between gap-2">
       <h3 class="text-xs font-medium uppercase tracking-wide text-zinc-500">{{ t('suggestions.title') }}</h3>
       <Button :label="t('suggestions.propose')" icon="pi pi-lightbulb" text size="small" severity="secondary" class="!min-h-11" @click="openForm()" />
     </div>
