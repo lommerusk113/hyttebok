@@ -58,9 +58,12 @@ public class ChatService {
     private static final int MAX_HISTORY = 20;
     private static final int RECENT_BOOKINGS = 5;
     private static final int WEATHER_DAYS = 45;
+    // Gemini answers 503 ("overloaded") now and then: wait a little and try again, the last time with the lighter model.
+    private static final List<Duration> RETRY_AFTER = List.of(Duration.ofSeconds(1), Duration.ofSeconds(3));
 
     private final String apiKey;
     private final String model;
+    private final String fallbackModel;
     private final String apiUrl;
     private final CabinInfoRepository cabins;
     private final BookingController bookings;
@@ -87,6 +90,7 @@ public class ChatService {
 
     public ChatService(@Value("${hyttebok.chat.api-key:}") String apiKey,
                        @Value("${hyttebok.chat.model:gemini-flash-latest}") String model,
+                       @Value("${hyttebok.chat.fallback-model:gemini-flash-lite-latest}") String fallbackModel,
                        @Value("${hyttebok.chat.url:`https://generativelanguage.googleapis.com/v1beta/models/`}") String apiUrl,
                        CabinInfoRepository cabins,
                        BookingController bookings,
@@ -98,6 +102,7 @@ public class ChatService {
                        JsonMapper json) {
         this.apiKey = apiKey;
         this.model = model;
+        this.fallbackModel = fallbackModel;
         this.apiUrl = apiUrl;
         this.cabins = cabins;
         this.bookings = bookings;
@@ -302,24 +307,47 @@ public class ChatService {
         }
     }
 
+    /** One call to Gemini, tried again (after a pause) while it's overloaded or unreachable; the last try uses the fallback model. */
+    private HttpResponse<byte[]> send(Map<String, Object> body) {
+
+        for (var attempt = 0; ; attempt++) {
+            var last = attempt == RETRY_AFTER.size();
+            var useModel = last ? fallbackModel : model;
+            try {
+                var request = HttpRequest.newBuilder(URI.create(apiUrl + useModel + ":generateContent"))
+                    .timeout(Duration.ofSeconds(60))
+                    .header("Content-Type", "application/json")
+                    .header("x-goog-api-key", apiKey)
+                    .POST(HttpRequest.BodyPublishers.ofByteArray(json.writeValueAsBytes(body)))
+                    .build();
+                var response = http.send(request, HttpResponse.BodyHandlers.ofByteArray());
+                var status = response.statusCode();
+                if (last || (status != 500 && status != 503 && status != 504)) {
+                    return response;
+                }
+                LOG.info("Gemini {} ({}), trying again", status, useModel);
+            } catch (IOException e) {
+                if (last) {
+                    throw new HttpStatusException(HttpStatus.BAD_GATEWAY, "Gemini unreachable");
+                }
+                LOG.info("Gemini unreachable ({}), trying again: {}", useModel, e.toString());
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                throw new HttpStatusException(HttpStatus.BAD_GATEWAY, "Interrupted");
+            }
+            try {
+                Thread.sleep(RETRY_AFTER.get(attempt));
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                throw new HttpStatusException(HttpStatus.BAD_GATEWAY, "Interrupted");
+            }
+        }
+    }
+
     @Nullable
     private Map<?, ?> generate(Map<String, Object> body) {
 
-        HttpResponse<byte[]> response;
-        try {
-            var request = HttpRequest.newBuilder(URI.create(apiUrl + model + ":generateContent"))
-                .timeout(Duration.ofSeconds(60))
-                .header("Content-Type", "application/json")
-                .header("x-goog-api-key", apiKey)
-                .POST(HttpRequest.BodyPublishers.ofByteArray(json.writeValueAsBytes(body)))
-                .build();
-            response = http.send(request, HttpResponse.BodyHandlers.ofByteArray());
-        } catch (IOException e) {
-            throw new HttpStatusException(HttpStatus.BAD_GATEWAY, "Gemini unreachable");
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            throw new HttpStatusException(HttpStatus.BAD_GATEWAY, "Interrupted");
-        }
+        var response = send(body);
 
         if (response.statusCode() == 429) {
             throw new HttpStatusException(HttpStatus.TOO_MANY_REQUESTS, "Gemini quota used up");

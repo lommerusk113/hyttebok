@@ -418,7 +418,8 @@
     "quota": "Gratiskvoten hos Google er brukt opp for nå. Prøv igjen senere.",
     "failed": "Noe gikk galt. Prøv igjen.",
     "offline": "Du er frakoblet. Chatten trenger nett.",
-    "noAnswer": "Jeg fant ikke noe svar på det."
+    "noAnswer": "Jeg fant ikke noe svar på det.",
+    "busy": "Googles KI er overbelastet akkurat nå. Prøv igjen om litt."
   },
   "login": {
     "intro": "Logg inn for å se bookinger, lister og hytteboka.",

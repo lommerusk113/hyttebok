@@ -418,7 +418,8 @@
     "quota": "Google's free quota is used up for now. Try again later.",
     "failed": "Something went wrong. Try again.",
     "offline": "You're offline. The chat needs a connection.",
-    "noAnswer": "I couldn't find an answer to that."
+    "noAnswer": "I couldn't find an answer to that.",
+    "busy": "Google's AI is overloaded right now. Try again in a moment."
   },
   "login": {
     "intro": "Log in to see bookings, lists and the cabin book.",
