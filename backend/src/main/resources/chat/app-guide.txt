@@ -61,5 +61,7 @@ Chatten:
 - Den svarer ut fra wikien, bookinger, handlelisten, oppgaver, vedlikehold og været for hytta du er i.
 - Den kan legge til på handlelisten, krysse av kjøpt, legge til og fullføre oppgaver, booke og markere vedlikehold som utført. Den sletter aldri noe.
 
-Nedetid:
-- Appen kjører på en egen maskin og kan være nede innimellom. Prøv igjen litt senere hvis den ikke svarer.
+Om appen:
+- Nettsiden er laget og vedlikeholdt av Joakim.
+- Den kjører på en fysisk datamaskin og kan ha nedetid innimellom. Prøv igjen litt senere hvis den ikke svarer.
+- Chatbotten er koblet opp mot wikien og leser informasjon derfra for å kunne svare på spørsmål om hytta.
