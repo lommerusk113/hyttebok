@@ -32,12 +32,14 @@ const reply = ref('')
 const formOpen = ref(false)
 const form = ref({})
 const busy = ref(false)
+const editing = ref(null) // { id, body } of the reply being edited
 
 const postId = computed(() => route.params.sub)
 const base = computed(() => `/h/${route.params.cabinId}/forum`)
 
-// Your own posts and replies can be deleted (owners can delete anything).
-const mine = item => auth.value?.canManage || (item.author && item.author === userName.value)
+// Your own posts and replies can be edited and deleted; owners can also delete anyone's (but not edit their words).
+const own = item => !!item.author && item.author === userName.value
+const mine = item => auth.value?.canManage || own(item)
 
 async function loadList() {
   const params = new URLSearchParams({ sort: sort.value, ...(query.value.trim() && { q: query.value.trim() }) })
@@ -61,18 +63,36 @@ function needName() {
   return true
 }
 
-function openForm() {
-  if (needName()) return
-  form.value = { title: '', body: '' }
+// New post, or (given one) editing it.
+function openForm(post) {
+  if (!post && needName()) return
+  form.value = post ? { id: post.id, title: post.title, body: post.body || '' } : { title: '', body: '' }
   formOpen.value = true
 }
 
-async function create() {
+async function save() {
   busy.value = true
   try {
+    if (form.value.id) {
+      thread.value.post = await api.put(`/forum/${form.value.id}`, form.value)
+      formOpen.value = false
+      return
+    }
     const post = await api.post('/forum', { ...form.value, author: userName.value })
     formOpen.value = false
     router.push(`${base.value}/${post.id}`)
+  } finally {
+    busy.value = false
+  }
+}
+
+async function saveReply() {
+  if (!editing.value.body.trim()) return
+  busy.value = true
+  try {
+    const saved = await api.put(`/forum/replies/${editing.value.id}`, { body: editing.value.body })
+    thread.value.replies = thread.value.replies.map(r => (r.id === saved.id ? saved : r))
+    editing.value = null
   } finally {
     busy.value = false
   }
@@ -123,9 +143,12 @@ const removeReply = r => ask(r.body.slice(0, 80), async () => {
       <article class="card p-5">
         <div class="flex items-start justify-between gap-3">
           <h1 class="text-xl font-semibold">{{ thread.post.title }}</h1>
-          <Button v-if="mine(thread.post)" icon="pi pi-trash" text rounded severity="secondary" :aria-label="t('common.delete')" @click="removePost" />
+          <span v-if="mine(thread.post)" class="flex shrink-0">
+            <Button v-if="own(thread.post)" icon="pi pi-pencil" text rounded severity="secondary" :aria-label="t('common.edit')" @click="openForm(thread.post)" />
+            <Button icon="pi pi-trash" text rounded severity="secondary" :aria-label="t('common.delete')" @click="removePost" />
+          </span>
         </div>
-        <p class="mt-1 text-sm text-zinc-500">{{ t('forum.by', { name: thread.post.author || '?', date: formatDate(thread.post.createdAt) }) }}</p>
+        <p class="mt-1 text-sm text-zinc-500">{{ t('forum.by', { name: thread.post.author || '?', date: formatDate(thread.post.createdAt) }) }}<span v-if="thread.post.editedAt" :title="formatDate(thread.post.editedAt)"> · {{ t('forum.edited') }}</span></p>
         <RichText v-if="thread.post.body" :text="thread.post.body" class="mt-4" />
       </article>
 
@@ -136,11 +159,21 @@ const removeReply = r => ask(r.body.slice(0, 80), async () => {
           <div class="min-w-0 flex-1">
             <div class="flex items-center gap-2">
               <span class="font-medium">{{ r.author || '?' }}</span>
-              <span class="text-xs text-zinc-500" :title="formatDate(r.createdAt)">{{ timeAgo(r.createdAt) }}</span>
+              <span class="text-xs text-zinc-500" :title="formatDate(r.createdAt)">{{ timeAgo(r.createdAt) }}<template v-if="r.editedAt"> · {{ t('forum.edited') }}</template></span>
               <span class="flex-1" />
-              <Button v-if="mine(r)" icon="pi pi-trash" text rounded size="small" severity="secondary" :aria-label="t('common.delete')" @click="removeReply(r)" />
+              <template v-if="mine(r) && editing?.id !== r.id">
+                <Button v-if="own(r)" icon="pi pi-pencil" text rounded size="small" severity="secondary" :aria-label="t('common.edit')" @click="editing = { id: r.id, body: r.body }" />
+                <Button icon="pi pi-trash" text rounded size="small" severity="secondary" :aria-label="t('common.delete')" @click="removeReply(r)" />
+              </template>
             </div>
-            <RichText :text="r.body" class="mt-1" />
+            <form v-if="editing?.id === r.id" class="mt-2 space-y-2" @submit.prevent="saveReply">
+              <Textarea v-model="editing.body" rows="3" auto-resize maxlength="10000" autofocus :aria-label="t('forum.reply')" class="w-full" />
+              <div class="flex justify-end gap-2">
+                <Button :label="t('common.cancel')" text severity="secondary" size="small" @click="editing = null" />
+                <Button type="submit" :label="t('common.save')" icon="pi pi-check" size="small" :loading="busy" :disabled="!editing.body.trim()" />
+              </div>
+            </form>
+            <RichText v-else :text="r.body" class="mt-1" />
           </div>
         </li>
       </ul>
@@ -157,7 +190,7 @@ const removeReply = r => ask(r.body.slice(0, 80), async () => {
   <!-- All posts -->
   <DashCard v-else :title="t('tabs.forum')" icon="pi pi-comments" tint="bg-sky-50 text-sky-700" :count="list?.length">
     <template #action>
-      <Button icon="pi pi-plus" :label="t('forum.new')" size="small" @click="openForm" />
+      <Button icon="pi pi-plus" :label="t('forum.new')" size="small" @click="openForm()" />
     </template>
 
     <div class="mb-4 flex flex-wrap gap-2">
@@ -189,14 +222,14 @@ const removeReply = r => ask(r.body.slice(0, 80), async () => {
     <EmptyState v-else-if="list" icon="pi pi-comments" :text="query.trim() ? t('forum.noMatch') : t('forum.empty')" />
   </DashCard>
 
-  <Dialog v-model:visible="formOpen" modal dismissable-mask :header="t('forum.new')" class="w-[34rem] max-w-[calc(100vw-2rem)]">
-    <form id="forum-form" class="flex flex-col gap-4" @submit.prevent="create">
+  <Dialog v-model:visible="formOpen" modal dismissable-mask :header="form.id ? t('forum.editPost') : t('forum.new')" class="w-[34rem] max-w-[calc(100vw-2rem)]">
+    <form id="forum-form" class="flex flex-col gap-4" @submit.prevent="save">
       <InputText v-model="form.title" required maxlength="200" autofocus :placeholder="t('forum.titlePlaceholder')" :aria-label="t('forum.title')" class="!font-semibold" />
       <Textarea v-model="form.body" rows="6" auto-resize maxlength="10000" :placeholder="t('forum.bodyPlaceholder')" :aria-label="t('forum.body')" />
     </form>
     <template #footer>
       <Button :label="t('common.cancel')" text severity="secondary" @click="formOpen = false" />
-      <Button type="submit" form="forum-form" :label="t('forum.publish')" icon="pi pi-send" :loading="busy" :disabled="!form.title?.trim()" />
+      <Button type="submit" form="forum-form" :label="form.id ? t('common.save') : t('forum.publish')" icon="pi pi-send" :loading="busy" :disabled="!form.title?.trim()" />
     </template>
   </Dialog>
 </template>

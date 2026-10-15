@@ -7,6 +7,7 @@ import io.micronaut.http.annotation.Controller;
 import io.micronaut.http.annotation.Delete;
 import io.micronaut.http.annotation.Get;
 import io.micronaut.http.annotation.Post;
+import io.micronaut.http.annotation.Put;
 import io.micronaut.http.annotation.QueryValue;
 import io.micronaut.http.exceptions.HttpStatusException;
 import io.micronaut.serde.annotation.Serdeable;
@@ -79,10 +80,19 @@ public class ForumController {
     @Post
     public ForumPost create(@Body @Valid ForumPost post) {
 
-        var saved = posts.save(new ForumPost(null, post.title().trim(), blankToNull(post.body()), post.author(), null, null));
+        var saved = posts.save(new ForumPost(null, post.title().trim(), blankToNull(post.body()), post.author(), null, null, null));
         notifier.forumPostCreated(saved);
 
         return saved;
+    }
+
+    /** New title and text; who wrote it and when stay as they were. */
+    @Put("/{id}")
+    public ForumPost update(Long id, @Body @Valid ForumPost post) {
+
+        var old = post(id);
+
+        return posts.update(new ForumPost(old.id(), post.title().trim(), blankToNull(post.body()), old.author(), old.createdAt(), Instant.now(), old.cabinId()));
     }
 
     @Delete("/{id}")
@@ -95,10 +105,18 @@ public class ForumController {
 
         var post = post(id);
         var earlier = replies.findByPostIdOrderByCreatedAt(id).stream().map(ForumReply::author).toList();
-        var saved = replies.save(new ForumReply(null, post.id(), reply.body().trim(), reply.author(), null, null));
+        var saved = replies.save(new ForumReply(null, post.id(), reply.body().trim(), reply.author(), null, null, null));
         notifier.forumReplied(post, saved, earlier);
 
         return saved;
+    }
+
+    @Put("/replies/{id}")
+    public ForumReply updateReply(Long id, @Body @Valid ForumReply reply) {
+
+        var old = replies.findById(id).orElseThrow(() -> new HttpStatusException(HttpStatus.NOT_FOUND, "No such reply"));
+
+        return replies.update(new ForumReply(old.id(), old.postId(), reply.body().trim(), old.author(), old.createdAt(), Instant.now(), old.cabinId()));
     }
 
     @Delete("/replies/{id}")

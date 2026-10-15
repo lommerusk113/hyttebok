@@ -584,6 +584,8 @@
     "publish": "Publiser",
     "reply": "Svar",
     "replyPlaceholder": "Skriv et svar …",
-    "deleteTitle": "Slette?"
+    "deleteTitle": "Slette?",
+    "edited": "endret",
+    "editPost": "Endre innlegg"
   }
 }

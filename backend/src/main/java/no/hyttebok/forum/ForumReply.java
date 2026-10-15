@@ -19,5 +19,6 @@ public record ForumReply(@Id @GeneratedValue @Nullable Long id,
                          @NotBlank @Size(max = 10000) String body,
                          @Nullable String author,
                          @DateCreated @Nullable Instant createdAt,
+                         @Nullable Instant editedAt,
                          @TenantId @Nullable Long cabinId) {
 }

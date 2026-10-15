@@ -584,6 +584,8 @@
     "publish": "Publish",
     "reply": "Reply",
     "replyPlaceholder": "Write a reply …",
-    "deleteTitle": "Delete?"
+    "deleteTitle": "Delete?",
+    "edited": "edited",
+    "editPost": "Edit post"
   }
 }
