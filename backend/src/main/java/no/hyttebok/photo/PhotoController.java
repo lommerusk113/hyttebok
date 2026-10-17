@@ -37,14 +37,16 @@ public class PhotoController {
 
     @Get
     public List<Photo> list() {
-        return repository.listOrderByCreatedAtDesc();
+        return repository.findByForumPostIdIsNullAndForumReplyIdIsNullOrderByCreatedAtDesc();
     }
 
     @Post(consumes = MediaType.MULTIPART_FORM_DATA)
     public Photo upload(CompletedFileUpload file,
                         @Nullable @Part String caption,
                         @Nullable @Part String uploadedBy,
-                        @Nullable @Part Long logEntryId) throws IOException {
+                        @Nullable @Part Long logEntryId,
+                        @Nullable @Part Long forumPostId,
+                        @Nullable @Part Long forumReplyId) throws IOException {
 
         var contentType = file.getContentType().map(MediaType::toString).orElse("");
         if (!contentType.startsWith("image/")) {
@@ -55,7 +57,7 @@ public class PhotoController {
         var fileName = UUID.randomUUID().toString();
         Files.write(uploadDir.resolve(fileName), file.getBytes());
 
-        return repository.save(new Photo(null, fileName, contentType, caption, uploadedBy, logEntryId, null, null));
+        return repository.save(new Photo(null, fileName, contentType, caption, uploadedBy, logEntryId, forumPostId, forumReplyId, null, null));
     }
 
     /**
@@ -66,7 +68,7 @@ public class PhotoController {
 
         var photo = findOrThrow(id);
         var updated = new Photo(photo.id(), photo.fileName(), photo.contentType(), body.caption(),
-            photo.uploadedBy(), photo.logEntryId(), photo.createdAt(), photo.cabinId());
+            photo.uploadedBy(), photo.logEntryId(), photo.forumPostId(), photo.forumReplyId(), photo.createdAt(), photo.cabinId());
 
         return repository.update(updated);
     }

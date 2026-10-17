@@ -569,6 +569,9 @@
     "save": "Save as done"
   },
   "forum": {
+    "addPhotos": "Add photos",
+    "removePhoto": "Remove photo",
+    "photosFailed": "The post is saved, but {n} photo couldn't be uploaded. | The post is saved, but {n} photos couldn't be uploaded.",
     "new": "New post",
     "search": "Search the forum",
     "sortBy": "Sort by",

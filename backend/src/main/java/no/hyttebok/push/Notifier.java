@@ -148,16 +148,16 @@ public class Notifier {
     /** Only to those in the thread (who wrote the post or replied before), so a busy forum doesn't buzz everyone. */
     public void forumReplied(ForumPost post, ForumReply reply, List<String> earlier) {
         notify(Topic.FORUM, s -> s.isFrom(reply.author()) || (!s.isFrom(post.author()) && earlier.stream().noneMatch(s::isFrom)) ? null : new Message(
-            (en(s) ? "Comment: " : "Kommentar: ") + label(post), by(reply.author()) + shorten(reply.body()), "/forum/" + post.id(), "forum-" + post.id()));
+            (en(s) ? "Comment: " : "Kommentar: ") + label(post), by(reply.author()) + (reply.body() == null ? "📷" : shorten(reply.body())), "/forum/" + post.id(), "forum-" + post.id()));
     }
 
     static boolean en(PushSubscription subscription) {
         return "en".equals(subscription.lang());
     }
 
-    /** What a forum post is called in a notification: its title, or the start of its text. */
+    /** What a forum post is called in a notification: its title, the start of its text, or 📷 for photos only. */
     private static String label(ForumPost post) {
-        return post.title() != null ? post.title() : shorten(post.body() == null ? "" : post.body().replace('\n', ' '), 60);
+        return post.title() != null ? post.title() : post.body() == null ? "📷" : shorten(post.body().replace('\n', ' '), 60);
     }
 
     /** Push messages have a size limit (about 4 kB), and a phone shows a couple of lines anyway. */

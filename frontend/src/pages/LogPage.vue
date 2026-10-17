@@ -207,7 +207,7 @@ async function post() {
     const failed = []
     for (const p of newPhotos.value) {
       try {
-        uploaded.push(await uploadPhoto(p.file, p.caption.trim(), userName.value, entry.id))
+        uploaded.push(await uploadPhoto(p.file, p.caption.trim(), userName.value, { logEntryId: entry.id }))
       } catch (err) {
         console.error(err)
         failed.push(p)

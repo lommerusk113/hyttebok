@@ -43,7 +43,7 @@ function optimistic(method, body, id) {
   }
   if (body instanceof FormData) {
     const fields = Object.fromEntries(body.entries())
-    return { id, caption: fields.caption || null, uploadedBy: fields.uploadedBy || null, logEntryId: fields.logEntryId ? Number(fields.logEntryId) : null, createdAt: now }
+    return { id, caption: fields.caption || null, uploadedBy: fields.uploadedBy || null, logEntryId: fields.logEntryId ? Number(fields.logEntryId) : null, forumPostId: fields.forumPostId ? Number(fields.forumPostId) : null, forumReplyId: fields.forumReplyId ? Number(fields.forumReplyId) : null, createdAt: now }
   }
 
   return { createdAt: now, ...body, ...(id && { id }), updatedAt: now }
@@ -103,13 +103,27 @@ export const api = {
 // The browser loads images itself (no X-Hytte header), so the cabin goes in the address.
 export const photoUrl = id => localPhotoUrl(id) || `/api/photos/${id}/file?hytte=${cabinId.value}`
 
-export function uploadPhoto(file, caption, uploadedBy, logEntryId) {
+// `links`: what the photo belongs to, e.g. { logEntryId } or { forumReplyId }.
+export function uploadPhoto(file, caption, uploadedBy, links = {}) {
   const form = new FormData()
   form.append('file', file)
   if (caption) form.append('caption', caption)
   if (uploadedBy) form.append('uploadedBy', uploadedBy)
-  if (logEntryId) form.append('logEntryId', logEntryId)
+  for (const [key, id] of Object.entries(links)) if (id) form.append(key, id)
   return api.post('/photos', form)
+}
+
+/** Uploads each file on its own, so one failing doesn't lose the others. Returns { uploaded, failed } (failed: a count). */
+export async function uploadEach(files, uploadedBy, links) {
+  const uploaded = []
+  for (const file of files) {
+    try {
+      uploaded.push(await uploadPhoto(file, null, uploadedBy, links))
+    } catch (err) {
+      console.error(err)
+    }
+  }
+  return { uploaded, failed: files.length - uploaded.length }
 }
 
 /** Starts background syncing; `onSynced({ sent, dropped })` runs after changes were sent. */

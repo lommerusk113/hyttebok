@@ -44,6 +44,7 @@ Hytteboka:
 
 Forumet:
 - Skriv et innlegg øverst i Forum. Andre kan kommentere og reagere (hold inne «Liker» for flere reaksjoner).
+- Legg ved bilder i innlegg og kommentarer med bildeknappen ved siden av tekstfeltet. Et innlegg eller en kommentar kan være bare bilder. Bilder kan også legges til eller fjernes når du endrer det du har skrevet. Forumbilder vises ikke i bildegalleriet.
 - Du kan søke og sortere innleggene.
 
 Hyttewiki:

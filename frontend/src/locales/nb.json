@@ -569,6 +569,9 @@
     "save": "Lagre som utført"
   },
   "forum": {
+    "addPhotos": "Legg til bilder",
+    "removePhoto": "Fjern bilde",
+    "photosFailed": "Innlegget er lagret, men {n} bilde kunne ikke lastes opp. | Innlegget er lagret, men {n} bilder kunne ikke lastes opp.",
     "new": "Nytt innlegg",
     "search": "Søk i forumet",
     "sortBy": "Sorter etter",

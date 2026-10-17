@@ -18,6 +18,8 @@ public record Photo(@Id @GeneratedValue @Nullable Long id,
                     @Nullable String caption,
                     @Nullable String uploadedBy,
                     @Nullable Long logEntryId,
+                    @Nullable Long forumPostId,
+                    @Nullable Long forumReplyId,
                     @DateCreated @Nullable Instant createdAt,
                     @TenantId @Nullable Long cabinId) {
 }

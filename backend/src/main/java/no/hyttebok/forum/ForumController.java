@@ -14,8 +14,12 @@ import io.micronaut.serde.annotation.Serdeable;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
+import no.hyttebok.photo.Photo;
+import no.hyttebok.photo.PhotoController;
+import no.hyttebok.photo.PhotoRepository;
 import no.hyttebok.push.Notifier;
 
+import java.io.IOException;
 import java.time.Instant;
 import java.util.Comparator;
 import java.util.List;
@@ -31,12 +35,17 @@ public class ForumController {
     private final ForumPostRepository posts;
     private final ForumReplyRepository replies;
     private final ForumReactionRepository reactions;
+    private final PhotoRepository photos;
+    private final PhotoController photoController;
     private final Notifier notifier;
 
-    public ForumController(ForumPostRepository posts, ForumReplyRepository replies, ForumReactionRepository reactions, Notifier notifier) {
+    public ForumController(ForumPostRepository posts, ForumReplyRepository replies, ForumReactionRepository reactions,
+                           PhotoRepository photos, PhotoController photoController, Notifier notifier) {
         this.posts = posts;
         this.replies = replies;
         this.reactions = reactions;
+        this.photos = photos;
+        this.photoController = photoController;
         this.notifier = notifier;
     }
 
@@ -45,12 +54,13 @@ public class ForumController {
     }
 
     @Serdeable
-    public record Comment(Long id, String body, @Nullable String author, Instant createdAt, @Nullable Instant editedAt, List<Reaction> reactions) {
+    public record Comment(Long id, @Nullable String body, @Nullable String author, Instant createdAt, @Nullable Instant editedAt, List<Photo> photos,
+                          List<Reaction> reactions) {
     }
 
     @Serdeable
     public record FeedPost(Long id, @Nullable String title, @Nullable String body, @Nullable String author, Instant createdAt,
-                           @Nullable Instant editedAt, List<Reaction> reactions, List<Comment> comments) {
+                           @Nullable Instant editedAt, List<Photo> photos, List<Reaction> reactions, List<Comment> comments) {
 
         public Instant lastActivity() {
             return comments.isEmpty() ? createdAt : comments.getLast().createdAt();
@@ -72,7 +82,8 @@ public class ForumController {
 
         // ponytail: the cabin's whole forum in memory, no paging; fine for thousands of posts. Page and search in SQL if it grows.
         var needle = q == null || q.isBlank() ? null : q.trim().toLowerCase(Locale.ROOT);
-        var feed = feed(posts.listOrderByCreatedAtDesc(), replies.listOrderByCreatedAt(), reactions.listOrderByCreatedAt()).stream()
+        var feed = feed(posts.listOrderByCreatedAtDesc(), replies.listOrderByCreatedAt(), reactions.listOrderByCreatedAt(),
+                photos.findByForumPostIdIsNotNullOrderByCreatedAt(), photos.findByForumReplyIdIsNotNullOrderByCreatedAt()).stream()
             .filter(p -> needle == null || matches(p, needle));
 
         Comparator<FeedPost> order = switch (sort == null ? "active" : sort) {
@@ -87,15 +98,14 @@ public class ForumController {
 
     @Get("/{id}")
     public FeedPost get(Long id) {
-        return feed(List.of(post(id)), replies.findByPostIdOrderByCreatedAt(id), reactions.listOrderByCreatedAt()).getFirst();
+        return feed(List.of(post(id)), replies.findByPostIdOrderByCreatedAt(id), reactions.listOrderByCreatedAt(),
+            photos.findByForumPostIdOrderByCreatedAt(id), photos.findByForumReplyIdIsNotNullOrderByCreatedAt()).getFirst();
     }
 
+    /** A post can be photos only: they're uploaded to /api/photos with its id right after, so it may come without text. */
     @Post
     public ForumPost create(@Body @Valid ForumPost post) {
 
-        if (blankToNull(post.title()) == null && blankToNull(post.body()) == null) {
-            throw new HttpStatusException(HttpStatus.BAD_REQUEST, "Write something");
-        }
         var saved = posts.save(new ForumPost(null, blankToNull(post.title()), blankToNull(post.body()), post.author(), null, null, null));
         notifier.forumPostCreated(saved);
 
@@ -107,7 +117,7 @@ public class ForumController {
     public ForumPost update(Long id, @Body @Valid ForumPost post) {
 
         var old = post(id);
-        if (blankToNull(post.title()) == null && blankToNull(post.body()) == null) {
+        if (blankToNull(post.title()) == null && blankToNull(post.body()) == null && photos.findByForumPostIdOrderByCreatedAt(id).isEmpty()) {
             throw new HttpStatusException(HttpStatus.BAD_REQUEST, "Write something");
         }
 
@@ -115,16 +125,23 @@ public class ForumController {
     }
 
     @Delete("/{id}")
-    public void delete(Long id) {
-        posts.deleteById(post(id).id());
+    public void delete(Long id) throws IOException {
+
+        var post = post(id);
+        for (var reply : replies.findByPostIdOrderByCreatedAt(post.id())) {
+            deletePhotos(photos.findByForumReplyIdOrderByCreatedAt(reply.id()));
+        }
+        deletePhotos(photos.findByForumPostIdOrderByCreatedAt(post.id()));
+        posts.deleteById(post.id());
     }
 
+    /** Like a post, a comment can be photos only: they're uploaded to /api/photos with its id right after. */
     @Post("/{id}/replies")
     public ForumReply reply(Long id, @Body @Valid ForumReply reply) {
 
         var post = post(id);
         var earlier = replies.findByPostIdOrderByCreatedAt(id).stream().map(ForumReply::author).toList();
-        var saved = replies.save(new ForumReply(null, post.id(), reply.body().trim(), reply.author(), null, null, null));
+        var saved = replies.save(new ForumReply(null, post.id(), blankToNull(reply.body()), reply.author(), null, null, null));
         notifier.forumReplied(post, saved, earlier);
 
         return saved;
@@ -134,13 +151,24 @@ public class ForumController {
     public ForumReply updateReply(Long id, @Body @Valid ForumReply reply) {
 
         var old = comment(id);
+        if (blankToNull(reply.body()) == null && photos.findByForumReplyIdOrderByCreatedAt(id).isEmpty()) {
+            throw new HttpStatusException(HttpStatus.BAD_REQUEST, "Write something");
+        }
 
-        return replies.update(new ForumReply(old.id(), old.postId(), reply.body().trim(), old.author(), old.createdAt(), Instant.now(), old.cabinId()));
+        return replies.update(new ForumReply(old.id(), old.postId(), blankToNull(reply.body()), old.author(), old.createdAt(), Instant.now(), old.cabinId()));
     }
 
     @Delete("/replies/{id}")
-    public void deleteReply(Long id) {
+    public void deleteReply(Long id) throws IOException {
+        deletePhotos(photos.findByForumReplyIdOrderByCreatedAt(id));
         replies.deleteById(id);
+    }
+
+    /** Through the photo controller, so the files go too (the rows would go with the post or comment anyway). */
+    private void deletePhotos(List<Photo> list) throws IOException {
+        for (var photo : list) {
+            photoController.delete(photo.id());
+        }
     }
 
     /** Your reaction to a post: a new one replaces yours, the same one again takes it away. Returns the post's reactions. */
@@ -183,17 +211,20 @@ public class ForumController {
         return replies.findById(id).orElseThrow(() -> new HttpStatusException(HttpStatus.NOT_FOUND, "No such comment"));
     }
 
-    private static List<FeedPost> feed(List<ForumPost> posts, List<ForumReply> replies, List<ForumReaction> reactions) {
+    private static List<FeedPost> feed(List<ForumPost> posts, List<ForumReply> replies, List<ForumReaction> reactions, List<Photo> postPhotos, List<Photo> replyPhotos) {
 
         Map<Long, List<Reaction>> onPost = reactions.stream().filter(r -> r.postId() != null)
             .collect(Collectors.groupingBy(ForumReaction::postId, Collectors.mapping(ForumController::reaction, Collectors.toList())));
         Map<Long, List<Reaction>> onComment = reactions.stream().filter(r -> r.replyId() != null)
             .collect(Collectors.groupingBy(ForumReaction::replyId, Collectors.mapping(ForumController::reaction, Collectors.toList())));
-        Function<ForumReply, Comment> comment = r -> new Comment(r.id(), r.body(), r.author(), r.createdAt(), r.editedAt(), onComment.getOrDefault(r.id(), List.of()));
+        var inPost = postPhotos.stream().collect(Collectors.groupingBy(Photo::forumPostId));
+        var inComment = replyPhotos.stream().collect(Collectors.groupingBy(Photo::forumReplyId));
+        Function<ForumReply, Comment> comment = r -> new Comment(r.id(), r.body(), r.author(), r.createdAt(), r.editedAt(),
+            inComment.getOrDefault(r.id(), List.of()), onComment.getOrDefault(r.id(), List.of()));
         var byPost = replies.stream().collect(Collectors.groupingBy(ForumReply::postId, Collectors.mapping(comment, Collectors.toList())));
 
         return posts.stream().map(p -> new FeedPost(p.id(), p.title(), p.body(), p.author(), p.createdAt(), p.editedAt(),
-            onPost.getOrDefault(p.id(), List.of()), byPost.getOrDefault(p.id(), List.of()))).toList();
+            inPost.getOrDefault(p.id(), List.of()), onPost.getOrDefault(p.id(), List.of()), byPost.getOrDefault(p.id(), List.of()))).toList();
     }
 
     private static Reaction reaction(ForumReaction r) {
