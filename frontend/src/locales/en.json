@@ -311,14 +311,14 @@
     "pickYear": "Year",
     "dueThisMonth": "This month",
     "completed": "Done",
-    "noneCompleted": "No finished one-off tasks yet.",
-    "once": "One-off task",
+    "noneCompleted": "No finished projects yet.",
+    "once": "Project",
     "repeats": "Repeats regularly",
-    "repeatsHint": "Turn on for routine jobs like sweeping the chimney. Off = a one-off job, e.g. \"Fix the gate\".",
+    "repeatsHint": "Turn on for routine jobs like sweeping the chimney. Off = a project, e.g. \"Fix the gate\".",
     "filter": {
       "all": "All",
       "recurring": "Recurring",
-      "once": "One-off"
+      "once": "Projects"
     },
     "seeCompleted": "Done this year ({n})",
     "noneInFilter": "Nothing here.",

@@ -35,7 +35,7 @@ Handlelisten:
 
 Vedlikehold:
 - Faste oppgaver (f.eks. feie pipa hvert år) viser når de skal gjøres neste gang, og blir røde når de er på overtid.
-- Engangsoppgaver er ting som må fikses én gang.
+- Prosjekter er ting som bare skal gjøres én gang, f.eks. fikse porten.
 - Trykk «Utført» når noe er gjort. Velg hvem som var med og skriv gjerne en kort beskrivelse.
 - «Utført i år» viser alt som er gjort i løpet av året, og Årsoversikten viser hva som er gjort og planlagt måned for måned.
 

@@ -311,14 +311,14 @@
     "pickYear": "År",
     "dueThisMonth": "Denne måneden",
     "completed": "Fullført",
-    "noneCompleted": "Ingen ferdige engangsoppgaver ennå.",
-    "once": "Engangsoppgave",
+    "noneCompleted": "Ingen ferdige prosjekter ennå.",
+    "once": "Prosjekt",
     "repeats": "Gjentas jevnlig",
-    "repeatsHint": "Slå på for faste ting som å feie pipa. Av = en engangsjobb, f.eks. «Fikse porten».",
+    "repeatsHint": "Slå på for faste ting som å feie pipa. Av = et prosjekt, f.eks. «Fikse porten».",
     "filter": {
       "all": "Alle",
       "recurring": "Faste",
-      "once": "Engang"
+      "once": "Prosjekter"
     },
     "seeCompleted": "Utført i år ({n})",
     "noneInFilter": "Ingenting her.",
