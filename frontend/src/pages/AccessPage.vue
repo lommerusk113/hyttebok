@@ -26,6 +26,12 @@ const chat = ref(null) // { enabled, configured }; only fetched for system admin
 const ROLES = computed(() => [{ value: 'OWNER', label: t('access.roles.OWNER') }, { value: 'MEMBER', label: t('access.roles.MEMBER') }])
 const inviteUrl = token => `${location.origin}/invitasjon/${token}`
 
+// The server refuses taking away your own ownership, and the last owner's: say why instead of offering it.
+const ownerCount = computed(() => members.value.filter(m => m.role === 'OWNER').length)
+const ownerLock = m => m.role !== 'OWNER' ? null
+  : m.email === auth.value.user?.email ? 'access.ownerSelf'
+    : ownerCount.value <= 1 ? 'access.ownerLast' : null
+
 async function load() {
   let code
   ;[requests.value, invites.value, members.value, code] = await Promise.all(['/access/requests', '/access/invites', '/access/members', '/access/code'].map(api.get))
@@ -200,8 +206,11 @@ function remove(member) {
               <span class="block truncate text-xs text-zinc-500"><span v-if="m.admin" class="mr-1.5 rounded-full bg-zinc-100 px-1.5 py-0.5 text-zinc-600">{{ t('access.admin') }}</span>{{ m.email }}</span>
             </span>
             <Button icon="pi pi-key" text rounded severity="secondary" :aria-label="t('access.resetLink')" v-tooltip.left="t('access.resetLink')" @click="resetLink(m)" />
-            <Select :model-value="m.role" :options="ROLES" option-label="label" option-value="value" size="small" :aria-label="t('access.role')" @update:model-value="setRole(m, $event)" />
-            <Button icon="pi pi-user-minus" text rounded severity="danger" :aria-label="t('access.remove')" @click="remove(m)" />
+            <span class="flex items-center gap-3" v-tooltip.left="ownerLock(m) && t(ownerLock(m))">
+              <Select :model-value="m.role" :options="ROLES" option-label="label" option-value="value" size="small" :aria-label="t('access.role')"
+                      :disabled="!!ownerLock(m)" @update:model-value="setRole(m, $event)" />
+              <Button icon="pi pi-user-minus" text rounded severity="danger" :aria-label="t('access.remove')" :disabled="!!ownerLock(m)" @click="remove(m)" />
+            </span>
           </li>
         </ul>
       </DashCard>

@@ -159,13 +159,33 @@ public class AccessController {
         access.requireManager(auth);
         var member = memberships.findByUserIdAndCabinId(userId, CabinContext.require())
             .orElseThrow(() -> new HttpStatusException(HttpStatus.NOT_FOUND, "Not a member"));
+        if (Membership.MEMBER.equals(body.role())) {
+            keepAnOwner(auth, member);
+        }
         memberships.update(member.withRole(body.role()));
     }
 
     @Delete("/members/{userId}")
     public void removeMember(Authentication auth, Long userId) {
+
         access.requireManager(auth);
-        memberships.deleteByUserIdAndCabinId(userId, CabinContext.require());
+        var cabin = CabinContext.require();
+        memberships.findByUserIdAndCabinId(userId, cabin).ifPresent(member -> keepAnOwner(auth, member));
+        memberships.deleteByUserIdAndCabinId(userId, cabin);
+    }
+
+    /** Owners can't take away their own ownership, and a cabin always keeps at least one owner. */
+    private void keepAnOwner(Authentication auth, Membership member) {
+
+        if (!Membership.OWNER.equals(member.role())) {
+            return;
+        }
+        if (member.userId().equals(AccessService.userId(auth))) {
+            throw new HttpStatusException(HttpStatus.CONFLICT, "You can't remove yourself as owner");
+        }
+        if (memberships.findByCabinId(member.cabinId()).stream().filter(m -> Membership.OWNER.equals(m.role())).count() <= 1) {
+            throw new HttpStatusException(HttpStatus.CONFLICT, "A cabin needs at least one owner");
+        }
     }
 
     /** System admins: give yourself owner access to the cabin of the request (e.g. one you're inspecting in admin mode). */

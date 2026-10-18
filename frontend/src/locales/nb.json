@@ -499,6 +499,8 @@
     "remove": "Fjern tilgang",
     "removeTitle": "Fjerne tilgang?",
     "removeMessage": "{name} mister tilgangen til hytta.",
+    "ownerSelf": "Du kan ikke fjerne deg selv som eier. Gjør noen andre til eier, så kan de gjøre det.",
+    "ownerLast": "Hytta må ha minst én eier.",
     "copyLink": "Kopier lenken:",
     "resetLink": "Lenke for nytt passord",
     "resetShareTitle": "Nytt passord for {name}",

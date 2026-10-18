@@ -499,6 +499,8 @@
     "remove": "Remove access",
     "removeTitle": "Remove access?",
     "removeMessage": "{name} will lose access to the cabin.",
+    "ownerSelf": "You can't remove yourself as owner. Make someone else owner and they can do it.",
+    "ownerLast": "The cabin needs at least one owner.",
     "copyLink": "Copy the link:",
     "resetLink": "New-password link",
     "resetShareTitle": "New password for {name}",

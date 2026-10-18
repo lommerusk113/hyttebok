@@ -166,7 +166,8 @@ function saveName(name = draftName.value) {
     </div>
 
     <main class="mx-auto max-w-6xl px-4 pb-12 pt-4">
-      <NoAccessPage v-if="noAccess" />
+      <!-- Only inside the cabin: «Mine hytter» stays open, so a removed member can get on to their other cabins -->
+      <NoAccessPage v-if="noAccess && route.params.cabinId" />
       <!-- A new cabin gets fresh pages (nothing left over from the one before) -->
       <RouterView v-else-if="!route.params.cabinId || authReady" :key="route.params.cabinId || 'home'" />
     </main>
