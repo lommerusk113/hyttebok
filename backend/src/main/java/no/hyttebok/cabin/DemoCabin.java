@@ -40,7 +40,8 @@ import java.util.List;
 /**
  * A test cabin for system admins: every field of the cabin filled in, and bookings, cabin book entries, maintenance
  * history, tasks, shopping, suggestions, forum and wiki from the last two years, plus a few bookings ahead. Dates are
- * relative to today, so the cabin always looks lived in. The admin who makes it becomes its owner.
+ * relative to today, so the cabin always looks lived in. The admin who makes it becomes its owner. The content is
+ * in English, so anyone can try it out.
  */
 @Singleton
 public class DemoCabin {
@@ -91,12 +92,12 @@ public class DemoCabin {
     public synchronized CabinInfo create(long ownerId, String ownerName) {
 
         today = LocalDate.now(OSLO);
-        var cabin = cabins.save(new CabinInfo(null, "Testhytta Fjellro", "Familiehytta ved Storevatnet",
-            "Tømmerhytte fra 1978 med fire soverom, badstue og utsikt over vatnet. Bilvei helt fram om sommeren; "
-                + "om vinteren parkerer du ved bommen og går eller går på ski de siste 800 meterne.",
-            "Fjellroveien 12, 3560 Hemsedal", "Fjellro-gjest", "Badstue2024!",
-            "Nøkkelen ligger i nøkkelboksen ved inngangsdøra (kode 4512). Slå på hovedbryteren i gangen og åpne vannet under kjøkkenbenken.",
-            "Steng vannet, tøm kjøleskapet og ta med søppelet. Sett varmen på 10 grader og lås nøkkelen inn i boksen igjen.",
+        var cabin = cabins.save(new CabinInfo(null, "Test cabin Fjellro", "The family cabin by Lake Storevatnet",
+            "Log cabin from 1978 with four bedrooms, a sauna and a view of the lake. You can drive all the way in summer; "
+                + "in winter, park at the gate and walk or ski the last 800 metres.",
+            "Fjellroveien 12, 3560 Hemsedal", "Fjellro-guest", "Sauna2024!",
+            "The key is in the key box by the front door (code 4512). Switch on the main breaker in the hall and open the water under the kitchen counter.",
+            "Turn off the water, empty the fridge and take the rubbish with you. Set the heating to 10 degrees and lock the key back in the box.",
             null, List.of(), 60.8623, 8.5532, 812.0, true));
         cabins.updateJoinCode(cabin.id(), JoinCodes.generate());
         memberships.save(new Membership(null, ownerId, cabin.id(), Membership.OWNER, Instant.now()));
@@ -124,19 +125,19 @@ public class DemoCabin {
         record Stay(int daysAgo, int nights, String who, int guests, String note) {
         }
         var stays = List.of(
-            new Stay(700, 7, "Kari", 4, "Vinterferie"),
+            new Stay(700, 7, "Kari", 4, "Winter break"),
             new Stay(610, 3, me, 2, null),
-            new Stay(540, 10, "Ola og Ingrid", 5, "Fellesferie, del 1"),
-            new Stay(470, 4, "Lars", 3, "Elgjakt"),
-            new Stay(380, 3, me, 6, "Juletur med hele gjengen"),
-            new Stay(330, 7, "Kari", 4, "Vinterferie"),
-            new Stay(250, 4, "Sofie", 2, "Påske"),
-            new Stay(175, 10, "Ola og Ingrid", 5, "Fellesferie"),
-            new Stay(105, 4, "Lars", 3, "Elgjakt"),
-            new Stay(30, 3, me, 4, "Dugnadshelg"),
+            new Stay(540, 10, "Ola and Ingrid", 5, "Summer holiday, part 1"),
+            new Stay(470, 4, "Lars", 3, "Moose hunt"),
+            new Stay(380, 3, me, 6, "Christmas with the whole gang"),
+            new Stay(330, 7, "Kari", 4, "Winter break"),
+            new Stay(250, 4, "Sofie", 2, "Easter"),
+            new Stay(175, 10, "Ola and Ingrid", 5, "Summer holiday"),
+            new Stay(105, 4, "Lars", 3, "Moose hunt"),
+            new Stay(30, 3, me, 4, "Work weekend"),
             new Stay(-12, 3, "Sofie", 2, null),
-            new Stay(-45, 5, me, 6, "Juletur"),
-            new Stay(-120, 7, "Kari", 4, "Vinterferie"));
+            new Stay(-45, 5, me, 6, "Christmas"),
+            new Stay(-120, 7, "Kari", 4, "Winter break"));
 
         return stays.stream().map(s -> {
             var start = today.minusDays(s.daysAgo());
@@ -150,18 +151,19 @@ public class DemoCabin {
         record Entry(int booking, String author, String title, String content, List<String> with) {
         }
         var entries = List.of(
-            new Entry(0, "Kari", "Snøkaos og skiføre", "Kom fram i full snøstorm og måtte måke oss inn. Resten av uka var det strålende sol "
-                + "og perfekt føre. Barna lærte å ta heisen alene i bakken.", List.of("Kari", "Per", "Emma", "Jonas")),
-            new Entry(2, "Ingrid", "Fellesferie ved vatnet", "Badet hver dag selv om vatnet var 16 grader. Fikk tre ørret på garnet, "
-                + "og Ola fikk endelig fikset benken på brygga.", List.of("Ola", "Ingrid", "Mia", "Theo", "Bestemor")),
-            new Entry(3, "Lars", "Elgjakt", "Ingen elg i år, men mye fin tur. Vedboden er fylt opp igjen.", List.of("Lars", "Henrik", "Tore")),
-            new Entry(4, me, "Jul på hytta", "Ribbe, pinnekjøtt og altfor mye konfekt. Strømmen gikk på julaften, så vi spiste i lys "
-                + "fra peisen. Ingen klaget.", List.of(me, "Kari", "Ola", "Ingrid", "Lars", "Sofie")),
-            new Entry(6, "Sofie", "Påskefjellet", "Lange turer til Storefjell, appelsin og Kvikk Lunsj på toppen. Brannslukkeren er sjekket.",
+            new Entry(0, "Kari", "Snow chaos and great skiing", "Arrived in a full blizzard and had to dig our way in. The rest of the week was "
+                + "glorious sunshine and perfect snow. The kids learned to ride the lift on their own.", List.of("Kari", "Per", "Emma", "Jonas")),
+            new Entry(2, "Ingrid", "Summer by the lake", "Swam every day even though the lake was 16 degrees. Caught three trout in the net, "
+                + "and Ola finally fixed the bench on the jetty.", List.of("Ola", "Ingrid", "Mia", "Theo", "Grandma")),
+            new Entry(3, "Lars", "Moose hunt", "No moose this year, but lots of good walks. The woodshed is full again.", List.of("Lars", "Henrik", "Tore")),
+            new Entry(4, me, "Christmas at the cabin", "Roast pork, lamb ribs and far too many sweets. The power went out on Christmas Eve, "
+                + "so we ate by the light of the fireplace. Nobody complained.", List.of(me, "Kari", "Ola", "Ingrid", "Lars", "Sofie")),
+            new Entry(6, "Sofie", "Easter in the mountains", "Long trips up Storefjell, oranges and chocolate at the top. The fire extinguisher is checked.",
                 List.of("Sofie", "Marius")),
-            new Entry(7, "Ola", "Sommer igjen", "Malte nordveggen og byttet to takstein. Myggen var verre enn i fjor.", List.of("Ola", "Ingrid", "Mia", "Theo")),
-            new Entry(8, "Lars", "Jakt og sopp", "Felte en okse første dag! Fant også masse kantarell bak låven.", List.of("Lars", "Henrik")),
-            new Entry(9, me, "Dugnad", "Ryddet kratt, renset takrennene og byttet batterier i røykvarslerne. Pizza i badstua etterpå.",
+            new Entry(7, "Ola", "Summer again", "Painted the north wall and replaced two roof tiles. The mosquitoes were worse than last year.",
+                List.of("Ola", "Ingrid", "Mia", "Theo")),
+            new Entry(8, "Lars", "Hunting and mushrooms", "Got a bull on the first day! Also found loads of chanterelles behind the barn.", List.of("Lars", "Henrik")),
+            new Entry(9, me, "Work weekend", "Cleared brush, cleaned the gutters and changed the smoke alarm batteries. Pizza in the sauna afterwards.",
                 List.of(me, "Kari", "Lars")));
 
         for (var e : entries) {
@@ -176,13 +178,13 @@ public class DemoCabin {
         record Task(String name, String description, int every, String unit, int... doneDaysAgo) {
         }
         var tasks = List.of(
-            new Task("Feie pipa", "Feieren kommer på forespørsel; ring kommunen i god tid.", 1, "YEARS", 690, 330),
-            new Task("Bytte batterier i røykvarslerne", "Fire varslere: gangen, stua og begge soverommene oppe.", 1, "YEARS", 400, 30),
-            new Task("Rense takrennene", null, 1, "YEARS", 560, 200),
-            new Task("Sjekke brannslukkeren", "Rist den og sjekk at nålen står på grønt.", 6, "MONTHS", 520, 340, 250),
-            new Task("Bytte vannfilter", "Filteret står under kjøkkenbenken. Nye filtre ligger i boden.", 3, "MONTHS", 300, 210),
-            new Task("Beise terrassen", null, 2, "YEARS", 600),
-            new Task("Tømme slamavskilleren", "Avtales med kommunen.", 2, "YEARS"));
+            new Task("Sweep the chimney", "The sweep comes on request; call the council well ahead.", 1, "YEARS", 690, 330),
+            new Task("Change the smoke alarm batteries", "Four alarms: the hall, the living room and both bedrooms upstairs.", 1, "YEARS", 400, 30),
+            new Task("Clean the gutters", null, 1, "YEARS", 560, 200),
+            new Task("Check the fire extinguisher", "Shake it and check that the needle is on green.", 6, "MONTHS", 520, 340, 250),
+            new Task("Change the water filter", "The filter is under the kitchen counter. New filters are in the shed.", 3, "MONTHS", 300, 210),
+            new Task("Stain the deck", null, 2, "YEARS", 600),
+            new Task("Empty the septic tank", "Book it with the council.", 2, "YEARS"));
 
         String[] who = {me, "Kari", "Ola", "Lars", "Sofie"};
         var n = 0;
@@ -193,7 +195,7 @@ public class DemoCabin {
             for (var daysAgo : task.doneDaysAgo()) {
                 var on = today.minusDays(daysAgo);
                 var by = who[n++ % who.length];
-                var done = completions.save(new MaintenanceCompletion(null, saved.id(), on, by, null, List.of(by), n % 2 == 0 ? "Alt i orden." : null, null));
+                var done = completions.save(new MaintenanceCompletion(null, saved.id(), on, by, null, List.of(by), n % 2 == 0 ? "All good." : null, null));
                 backdate("maintenance_completion", done.id(), on);
                 last = on;
             }
@@ -203,14 +205,14 @@ public class DemoCabin {
 
     private void todos(String me) {
 
-        todo("Fikse porten", "Hengslet nederst har løsnet.", "Ola", 90, null, 0, null);
-        todo("Skifte pakning på kjøkkenkrana", "Den drypper.", "Kari", 40, null, 0, null);
-        todo("Kjøpe ny grill", null, me, 12, null, 0, null);
-        todo("Male utedoen", null, "Sofie", 200, null, 0, null);
-        todo("Bytte lyspære i badstua", null, "Lars", 320, "Lars", 300, "Tok med to ekstra, de ligger i skuffen.");
-        todo("Montere ny vedovn", "Den gamle sprakk i fjor vinter.", me, 420, me, 360, "Ny Jøtul på plass, godkjent av feieren.");
-        todo("Fjerne vepsebol under taket", null, "Ingrid", 190, "Ola", 170, null);
-        todo("Skru fast gelenderet på trappa", null, "Kari", 60, "Lars", 28, "Nye skruer, sitter som et skudd.");
+        todo("Fix the gate", "The bottom hinge has come loose.", "Ola", 90, null, 0, null);
+        todo("Replace the washer in the kitchen tap", "It drips.", "Kari", 40, null, 0, null);
+        todo("Buy a new grill", null, me, 12, null, 0, null);
+        todo("Paint the outhouse", null, "Sofie", 200, null, 0, null);
+        todo("Change the light bulb in the sauna", null, "Lars", 320, "Lars", 300, "Brought two spares, they're in the drawer.");
+        todo("Install a new wood stove", "The old one cracked last winter.", me, 420, me, 360, "New Jøtul in place, approved by the sweep.");
+        todo("Remove the wasp nest under the roof", null, "Ingrid", 190, "Ola", 170, null);
+        todo("Tighten the stair railing", null, "Kari", 60, "Lars", 28, "New screws, solid as a rock.");
     }
 
     private void todo(String title, String description, String by, int createdDaysAgo, String doneBy, int doneDaysAgo, String note) {
@@ -223,18 +225,18 @@ public class DemoCabin {
 
     private void shopping(String me) {
 
-        for (var name : List.of("Dopapir", "Kaffe", "Ved", "Fyrstikker", "Søppelposer", "Oppvaskmiddel", "Lyspærer", "Batterier (AA)")) {
+        for (var name : List.of("Toilet paper", "Coffee", "Firewood", "Matches", "Bin bags", "Washing-up liquid", "Light bulbs", "Batteries (AA)")) {
             checklist.save(new ChecklistItem(null, name, null, null));
         }
         record Item(String name, String quantity, String by, int daysAgo, String boughtBy) {
         }
         for (var i : List.of(
-            new Item("Kaffe", "2 pakker", "Kari", 3, null),
-            new Item("Dopapir", null, me, 5, null),
-            new Item("Tennbrikett", null, "Lars", 8, null),
-            new Item("Lyspærer E14", "4 stk", "Sofie", 20, null),
-            new Item("Søppelposer", "1 rull", "Ola", 35, "Ola"),
-            new Item("Oppvaskmiddel", null, me, 40, "Kari"))) {
+            new Item("Coffee", "2 packs", "Kari", 3, null),
+            new Item("Toilet paper", null, me, 5, null),
+            new Item("Fire lighters", null, "Lars", 8, null),
+            new Item("Light bulbs E14", "4", "Sofie", 20, null),
+            new Item("Bin bags", "1 roll", "Ola", 35, "Ola"),
+            new Item("Washing-up liquid", null, me, 40, "Kari"))) {
             var bought = i.boughtBy() != null;
             var saved = shopping.save(new ShoppingItem(null, i.name(), i.quantity(), bought, i.boughtBy(), bought ? at(today.minusDays(i.daysAgo() - 2)) : null,
                 i.by(), null, null));
@@ -247,11 +249,11 @@ public class DemoCabin {
         record Idea(String title, String description, String category, String author, List<String> voters, boolean done, int daysAgo) {
         }
         for (var s : List.of(
-            new Idea("Bygge gapahuk ved vatnet", "Kunne vært fint for overnatting ute med barna.", "DO", "Lars", List.of("Lars", "Kari", "Sofie"), false, 150),
-            new Idea("Ny kajakk", "Den gamle lekker.", "BUY", "Ola", List.of("Ola", "Ingrid", me), false, 80),
-            new Idea("Varmepumpe", "Sparer strøm og holder hytta tørr om vinteren.", "BUY", me, List.of(me, "Kari"), false, 45),
-            new Idea("Felles dugnadshelg hver høst", null, "DO", "Kari", List.of("Kari", "Lars", "Ola", me), true, 400),
-            new Idea("Brettspill til regnværsdager", null, "BUY", "Sofie", List.of("Sofie"), false, 20))) {
+            new Idea("Build a lean-to by the lake", "Would be great for sleeping outside with the kids.", "DO", "Lars", List.of("Lars", "Kari", "Sofie"), false, 150),
+            new Idea("New kayak", "The old one leaks.", "BUY", "Ola", List.of("Ola", "Ingrid", me), false, 80),
+            new Idea("Heat pump", "Saves power and keeps the cabin dry in winter.", "BUY", me, List.of(me, "Kari"), false, 45),
+            new Idea("A shared work weekend every autumn", null, "DO", "Kari", List.of("Kari", "Lars", "Ola", me), true, 400),
+            new Idea("Board games for rainy days", null, "BUY", "Sofie", List.of("Sofie"), false, 20))) {
             var saved = suggestions.save(new Suggestion(null, s.title(), s.description(), s.category(), s.author(), s.voters(), s.done(), null, null));
             backdate("suggestion", saved.id(), today.minusDays(s.daysAgo()));
         }
@@ -259,17 +261,17 @@ public class DemoCabin {
 
     private void forum(String me) {
 
-        var post = post("Hvem tar med tilhenger til dugnaden?", "Vi må kjøre bort kvist og gammelt materiale. Har noen tilhenger de kan ta med?", "Kari", 45);
-        reply(post, "Jeg tar med min, den er stor nok til det meste.", "Lars", 44, "👍");
-        reply(post, "Supert! Jeg tar med pizza til etterpå.", me, 43, "🎉");
+        var post = post("Who's bringing a trailer to the work weekend?", "We need to haul away branches and old timber. Does anyone have a trailer they can bring?", "Kari", 45);
+        reply(post, "I'll bring mine, it's big enough for most of it.", "Lars", 44, "👍");
+        reply(post, "Great! I'll bring pizza for afterwards.", me, 43, "🎉");
         react(post, null, "👍", "Ola");
 
-        post = post("Strømprisene i vinter", "Skal vi senke grunnvarmen til 8 grader når ingen er der? Det står på 12 nå.", me, 120);
-        reply(post, "Enig, men ikke lavere enn 8, ellers fryser rørene i gangen.", "Ola", 119, null);
-        reply(post, "Kan vi få en smartplugg så vi kan skru opp før vi kommer?", "Sofie", 117, "❤️");
+        post = post("Power prices this winter", "Should we turn the background heat down to 8 degrees when nobody is there? It's on 12 now.", me, 120);
+        reply(post, "Agreed, but no lower than 8, or the pipes in the hall will freeze.", "Ola", 119, null);
+        reply(post, "Could we get a smart plug so we can turn it up before we arrive?", "Sofie", 117, "❤️");
 
-        post = post("Bilder fra jakta", "Endelig en okse! Takk for et fint lag i år.", "Lars", 100);
-        reply(post, "Gratulerer! Gleder meg til elgstek til jul.", "Ingrid", 99, "😂");
+        post = post("Photos from the hunt", "Finally a bull! Thanks for a great team this year.", "Lars", 100);
+        reply(post, "Congratulations! Looking forward to moose roast at Christmas.", "Ingrid", 99, "😂");
         react(post, null, "🎉", "Kari");
         react(post, null, "🎉", me);
     }
@@ -294,16 +296,16 @@ public class DemoCabin {
 
     private void wiki(String me) {
 
-        wiki.save(new WikiPage(null, "Vann og strøm", "Hovedbryteren står i sikringsskapet i gangen. Vannet åpnes med kranen under kjøkkenbenken, "
-            + "og må stenges og tømmes om vinteren hvis det er meldt kuldegrader. Vannpumpa er i kjelleren; trykk på den røde knappen hvis det ikke kommer vann.", me, null, null));
-        wiki.save(new WikiPage(null, "Peis og ved", "Ved ligger i vedskjulet bak hytta; ta fra venstre side (den eldste). Spjeldet må være åpent "
-            + "før du fyrer. Aske i metallbøtta på verandaen, aldri i søppelet.", "Lars", null, null));
-        wiki.save(new WikiPage(null, "Søppel og gjenvinning", "Nærmeste returpunkt er ved butikken i sentrum. Matavfall i grønne poser, "
-            + "plast i egen pose. Glass og metall i kassen i boden.", "Kari", null, null));
-        wiki.save(new WikiPage(null, "Badstua", "Ovnen slås på med bryteren ved døra og bruker ca. 40 minutter. Skru den av når dere er ferdige, "
-            + "og la døra stå på gløtt så den tørker.", "Sofie", null, null));
-        wiki.save(new WikiPage(null, "Båt og fiske", "Robåten ligger opp ned ved brygga, årene henger i boden. Fiskekort kjøpes på inatur.no. "
-            + "Garn skal røktes hver morgen.", "Ola", null, null));
+        wiki.save(new WikiPage(null, "Water and power", "The main breaker is in the fuse box in the hall. The water is opened with the tap under the kitchen counter, "
+            + "and must be shut off and drained in winter if frost is forecast. The water pump is in the basement; press the red button if no water comes.", me, null, null));
+        wiki.save(new WikiPage(null, "Fireplace and firewood", "Firewood is in the woodshed behind the cabin; take from the left side (the oldest). The damper must be open "
+            + "before you light the fire. Ash goes in the metal bucket on the porch, never in the rubbish.", "Lars", null, null));
+        wiki.save(new WikiPage(null, "Rubbish and recycling", "The nearest recycling point is by the shop in the village. Food waste in green bags, "
+            + "plastic in its own bag. Glass and metal in the box in the shed.", "Kari", null, null));
+        wiki.save(new WikiPage(null, "The sauna", "The heater is switched on by the door and takes about 40 minutes. Turn it off when you're done, "
+            + "and leave the door ajar so it dries.", "Sofie", null, null));
+        wiki.save(new WikiPage(null, "Boat and fishing", "The rowing boat lies upside down by the jetty, the oars hang in the shed. Fishing licences are bought at inatur.no. "
+            + "Nets must be checked every morning.", "Ola", null, null));
     }
 
     /** Created on that day: @DateCreated stamps "now" on save, so the history gets its dates afterwards. */
