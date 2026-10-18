@@ -73,6 +73,11 @@ public class CabinsController {
     public record NewCabin(@NotBlank @Size(max = 80) String name) {
     }
 
+    /** {@code lang}: the app's language, so the test cabin's texts match it. */
+    @Serdeable
+    public record DemoRequest(@Nullable String lang) {
+    }
+
     @Serdeable
     public record JoinRequest(@NotBlank @Size(max = 20) String code, @Nullable @Size(max = 500) String message) {
     }
@@ -135,12 +140,12 @@ public class CabinsController {
         cabins.updateDeleted(id, null, null);
     }
 
-    /** System admins: a new cabin filled with example data from the last couple of years, for trying things out. */
+    /** System admins: a new cabin filled with example data from the last couple of years, in the app's language, for trying things out. */
     @Post("/demo")
-    public Cabin createDemo(Authentication auth) {
+    public Cabin createDemo(Authentication auth, @Body DemoRequest body) {
 
         requireAdmin(auth);
-        var cabin = demo.create(AccessService.userId(auth), String.valueOf(auth.getAttributes().get("name")));
+        var cabin = demo.create(AccessService.userId(auth), String.valueOf(auth.getAttributes().get("name")), body.lang());
 
         return summary(cabin, Membership.OWNER, false);
     }

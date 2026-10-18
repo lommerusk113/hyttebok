@@ -8,7 +8,7 @@ import Textarea from 'primevue/textarea'
 import { api } from '../api'
 import { auth, loadAuth } from '../auth'
 import { adminMode, cabinId } from '../hytte'
-import { t } from '../i18n'
+import { locale, t } from '../i18n'
 
 // "Mine hytter": the cabins you belong to, a new cabin of your own, and asking for access with a cabin's
 // join code. Other people's cabins are never listed or searchable (admins in admin mode excepted).
@@ -72,11 +72,11 @@ async function join() {
   }
 }
 
-// System admins: an example cabin with two years of history, to try things out in.
+// System admins: an example cabin with two years of history, in the app's language, to try things out in.
 async function createDemo() {
   busy.value = true
   try {
-    const demo = await api.post('/cabins/demo')
+    const demo = await api.post('/cabins/demo', { lang: locale.value })
     router.push(`/h/${demo.id}`)
   } finally {
     busy.value = false
