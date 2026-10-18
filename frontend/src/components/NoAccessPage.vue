@@ -2,11 +2,12 @@
 import { ref } from 'vue'
 import Button from 'primevue/button'
 import { auth, loadAuth } from '../auth'
-import { cabinHeaders } from '../hytte'
+import { cabinHeaders, cabinId } from '../hytte'
 import { t } from '../i18n'
 
 // In a cabin you're not a member of (an old link, or access was removed). Ordinary users go back to their
-// own cabins (or ask with the cabin's code there); a system admin can give themselves access.
+// own cabins (or ask with the cabin's code there); a system admin can give themselves access, or bring
+// back a deleted cabin.
 const busy = ref(false)
 
 async function grantSelf() {
@@ -18,16 +19,30 @@ async function grantSelf() {
     busy.value = false
   }
 }
+
+async function restore() {
+  busy.value = true
+  try {
+    await fetch(`/api/cabins/${cabinId.value}/restore`, { method: 'POST', headers: cabinHeaders() })
+    await loadAuth()
+  } finally {
+    busy.value = false
+  }
+}
 </script>
 
 <template>
   <div class="grid min-h-[60vh] place-items-center">
     <div class="w-full max-w-sm text-center">
       <span class="mx-auto grid size-16 place-items-center rounded-2xl bg-zinc-100 text-zinc-500"><i class="pi pi-lock text-2xl" /></span>
-      <h1 class="mt-5 text-xl font-semibold">{{ t('access.noAccessTitle') }}</h1>
-      <p class="mt-1 text-sm text-zinc-500">{{ t('access.noAccessText') }}</p>
+      <h1 class="mt-5 text-xl font-semibold">{{ t(auth.cabinDeleted ? 'access.deletedTitle' : 'access.noAccessTitle') }}</h1>
+      <p class="mt-1 text-sm text-zinc-500">{{ t(auth.cabinDeleted ? 'access.deletedText' : 'access.noAccessText') }}</p>
 
-      <div v-if="auth.admin" class="mt-6 rounded-lg bg-zinc-100 p-4 text-left text-sm">
+      <div v-if="auth.admin && auth.cabinDeleted" class="mt-6 rounded-lg bg-zinc-100 p-4 text-left text-sm">
+        <p class="mb-3">{{ t('access.restoreHint') }}</p>
+        <Button :label="t('access.restore')" icon="pi pi-replay" :loading="busy" @click="restore" />
+      </div>
+      <div v-else-if="auth.admin" class="mt-6 rounded-lg bg-zinc-100 p-4 text-left text-sm">
         <p class="mb-3">{{ t('access.adminHint') }}</p>
         <Button :label="t('access.grantSelf')" icon="pi pi-key" :loading="busy" @click="grantSelf" />
       </div>

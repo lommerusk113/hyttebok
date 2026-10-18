@@ -1,5 +1,6 @@
 <script setup>
 import { computed, onMounted, ref } from 'vue'
+import { useRouter } from 'vue-router'
 import { useConfirm } from 'primevue/useconfirm'
 import { useToast } from 'primevue/usetoast'
 import Avatar from 'primevue/avatar'
@@ -9,6 +10,8 @@ import ToggleSwitch from 'primevue/toggleswitch'
 import DashCard from '../components/DashCard.vue'
 import { api } from '../api'
 import { auth, loadAuth } from '../auth'
+import { cabin } from '../cabin'
+import { cabinId, setCabin } from '../hytte'
 import { colorFor, formatDate, initials } from '../utils'
 import { t } from '../i18n'
 
@@ -16,6 +19,7 @@ import { t } from '../i18n'
 // everyone who has logged in: access is given through requests and invitations.
 const confirm = useConfirm()
 const toast = useToast()
+const router = useRouter()
 const requests = ref([])
 const invites = ref([])
 const joinCode = ref('')
@@ -129,6 +133,22 @@ function remove(member) {
   })
 }
 
+// Only marked deleted on the server: everyone loses access, and a system admin can bring it back.
+function deleteCabin() {
+  const name = cabin.value?.name
+  confirm.require({
+    header: t('access.deleteTitle'),
+    message: t('access.deleteMessage', { name }),
+    acceptProps: { label: t('access.deleteCabin'), severity: 'danger' },
+    rejectProps: { label: t('common.cancel'), severity: 'secondary', text: true },
+    accept: async () => {
+      await api.del(`/cabins/${cabinId.value}`)
+      setCabin(null)
+      router.push('/?alle=1')
+      toast.add({ severity: 'success', summary: t('access.deleted', { name }), life: 4000 })
+    },
+  })
+}
 </script>
 
 <template>
@@ -213,6 +233,13 @@ function remove(member) {
             </span>
           </li>
         </ul>
+      </DashCard>
+
+      <DashCard :title="t('access.deleteCabin')" icon="pi pi-trash" tint="bg-red-50 text-red-700">
+        <div class="flex flex-wrap items-center gap-3">
+          <p class="min-w-0 flex-1 text-sm text-zinc-500">{{ t('access.deleteHint') }}</p>
+          <Button :label="t('access.deleteCabin')" icon="pi pi-trash" size="small" severity="danger" outlined @click="deleteCabin" />
+        </div>
       </DashCard>
 
     </template>

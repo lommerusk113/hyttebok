@@ -72,18 +72,19 @@ public class AuthController {
     /**
      * For the cabin the app is showing: {@code role} (OWNER, MEMBER or null = no access), {@code canManage} (owner,
      * or admin in admin mode: the "Tilgang" tab) and {@code waitingRequests}. {@code admin}: may switch on admin mode.
+     * {@code cabinDeleted}: the cabin was deleted (no access for its members; an admin can bring it back).
      */
     /** {@code googleEnabled}: show "Logg inn med Google" (GOOGLE_CLIENT_ID is set); email + password always works. */
     @Serdeable
     public record Me(boolean loginEnabled, boolean googleEnabled, @Nullable User user, @Nullable String role, boolean admin, boolean canManage,
-                     boolean adminMode, int waitingRequests, boolean chatEnabled) {
+                     boolean adminMode, int waitingRequests, boolean chatEnabled, boolean cabinDeleted) {
     }
 
     @Get("/me")
     public Me me(@Nullable Authentication authentication) {
 
         if (authentication == null) {
-            return new Me(login.loginOn(), login.googleOn(), null, null, false, false, false, 0, !login.loginOn() && chatOn(CabinContext.current().orElse(null)));
+            return new Me(login.loginOn(), login.googleOn(), null, null, false, false, false, 0, !login.loginOn() && chatOn(CabinContext.current().orElse(null)), false);
         }
         var attributes = authentication.getAttributes();
         var user = new User(String.valueOf(attributes.get("name")), String.valueOf(attributes.get("email")), String.valueOf(attributes.getOrDefault("picture", "")));
@@ -93,7 +94,8 @@ public class AuthController {
         var canManage = cabin.isPresent() && access.canManage(authentication);
         var waiting = canManage ? requests.findByCabinIdAndStatusOrderByCreatedAt(cabin.get(), AccessRequest.PENDING).size() : 0;
 
-        return new Me(true, login.googleOn(), user, role, access.isAdmin(authentication), canManage, access.adminMode(authentication), waiting, chatOn(cabin.orElse(null)));
+        return new Me(true, login.googleOn(), user, role, access.isAdmin(authentication), canManage, access.adminMode(authentication), waiting, chatOn(cabin.orElse(null)),
+            cabin.flatMap(cabins::findDeleted).orElse(false));
     }
 
     /** The AI chat is shown in a cabin when the server has a key and a system admin turned it on there. */

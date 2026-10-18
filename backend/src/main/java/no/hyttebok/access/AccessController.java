@@ -288,7 +288,7 @@ public class AccessController {
     @Secured(SecurityRule.IS_ANONYMOUS)
     public InviteInfo inviteInfo(String token) {
 
-        var invite = invitations.findByToken(token).filter(i -> i.usable(Instant.now()));
+        var invite = invitations.findByToken(token).filter(this::open);
         var cabinName = invite.flatMap(i -> cabins.findById(i.cabinId())).map(c -> c.name()).orElse("Hyttebok");
         var invitedBy = invite.map(Invitation::createdBy).flatMap(users::findById).map(u -> u.name() == null ? u.email() : u.name()).orElse(null);
 
@@ -299,7 +299,7 @@ public class AccessController {
     @Post("/invites/{token}/accept")
     public Accepted accept(Authentication auth, String token) {
 
-        var invite = invitations.findByToken(token).filter(i -> i.usable(Instant.now()))
+        var invite = invitations.findByToken(token).filter(this::open)
             .orElseThrow(() -> new HttpStatusException(HttpStatus.GONE, "This invitation has expired or was revoked"));
         var userId = AccessService.userId(auth);
         if (!memberships.existsByUserIdAndCabinId(userId, invite.cabinId())) {
@@ -311,6 +311,11 @@ public class AccessController {
             .ifPresent(r -> requests.update(new AccessRequest(r.id(), r.cabinId(), r.userId(), r.message(), "APPROVED", r.createdAt(), invite.createdBy(), Instant.now())));
 
         return new Accepted(invite.cabinId());
+    }
+
+    /** Not expired or revoked, and its cabin isn't deleted. */
+    private boolean open(Invitation invite) {
+        return invite.usable(Instant.now()) && !cabins.findDeleted(invite.cabinId()).orElse(true);
     }
 
     private void join(Long userId, Long cabinId, String role) {

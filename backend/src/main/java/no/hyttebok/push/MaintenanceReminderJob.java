@@ -36,7 +36,11 @@ public class MaintenanceReminderJob {
 
     @Scheduled(cron = "0 0 8 * * *", zoneId = "Europe/Oslo")
     void run() {
+        var deleted = cabins.findDeletedIds();
         for (var cabin : cabins.findAll()) {
+            if (deleted.contains(cabin.id())) {
+                continue;
+            }
             CabinContext.runAs(cabin.id(), this::remind);
         }
     }

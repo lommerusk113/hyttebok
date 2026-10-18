@@ -55,10 +55,10 @@ public class AccessService {
             .map(r -> "on".equals(r.getHeaders().get(ADMIN_MODE_HEADER))).orElse(false);
     }
 
-    /** OWNER, MEMBER or null in the given cabin. */
+    /** OWNER, MEMBER or null in the given cabin (null in a deleted one). */
     @Nullable
     public String role(Authentication authentication, long cabinId) {
-        return memberships.findByUserIdAndCabinId(userId(authentication), cabinId).map(Membership::role).orElse(null);
+        return memberships.findActive(userId(authentication), cabinId).map(Membership::role).orElse(null);
     }
 
     /** Role in the cabin of the current request, or null. */

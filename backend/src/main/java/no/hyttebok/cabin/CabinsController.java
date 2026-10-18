@@ -4,6 +4,7 @@ import io.micronaut.core.annotation.Nullable;
 import io.micronaut.http.HttpStatus;
 import io.micronaut.http.annotation.Body;
 import io.micronaut.http.annotation.Controller;
+import io.micronaut.http.annotation.Delete;
 import io.micronaut.http.annotation.Get;
 import io.micronaut.http.annotation.Post;
 import io.micronaut.http.exceptions.HttpStatusException;
@@ -25,6 +26,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -32,7 +34,7 @@ import java.util.stream.Collectors;
 /**
  * "Mine hytter": the cabins you belong to, making a new one, and asking for access with a cabin's join code.
  * Nobody can list or search other people's cabins; the code is the only way to find one (admins in admin mode
- * excepted, for support).
+ * excepted, for support). Owners can delete a cabin; it is only marked deleted, and system admins can bring it back.
  */
 @Controller("/api/cabins")
 @Secured(SecurityRule.IS_AUTHENTICATED)
@@ -46,6 +48,7 @@ public class CabinsController {
     private final AccessRequestRepository requests;
     private final AccessService access;
     private final Notifier notifier;
+    private final DemoCabin demo;
     // ponytail: in memory, per user; a restart forgets it. Enough to stop guessing codes by hand or script.
     private final Map<Long, WrongCodes> wrongCodes = new ConcurrentHashMap<>();
 
@@ -53,16 +56,17 @@ public class CabinsController {
     }
 
     public CabinsController(CabinInfoRepository cabins, MembershipRepository memberships, AccessRequestRepository requests,
-                            AccessService access, Notifier notifier) {
+                            AccessService access, Notifier notifier, DemoCabin demo) {
         this.cabins = cabins;
         this.memberships = memberships;
         this.requests = requests;
         this.access = access;
         this.notifier = notifier;
+        this.demo = demo;
     }
 
     @Serdeable
-    public record Cabin(Long id, String name, @Nullable String tagline, @Nullable Long heroPhotoId, @Nullable String role) {
+    public record Cabin(Long id, String name, @Nullable String tagline, @Nullable Long heroPhotoId, @Nullable String role, boolean deleted) {
     }
 
     @Serdeable
@@ -82,20 +86,25 @@ public class CabinsController {
     public record Waiting(String cabinName, Instant since) {
     }
 
-    /** Your cabins with your role. Admins in admin mode see every cabin. */
+    /** Your cabins with your role. Admins in admin mode see every cabin, the deleted ones too. */
     @Get
     public List<Cabin> mine(@Nullable Authentication auth) {
 
+        var deleted = Set.copyOf(cabins.findDeletedIds());
         if (auth == null) {
-            return cabins.listOrderByName().stream().map(c -> summary(c, Membership.OWNER)).toList(); // login switched off: one shared cabin
+            return cabins.listOrderByName().stream().filter(c -> !deleted.contains(c.id())) // login switched off: one shared cabin
+                .map(c -> summary(c, Membership.OWNER, false)).toList();
         }
         var roles = memberships.findByUserId(AccessService.userId(auth)).stream().collect(Collectors.toMap(Membership::cabinId, Membership::role));
-        var list = access.adminMode(auth) ? cabins.listOrderByName() : cabins.findByIdInOrderByName(roles.keySet());
-        if (roles.isEmpty() && !access.adminMode(auth)) {
+        if (access.adminMode(auth)) {
+            return cabins.listOrderByName().stream().map(c -> summary(c, roles.get(c.id()), deleted.contains(c.id()))).toList();
+        }
+        roles.keySet().removeAll(deleted);
+        if (roles.isEmpty()) {
             return List.of();
         }
 
-        return list.stream().map(c -> summary(c, roles.get(c.id()))).toList();
+        return cabins.findByIdInOrderByName(roles.keySet()).stream().map(c -> summary(c, roles.get(c.id()), false)).toList();
     }
 
     /** A new cabin, with you as its owner. */
@@ -106,7 +115,34 @@ public class CabinsController {
         cabins.updateJoinCode(cabin.id(), JoinCodes.generate());
         memberships.save(new Membership(null, AccessService.userId(auth), cabin.id(), Membership.OWNER, Instant.now()));
 
-        return summary(cabin, Membership.OWNER);
+        return summary(cabin, Membership.OWNER, false);
+    }
+
+    /** Owners (and admins in admin mode): marks the cabin deleted. Its members lose access; the data stays. */
+    @Delete("/{id}")
+    public void delete(Authentication auth, Long id) {
+
+        if (!access.adminMode(auth) && !Membership.OWNER.equals(access.role(auth, id))) {
+            throw new HttpStatusException(HttpStatus.FORBIDDEN, "Only owners can delete the cabin");
+        }
+        cabins.updateDeleted(id, Instant.now(), AccessService.userId(auth));
+    }
+
+    /** System admins: brings a deleted cabin back, as it was. */
+    @Post("/{id}/restore")
+    public void restore(Authentication auth, Long id) {
+        requireAdmin(auth);
+        cabins.updateDeleted(id, null, null);
+    }
+
+    /** System admins: a new cabin filled with example data from the last couple of years, for trying things out. */
+    @Post("/demo")
+    public Cabin createDemo(Authentication auth) {
+
+        requireAdmin(auth);
+        var cabin = demo.create(AccessService.userId(auth), String.valueOf(auth.getAttributes().get("name")));
+
+        return summary(cabin, Membership.OWNER, false);
     }
 
     /** "Har du en kode?": find the cabin by its join code and ask its owners for access. */
@@ -148,14 +184,22 @@ public class CabinsController {
     @Get("/waiting")
     public List<Waiting> waiting(Authentication auth) {
 
-        var pending = requests.findByUserIdAndStatus(AccessService.userId(auth), AccessRequest.PENDING);
+        var deleted = cabins.findDeletedIds();
+        var pending = requests.findByUserIdAndStatus(AccessService.userId(auth), AccessRequest.PENDING).stream()
+            .filter(r -> !deleted.contains(r.cabinId())).toList();
         var names = cabins.findByIdInOrderByName(pending.stream().map(AccessRequest::cabinId).toList()).stream()
             .collect(Collectors.toMap(CabinInfo::id, Function.identity()));
 
         return pending.stream().filter(r -> names.containsKey(r.cabinId())).map(r -> new Waiting(names.get(r.cabinId()).name(), r.createdAt())).toList();
     }
 
-    private static Cabin summary(CabinInfo cabin, @Nullable String role) {
-        return new Cabin(cabin.id(), cabin.name(), cabin.tagline(), cabin.heroPhotoId(), role);
+    private void requireAdmin(Authentication auth) {
+        if (!access.isAdmin(auth)) {
+            throw new HttpStatusException(HttpStatus.FORBIDDEN, "Only system admins can do this");
+        }
+    }
+
+    private static Cabin summary(CabinInfo cabin, @Nullable String role, boolean deleted) {
+        return new Cabin(cabin.id(), cabin.name(), cabin.tagline(), cabin.heroPhotoId(), role, deleted);
     }
 }

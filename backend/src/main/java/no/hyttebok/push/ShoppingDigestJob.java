@@ -37,7 +37,11 @@ public class ShoppingDigestJob {
 
         var since = lastRun;
         lastRun = Instant.now();
+        var deleted = cabins.findDeletedIds();
         for (var cabin : cabins.findAll()) {
+            if (deleted.contains(cabin.id())) {
+                continue;
+            }
             CabinContext.runAs(cabin.id(), () -> announce(since));
         }
     }

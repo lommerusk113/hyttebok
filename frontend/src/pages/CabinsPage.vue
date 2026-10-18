@@ -6,7 +6,7 @@ import Dialog from 'primevue/dialog'
 import InputText from 'primevue/inputtext'
 import Textarea from 'primevue/textarea'
 import { api } from '../api'
-import { auth } from '../auth'
+import { auth, loadAuth } from '../auth'
 import { adminMode, cabinId } from '../hytte'
 import { t } from '../i18n'
 
@@ -72,6 +72,24 @@ async function join() {
   }
 }
 
+// System admins: an example cabin with two years of history, to try things out in.
+async function createDemo() {
+  busy.value = true
+  try {
+    const demo = await api.post('/cabins/demo')
+    router.push(`/h/${demo.id}`)
+  } finally {
+    busy.value = false
+  }
+}
+
+// Admin mode lists deleted cabins too; bringing one back gives its members their access again.
+async function restore(c) {
+  await api.post(`/cabins/${c.id}/restore`)
+  c.deleted = false
+  if (c.id === cabinId.value) await loadAuth()
+}
+
 const ROLE = { OWNER: 'access.roles.OWNER', MEMBER: 'access.roles.MEMBER' }
 </script>
 
@@ -79,7 +97,10 @@ const ROLE = { OWNER: 'access.roles.OWNER', MEMBER: 'access.roles.MEMBER' }
   <div class="mx-auto max-w-3xl space-y-6">
     <div class="flex flex-wrap items-center justify-between gap-3">
       <h1 class="text-xl font-semibold">{{ t('cabins.title') }}</h1>
-      <Button v-if="auth?.user && cabins?.length" :label="t('cabins.new')" icon="pi pi-plus" @click="creating = true; newName = ''" />
+      <span class="flex flex-wrap gap-2">
+        <Button v-if="auth?.admin && adminMode" :label="t('cabins.demo')" icon="pi pi-box" severity="secondary" outlined :loading="busy" @click="createDemo" />
+        <Button v-if="auth?.user && cabins?.length" :label="t('cabins.new')" icon="pi pi-plus" @click="creating = true; newName = ''" />
+      </span>
     </div>
 
     <p v-if="adminMode" class="rounded-lg bg-amber-50 p-3 text-sm text-amber-800"><i class="pi pi-shield mr-1" />{{ t('cabins.adminModeOn') }}</p>
@@ -87,15 +108,17 @@ const ROLE = { OWNER: 'access.roles.OWNER', MEMBER: 'access.roles.MEMBER' }
     <!-- Your cabins -->
     <div v-if="cabins?.length" class="grid gap-3 sm:grid-cols-2">
       <RouterLink v-for="c in cabins" :key="c.id" :to="`/h/${c.id}`"
-                  class="card flex items-center gap-4 p-4 transition hover:-translate-y-0.5 hover:shadow-md">
+                  class="card flex items-center gap-4 p-4 transition hover:-translate-y-0.5 hover:shadow-md" :class="c.deleted && 'opacity-70'">
         <img v-if="c.heroPhotoId" :src="`/api/photos/${c.heroPhotoId}/file?hytte=${c.id}`" alt="" class="size-16 shrink-0 rounded-lg object-cover">
         <span v-else class="grid size-16 shrink-0 place-items-center rounded-lg bg-zinc-100 text-zinc-500"><i class="pi pi-home text-xl" /></span>
         <span class="min-w-0 flex-1">
           <span class="block truncate font-semibold">{{ c.name }}</span>
           <span v-if="c.tagline" class="block truncate text-sm text-zinc-500">{{ c.tagline }}</span>
-          <span v-if="c.role" class="mt-1 inline-block rounded-full bg-zinc-100 px-2 py-0.5 text-xs text-zinc-600">{{ t(ROLE[c.role]) }}</span>
+          <span v-if="c.role" class="mr-1 mt-1 inline-block rounded-full bg-zinc-100 px-2 py-0.5 text-xs text-zinc-600">{{ t(ROLE[c.role]) }}</span>
+          <span v-if="c.deleted" class="mt-1 inline-block rounded-full bg-red-50 px-2 py-0.5 text-xs text-red-700">{{ t('cabins.deleted') }}</span>
         </span>
-        <i class="pi pi-chevron-right text-xs text-zinc-400" />
+        <Button v-if="c.deleted" :label="t('access.restore')" icon="pi pi-replay" size="small" outlined @click.prevent.stop="restore(c)" />
+        <i v-else class="pi pi-chevron-right text-xs text-zinc-400" />
       </RouterLink>
     </div>
     <!-- No cabins yet: making one is the main thing; an invitation link takes you straight into someone else's -->
