@@ -10,7 +10,6 @@ Slik inviterer du noen:
 - Bare eiere av hytta kan invitere. Gå til fanen Tilgang.
 - Under «Invitasjonslenker», trykk «Ny lenke» og del den (f.eks. i familiechatten).
 - Den som åpner lenken og logger inn, blir medlem med en gang. Lenken gjelder i 14 dager.
-- Alternativt: del koden under «Kode for å be om tilgang». Den som har koden, skriver den inn under «Mine hytter», og en eier må godkjenne forespørselen under Tilgang.
 - Eiere kan endre rolle (eier/medlem), lage lenke for nytt passord eller fjerne tilgang under «Medlemmer».
 
 Innlogging:

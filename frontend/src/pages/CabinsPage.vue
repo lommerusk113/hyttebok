@@ -4,31 +4,24 @@ import { useRouter } from 'vue-router'
 import Button from 'primevue/button'
 import Dialog from 'primevue/dialog'
 import InputText from 'primevue/inputtext'
-import Textarea from 'primevue/textarea'
 import { api } from '../api'
 import { auth, loadAuth } from '../auth'
 import { adminMode, cabinId } from '../hytte'
 import { locale, t } from '../i18n'
 
-// "Mine hytter": the cabins you belong to, a new cabin of your own, and asking for access with a cabin's
-// join code. Other people's cabins are never listed or searchable (admins in admin mode excepted).
+// "Mine hytter": the cabins you belong to and a new cabin of your own. Other people's cabins are never listed
+// or searchable: an invitation link is the way into one.
 const router = useRouter()
 const cabins = ref(null)
-const waiting = ref([])
 const creating = ref(false)
 const newName = ref('')
-const code = ref('')
-const message = ref('')
-const result = ref(null) // { status, cabinName } or { error }
 const busy = ref(false)
-// The join code is the exception (most people come in through an invitation link): tucked behind a link.
-const showCode = ref(false)
 
 // Opening the app ("/") goes straight back to the cabin you were in; the menu's "Mine hytter" (?alle) stays here.
 let firstVisit = true
 
 onMounted(async () => {
-  ;[cabins.value, waiting.value] = await Promise.all([api.get('/cabins'), auth.value?.user ? api.get('/cabins/waiting') : []])
+  cabins.value = await api.get('/cabins')
   const resume = cabins.value.find(c => c.id === cabinId.value) || (cabins.value.length === 1 && !adminMode.value && cabins.value[0])
   // Only if still here: after a login the app may already have gone on to where you were heading.
   const stillHere = router.currentRoute.value.path === '/'
@@ -43,30 +36,6 @@ async function create() {
     const cabin = await api.post('/cabins', { name: newName.value.trim() })
     creating.value = false
     router.push(`/h/${cabin.id}`)
-  } finally {
-    busy.value = false
-  }
-}
-
-async function join() {
-  result.value = null
-  busy.value = true
-  try {
-    const res = await fetch('/api/cabins/join', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ code: code.value, message: message.value }),
-    })
-    if (!res.ok) {
-      result.value = { error: res.status === 404 ? 'cabins.codeUnknown' : res.status === 429 ? 'cabins.tooManyCodes' : 'common.tryAgain' }
-      return
-    }
-    const joined = await res.json()
-    if (joined.status === 'MEMBER') return router.push(`/h/${joined.cabinId}`)
-    result.value = joined
-    code.value = ''
-    message.value = ''
-    waiting.value = await api.get('/cabins/waiting')
   } finally {
     busy.value = false
   }
@@ -135,33 +104,6 @@ const ROLE = { OWNER: 'access.roles.OWNER', MEMBER: 'access.roles.MEMBER' }
       <p class="flex items-start gap-2 text-left text-sm text-zinc-500"><i class="pi pi-link mt-1 text-xs" />{{ t('cabins.inviteHint') }}</p>
     </form>
     <p v-else-if="cabins" class="card p-5 text-zinc-600">{{ t('cabins.none') }}</p>
-
-    <!-- Asked with a code, no answer yet -->
-    <div v-if="waiting.length" class="rounded-lg bg-zinc-100 p-4 text-sm" role="status">
-      <p v-for="w in waiting" :key="w.cabinName"><i class="pi pi-clock mr-1.5 text-zinc-500" />{{ t('cabins.waitingFor', { name: w.cabinName }) }}</p>
-    </div>
-
-    <!-- Someone else's cabin by its code (owners approve): secondary, opened from a link -->
-    <button v-if="auth?.user && !showCode && !result" class="mx-auto flex min-h-11 items-center gap-2 text-sm text-zinc-500 underline-offset-4 hover:text-zinc-900 hover:underline"
-            @click="showCode = true">
-      <i class="pi pi-key text-xs" />{{ cabins?.length ? t('cabins.codeOtherCabin') : t('cabins.codeInstead') }}
-    </button>
-    <form v-if="auth?.user && (showCode || result)" class="card space-y-3 p-5" @submit.prevent="join">
-      <div>
-        <h2 class="font-semibold">{{ t('cabins.haveCode') }}</h2>
-        <p class="text-sm text-zinc-500">{{ t('cabins.codeHint') }}</p>
-      </div>
-      <div class="flex flex-wrap gap-2">
-        <InputText v-model="code" required maxlength="20" :placeholder="t('cabins.codePlaceholder')" :aria-label="t('cabins.code')"
-                   class="w-44 font-mono uppercase tracking-wider" autocapitalize="characters" autocomplete="off" />
-        <Button type="submit" :label="t('cabins.ask')" icon="pi pi-send" :loading="busy" :disabled="!code.trim()" />
-      </div>
-      <Textarea v-model="message" rows="1" auto-resize maxlength="500" :placeholder="t('access.messagePlaceholder')" :aria-label="t('access.messagePlaceholder')" class="w-full" />
-      <p v-if="result?.error" class="rounded-lg bg-amber-50 p-3 text-sm text-amber-800" role="alert">{{ t(result.error) }}</p>
-      <p v-else-if="result" class="rounded-lg bg-emerald-50 p-3 text-sm text-emerald-900" role="status">
-        <i class="pi pi-check-circle mr-1" />{{ t(result.status === 'PENDING' ? 'cabins.alreadyAsked' : 'cabins.asked', { name: result.cabinName }) }}
-      </p>
-    </form>
 
     <Dialog v-model:visible="creating" modal dismissable-mask :header="t('cabins.new')" class="w-[26rem] max-w-[calc(100vw-2rem)]">
       <form id="new-cabin" @submit.prevent="create">

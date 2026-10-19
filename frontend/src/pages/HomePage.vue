@@ -202,8 +202,6 @@ async function save() {
                       :class="tab === tb && '!bg-zinc-950 !text-surface'">
             <i :class="tb.icon" />{{ t(tb.label) }}
             <!-- People waiting for an answer -->
-            <span v-if="tb.key === 'tilgang' && auth?.waitingRequests" class="absolute right-1 top-1 grid min-w-4 place-items-center rounded-full bg-rose-500 px-1 text-[10px] font-semibold leading-4 text-white sm:static sm:min-w-5 sm:text-xs sm:leading-5"
-                  :aria-label="t('access.waiting', auth.waitingRequests)">{{ auth.waitingRequests }}</span>
           </RouterLink>
         </div>
         <button v-for="side in ['left', 'right']" v-show="moreTabs[side]" :key="side" type="button" tabindex="-1" aria-hidden="true"

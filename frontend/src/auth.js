@@ -5,7 +5,7 @@ import { cabinHeaders, cabinId, setAdminMode, setCabin } from './hytte'
 
 // Who is logged in. /api/auth/me says whether login is on (GOOGLE_CLIENT_ID on the server) and who you are.
 // Offline, the service worker (or the copy kept below) answers with the last known reply, so the app still opens at the cabin.
-// For the cabin on screen: { loginEnabled, googleEnabled, user, role, admin, adminMode, canManage, waitingRequests }
+// For the cabin on screen: { loginEnabled, googleEnabled, user, role, admin, adminMode, canManage }
 export const auth = ref(null)
 
 export const needsLogin = computed(() => !!auth.value?.loginEnabled && !auth.value.user)

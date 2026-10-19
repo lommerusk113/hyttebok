@@ -363,10 +363,6 @@
         "title": "Vedlikehold",
         "hint": "Kl. 08 når noe skal gjøres"
       },
-      "ACCESS": {
-        "title": "Forespørsler om tilgang",
-        "hint": "Når noen ber om tilgang til hytta"
-      },
       "FORUM": {
         "title": "Forumet",
         "hint": "Nye innlegg, og svar i tråder du er med i"
@@ -464,8 +460,7 @@
   "access": {
     "title": "Tilgang",
     "noAccessTitle": "Du har ikke tilgang til denne hytta",
-    "noAccessText": "Be eierne om en invitasjon eller koden til hytta, og bruk den under «Mine hytter».",
-    "messagePlaceholder": "Melding (valgfritt), f.eks. «Hei, det er Kari!»",
+    "noAccessText": "Be en eier av hytta om en invitasjonslenke.",
     "request": "Be om tilgang",
     "requestSent": "Forespørselen er sendt. En eier må godkjenne den.",
     "checkAgain": "Sjekk på nytt",
@@ -477,10 +472,6 @@
     "inviteInvalidHint": "Den er utløpt eller trukket tilbake. Be om en ny lenke, eller be om tilgang etter innlogging.",
     "toStart": "Til forsiden",
     "notAllowed": "Bare eiere og systemadministratorer kan styre tilgang.",
-    "requests": "Forespørsler",
-    "noRequests": "Ingen venter på svar.",
-    "approve": "Godkjenn",
-    "decline": "Avslå",
     "invites": "Invitasjonslenker",
     "newInvite": "Ny lenke",
     "invitesHint": "Del lenken (f.eks. i familiechatten). Den som åpner den og logger inn, blir medlem. Gjelder i 14 dager.",
@@ -513,14 +504,7 @@
     "copyLink": "Kopier lenken:",
     "resetLink": "Lenke for nytt passord",
     "resetShareTitle": "Nytt passord for {name}",
-    "waiting": "{n} venter på svar | {n} venter på svar",
     "grantSelf": "Gi meg tilgang som eier",
-    "code": "Kode for å be om tilgang",
-    "codeHint": "Den som har koden, kan be om tilgang under «Mine hytter». Dere godkjenner forespørselen her. Hytta vises aldri for andre.",
-    "codeCopied": "Koden er kopiert",
-    "newCode": "Ny kode",
-    "newCodeTitle": "Lage ny kode?",
-    "newCodeMessage": "Den gamle koden slutter å virke. Allerede sendte forespørsler beholdes.",
     "adminTools": "Systemadmin",
     "chatToggle": "KI-chat for denne hytta",
     "chatHint": "Alle med tilgang til hytta får chat-knappen. Bare systemadministratorer ser denne bryteren.",
@@ -546,16 +530,6 @@
     "title": "Mine hytter",
     "new": "Ny hytte",
     "none": "Du har ingen hytter ennå. Lag en ny, eller be om tilgang med koden til en hytte.",
-    "haveCode": "Har du en kode?",
-    "codeHint": "Eierne av en hytte kan gi deg koden. De får beskjed og godkjenner deg.",
-    "code": "Kode",
-    "codePlaceholder": "ABCD-2345",
-    "ask": "Be om tilgang",
-    "asked": "Forespørselen er sendt til eierne av {name}.",
-    "alreadyAsked": "Du har allerede bedt om tilgang til {name}. Venter på svar.",
-    "codeUnknown": "Fant ingen hytte med den koden. Sjekk at den er skrevet riktig.",
-    "tooManyCodes": "For mange feil koder. Prøv igjen om en time.",
-    "waitingFor": "Venter på svar fra {name}",
     "name": "Hva heter hytta?",
     "namePlaceholder": "F.eks. Fjellro",
     "newHint": "Gi den et navn. Du blir eier og kan invitere resten av familien.",
@@ -566,9 +540,7 @@
     "adminMode": "Adminmodus",
     "adminModeHint": "Se alle hytter, for feilsøking",
     "firstTitle": "Lag din første hytte",
-    "inviteHint": "Har du fått en invitasjonslenke fra noen? Åpne den, så kommer du rett inn i hytta deres.",
-    "codeInstead": "Har du en kode i stedet?",
-    "codeOtherCabin": "Har du en kode til en annen hytte?"
+    "inviteHint": "Har du fått en invitasjonslenke fra noen? Åpne den, så kommer du rett inn i hytta deres."
   },
   "done": {
     "title": "Utført: {task}",

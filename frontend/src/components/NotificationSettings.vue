@@ -1,15 +1,12 @@
 <script setup>
-import { computed, onMounted, onUnmounted, ref } from 'vue'
+import { onMounted, onUnmounted, ref } from 'vue'
 import Button from 'primevue/button'
 import ToggleSwitch from 'primevue/toggleswitch'
 import { needsInstall, permission, refreshPermission, sendTest, setTopics, supported, TOPICS, topics } from '../push'
 import { askName, userName } from '../user'
-import { auth } from '../auth'
 import { locale, t } from '../i18n'
 
 const busy = ref(false)
-// Access requests only matter to those who can answer them (owners and system admins).
-const shownTopics = computed(() => TOPICS.filter(x => x !== 'ACCESS' || auth.value?.canManage))
 const failed = ref(null) // 'pushService' when the browser can't reach its push server (e.g. Brave), else 'generic'
 const testSent = ref(false)
 
@@ -59,7 +56,7 @@ async function test() {
     <p class="mb-3 text-sm text-zinc-600">{{ t('push.intro') }}</p>
 
     <ul class="divide-y divide-zinc-100">
-      <li v-for="topic in shownTopics" :key="topic">
+      <li v-for="topic in TOPICS" :key="topic">
         <label class="flex min-h-14 cursor-pointer items-center gap-3 py-2">
           <span class="min-w-0 flex-1">
             <span class="block text-sm font-medium">{{ t(`push.topics.${topic}.title`) }}</span>

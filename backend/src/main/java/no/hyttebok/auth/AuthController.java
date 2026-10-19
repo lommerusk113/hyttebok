@@ -13,8 +13,6 @@ import io.micronaut.security.annotation.Secured;
 import io.micronaut.security.authentication.Authentication;
 import io.micronaut.security.rules.SecurityRule;
 import io.micronaut.serde.annotation.Serdeable;
-import no.hyttebok.access.AccessRequest;
-import no.hyttebok.access.AccessRequestRepository;
 import no.hyttebok.access.AccessService;
 import no.hyttebok.cabin.CabinContext;
 import no.hyttebok.cabin.CabinInfoRepository;
@@ -35,17 +33,15 @@ public class AuthController {
 
     private final LoginOffRule login;
     private final AccessService access;
-    private final AccessRequestRepository requests;
     private final AppUserRepository users;
     private final PasswordResetRepository resets;
     private final CabinInfoRepository cabins;
     private final boolean chatOn;
 
-    public AuthController(LoginOffRule login, AccessService access, AccessRequestRepository requests, AppUserRepository users, PasswordResetRepository resets,
+    public AuthController(LoginOffRule login, AccessService access, AppUserRepository users, PasswordResetRepository resets,
                           CabinInfoRepository cabins, @Value("${hyttebok.chat.api-key:}") String chatKey) {
         this.login = login;
         this.access = access;
-        this.requests = requests;
         this.users = users;
         this.resets = resets;
         this.cabins = cabins;
@@ -71,30 +67,29 @@ public class AuthController {
 
     /**
      * For the cabin the app is showing: {@code role} (OWNER, MEMBER or null = no access), {@code canManage} (owner,
-     * or admin in admin mode: the "Tilgang" tab) and {@code waitingRequests}. {@code admin}: may switch on admin mode.
+     * or admin in admin mode: the "Tilgang" tab). {@code admin}: may switch on admin mode.
      * {@code cabinDeleted}: the cabin was deleted (no access for its members; an admin can bring it back).
      */
     /** {@code googleEnabled}: show "Logg inn med Google" (GOOGLE_CLIENT_ID is set); email + password always works. */
     @Serdeable
     public record Me(boolean loginEnabled, boolean googleEnabled, @Nullable User user, @Nullable String role, boolean admin, boolean canManage,
-                     boolean adminMode, int waitingRequests, boolean chatEnabled, boolean cabinDeleted) {
+                     boolean adminMode, boolean chatEnabled, boolean cabinDeleted) {
     }
 
     @Get("/me")
     public Me me(@Nullable Authentication authentication) {
 
         if (authentication == null) {
-            return new Me(login.loginOn(), login.googleOn(), null, null, false, false, false, 0, !login.loginOn() && chatOn(CabinContext.current().orElse(null)), false);
+            return new Me(login.loginOn(), login.googleOn(), null, null, false, false, false, !login.loginOn() && chatOn(CabinContext.current().orElse(null)), false);
         }
         var attributes = authentication.getAttributes();
         var user = new User(String.valueOf(attributes.get("name")), String.valueOf(attributes.get("email")), String.valueOf(attributes.getOrDefault("picture", "")));
-        // Role, manage rights and waiting requests are for the cabin the app is showing (X-Hytte), if any.
+        // Role and manage rights are for the cabin the app is showing (X-Hytte), if any.
         var cabin = CabinContext.current();
         var role = access.role(authentication);
         var canManage = cabin.isPresent() && access.canManage(authentication);
-        var waiting = canManage ? requests.findByCabinIdAndStatusOrderByCreatedAt(cabin.get(), AccessRequest.PENDING).size() : 0;
 
-        return new Me(true, login.googleOn(), user, role, access.isAdmin(authentication), canManage, access.adminMode(authentication), waiting, chatOn(cabin.orElse(null)),
+        return new Me(true, login.googleOn(), user, role, access.isAdmin(authentication), canManage, access.adminMode(authentication), chatOn(cabin.orElse(null)),
             cabin.flatMap(cabins::findDeleted).orElse(false));
     }
 

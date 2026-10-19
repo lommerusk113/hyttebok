@@ -6,7 +6,7 @@ import { cabinHeaders, cabinId } from '../hytte'
 import { t } from '../i18n'
 
 // In a cabin you're not a member of (an old link, or access was removed). Ordinary users go back to their
-// own cabins (or ask with the cabin's code there); a system admin can give themselves access, or bring
+// own cabins (an owner can send them a new invitation link); a system admin can give themselves access, or bring
 // back a deleted cabin.
 const busy = ref(false)
 

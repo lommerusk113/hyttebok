@@ -21,7 +21,6 @@ import no.hyttebok.auth.PasswordReset;
 import no.hyttebok.auth.PasswordResetRepository;
 import no.hyttebok.cabin.CabinContext;
 import no.hyttebok.cabin.CabinInfoRepository;
-import no.hyttebok.cabin.JoinCodes;
 
 import java.security.SecureRandom;
 import java.time.Duration;
@@ -34,9 +33,8 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /**
- * Who has access to the cabin of the request: access requests, members and roles, invitation links and the
- * join code. Owners (and admins in admin mode) manage it. There is deliberately no list of all users or cabins:
- * people get in through an invitation link (straight in) or the join code (asks the owners).
+ * Who has access to the cabin of the request: members and roles, and invitation links. Owners (and admins in
+ * admin mode) manage it. People get in through an invitation link; there is no other way in.
  */
 @Controller("/api/access")
 @Secured(SecurityRule.IS_AUTHENTICATED)
@@ -50,20 +48,18 @@ public class AccessController {
     private final AppUserRepository users;
     private final MembershipRepository memberships;
     private final InvitationRepository invitations;
-    private final AccessRequestRepository requests;
     private final CabinInfoRepository cabins;
     private final PasswordResetRepository resets;
     private final boolean chatConfigured;
     private final SecureRandom random = new SecureRandom();
 
     public AccessController(AccessService access, AppUserRepository users, MembershipRepository memberships, InvitationRepository invitations,
-                            AccessRequestRepository requests, CabinInfoRepository cabins, PasswordResetRepository resets,
+                            CabinInfoRepository cabins, PasswordResetRepository resets,
                             @Value("${hyttebok.chat.api-key:}") String chatKey) {
         this.access = access;
         this.users = users;
         this.memberships = memberships;
         this.invitations = invitations;
-        this.requests = requests;
         this.cabins = cabins;
         this.resets = resets;
         this.chatConfigured = !chatKey.isBlank();
@@ -71,10 +67,6 @@ public class AccessController {
 
     @Serdeable
     public record Person(Long id, String name, String email, @Nullable String picture, @Nullable String role) {
-    }
-
-    @Serdeable
-    public record PendingRequest(Long id, Person user, @Nullable String message, Instant createdAt) {
     }
 
     @Serdeable
@@ -94,52 +86,12 @@ public class AccessController {
     }
 
     @Serdeable
-    public record Code(String code) {
-    }
-
-    @Serdeable
     public record ResetLink(String token, Instant expiresAt) {
     }
 
     /** {@code configured}: the server has an AI key (without one, the switch does nothing yet). */
     @Serdeable
     public record ChatSetting(boolean enabled, boolean configured) {
-    }
-
-    // ---- requests (made with the join code, see CabinsController) ----
-
-    @Get("/requests")
-    public List<PendingRequest> pending(Authentication auth) {
-
-        access.requireManager(auth);
-        var pending = requests.findByCabinIdAndStatusOrderByCreatedAt(CabinContext.require(), AccessRequest.PENDING);
-        var people = people(pending.stream().map(AccessRequest::userId).toList());
-
-        return pending.stream().filter(r -> people.containsKey(r.userId()))
-            .map(r -> new PendingRequest(r.id(), people.get(r.userId()), r.message(), r.createdAt())).toList();
-    }
-
-    @Post("/requests/{id}/approve")
-    public void approve(Authentication auth, Long id) {
-        decide(auth, id, "APPROVED");
-    }
-
-    @Post("/requests/{id}/deny")
-    public void deny(Authentication auth, Long id) {
-        decide(auth, id, "DENIED");
-    }
-
-    private void decide(Authentication auth, Long id, String status) {
-
-        access.requireManager(auth);
-        var cabin = CabinContext.require();
-        var request = requests.findById(id).filter(r -> r.cabinId().equals(cabin))
-            .orElseThrow(() -> new HttpStatusException(HttpStatus.NOT_FOUND, "No such request"));
-        requests.update(new AccessRequest(request.id(), request.cabinId(), request.userId(), request.message(), status, request.createdAt(),
-            AccessService.userId(auth), Instant.now()));
-        if ("APPROVED".equals(status)) {
-            join(request.userId(), cabin, Membership.MEMBER);
-        }
     }
 
     // ---- members ----
@@ -216,25 +168,6 @@ public class AccessController {
         return new ChatSetting(body.enabled(), chatConfigured);
     }
 
-    // ---- join code ----
-
-    @Get("/code")
-    public Code code(Authentication auth) {
-        access.requireManager(auth);
-        return new Code(JoinCodes.display(cabins.findJoinCode(CabinContext.require()).orElseThrow()));
-    }
-
-    /** A new code; the old one stops working (e.g. if it was shared too widely). */
-    @Post("/code")
-    public Code newCode(Authentication auth) {
-
-        access.requireManager(auth);
-        var code = JoinCodes.generate();
-        cabins.updateJoinCode(CabinContext.require(), code);
-
-        return new Code(JoinCodes.display(code));
-    }
-
     // ---- new password (no email service: the link is shared by hand) ----
 
     /** For members of this cabin: a one-time link to set a new password, valid for a day. */
@@ -307,8 +240,6 @@ public class AccessController {
             invitations.update(new Invitation(invite.id(), invite.cabinId(), invite.token(), invite.createdBy(), invite.createdAt(), invite.expiresAt(), false,
                 invite.uses() + 1));
         }
-        requests.findFirstByCabinIdAndUserIdAndStatus(invite.cabinId(), userId, AccessRequest.PENDING)
-            .ifPresent(r -> requests.update(new AccessRequest(r.id(), r.cabinId(), r.userId(), r.message(), "APPROVED", r.createdAt(), invite.createdBy(), Instant.now())));
 
         return new Accepted(invite.cabinId());
     }

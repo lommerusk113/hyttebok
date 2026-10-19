@@ -15,14 +15,12 @@ import { cabinId, setCabin } from '../hytte'
 import { colorFor, formatDate, initials } from '../utils'
 import { t } from '../i18n'
 
-// "Tilgang": requests to approve, invitation links, and members with their roles. There is no list of
-// everyone who has logged in: access is given through requests and invitations.
+// "Tilgang": invitation links, and members with their roles. There is no list of everyone who has logged in:
+// access is given through invitations.
 const confirm = useConfirm()
 const toast = useToast()
 const router = useRouter()
-const requests = ref([])
 const invites = ref([])
-const joinCode = ref('')
 const members = ref([])
 const loaded = ref(false)
 const chat = ref(null) // { enabled, configured }; only fetched for system admins
@@ -37,9 +35,7 @@ const ownerLock = m => m.role !== 'OWNER' ? null
     : ownerCount.value <= 1 ? 'access.ownerLast' : null
 
 async function load() {
-  let code
-  ;[requests.value, invites.value, members.value, code] = await Promise.all(['/access/requests', '/access/invites', '/access/members', '/access/code'].map(api.get))
-  joinCode.value = code.code
+  ;[invites.value, members.value] = await Promise.all(['/access/invites', '/access/members'].map(api.get))
   loaded.value = true
 }
 onMounted(load)
@@ -54,11 +50,6 @@ async function setChat(enabled) {
 // Your own access may have changed (e.g. you gave yourself access): refresh what the app lets you see.
 async function changed() {
   await Promise.all([load(), loadAuth()])
-}
-
-async function decide(request, approve) {
-  await api.post(`/access/requests/${request.id}/${approve ? 'approve' : 'deny'}`)
-  await changed()
 }
 
 async function createInvite() {
@@ -89,25 +80,6 @@ async function shareUrl(url, title) {
     // No clipboard (plain http, or the browser said no): show the link so it can be copied by hand.
     toast.add({ severity: 'info', summary: t('access.copyLink'), detail: url, life: 15000 })
   }
-}
-
-async function copyCode() {
-  try {
-    await navigator.clipboard.writeText(joinCode.value)
-    toast.add({ severity: 'success', summary: t('access.codeCopied'), life: 2000 })
-  } catch {
-    toast.add({ severity: 'info', summary: t('access.code'), detail: joinCode.value, life: 8000 })
-  }
-}
-
-function newCode() {
-  confirm.require({
-    header: t('access.newCodeTitle'),
-    message: t('access.newCodeMessage'),
-    acceptProps: { label: t('access.newCode') },
-    rejectProps: { label: t('common.cancel'), severity: 'secondary', text: true },
-    accept: async () => { joinCode.value = (await api.post('/access/code')).code },
-  })
 }
 
 async function revoke(invite) {
@@ -157,35 +129,6 @@ function deleteCabin() {
     <p v-if="!auth.canManage" class="rounded-lg bg-amber-50 p-4 text-sm text-amber-800">{{ t('access.notAllowed') }}</p>
 
     <template v-else-if="loaded">
-      <!-- Waiting for a yes or no -->
-      <DashCard :title="t('access.requests')" icon="pi pi-inbox" tint="bg-amber-50 text-amber-700" :count="requests.length" count-class="bg-amber-100 text-amber-800">
-        <ul v-if="requests.length" class="-mx-5 divide-y divide-zinc-100 border-t border-zinc-100">
-          <li v-for="r in requests" :key="r.id" class="flex flex-wrap items-center gap-3 px-5 py-3">
-            <Avatar :image="r.user.picture || undefined" :label="r.user.picture ? undefined : initials(r.user.name)" shape="circle" :class="[colorFor(r.user.name).bg, colorFor(r.user.name).text]" />
-            <span class="min-w-0 flex-1">
-              <span class="block font-medium">{{ r.user.name }}</span>
-              <span class="block truncate text-xs text-zinc-500">{{ r.user.email }} · {{ formatDate(r.createdAt) }}</span>
-              <span v-if="r.message" class="mt-1 block text-sm text-zinc-700">«{{ r.message }}»</span>
-            </span>
-            <span class="flex gap-2">
-              <Button :label="t('access.decline')" size="small" text severity="secondary" @click="decide(r, false)" />
-              <Button :label="t('access.approve')" icon="pi pi-check" size="small" @click="decide(r, true)" />
-            </span>
-          </li>
-        </ul>
-        <p v-else class="py-1 text-sm text-zinc-500">{{ t('access.noRequests') }}</p>
-      </DashCard>
-
-      <!-- The code people type under "Mine hytter" to ask for access (owners approve above) -->
-      <DashCard :title="t('access.code')" icon="pi pi-key" tint="bg-violet-50 text-violet-700">
-        <p class="mb-3 text-sm text-zinc-500">{{ t('access.codeHint') }}</p>
-        <div class="flex flex-wrap items-center gap-2">
-          <span class="rounded-lg bg-zinc-100 px-4 py-2 font-mono text-lg font-semibold tracking-widest">{{ joinCode }}</span>
-          <Button icon="pi pi-copy" :label="t('common.copy')" size="small" outlined severity="secondary" @click="copyCode" />
-          <Button icon="pi pi-refresh" :label="t('access.newCode')" size="small" text severity="secondary" @click="newCode" />
-        </div>
-      </DashCard>
-
       <!-- Links to share in the family chat -->
       <DashCard :title="t('access.invites')" icon="pi pi-link" tint="bg-sky-50 text-sky-700">
         <template #action>

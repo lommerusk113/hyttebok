@@ -108,7 +108,6 @@ public class DemoCabin {
             t("Steng vannet, tøm kjøleskapet og ta med søppelet. Sett varmen på 10 grader og lås nøkkelen inn i boksen igjen.",
                 "Turn off the water, empty the fridge and take the rubbish with you. Set the heating to 10 degrees and lock the key back in the box."),
             null, List.of(), 60.8623, 8.5532, 812.0, true));
-        cabins.updateJoinCode(cabin.id(), JoinCodes.generate());
         memberships.save(new Membership(null, ownerId, cabin.id(), Membership.OWNER, Instant.now()));
 
         CabinContext.runAs(cabin.id(), () -> fill(ownerName.split("\\s+")[0]));
