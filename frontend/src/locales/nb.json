@@ -440,7 +440,7 @@
     "wrongPassword": "Feil e-post eller passord. Etter 5 feil må du vente 15 minutter.",
     "offline": "Får ikke kontakt med serveren. Prøv igjen.",
     "forgot": "Glemt passordet?",
-    "forgotHint": "Be en eier av hytta om en lenke for nytt passord (under Tilgang).",
+    "forgotHint": "Be en eier av hytta om en lenke for nytt passord (under Tilgang), eller en systemadministrator.",
     "newPassword": "Velg nytt passord",
     "savePassword": "Lagre passord",
     "passwordSaved": "Passordet er lagret",
@@ -529,16 +529,15 @@
   "cabins": {
     "title": "Mine hytter",
     "new": "Ny hytte",
-    "none": "Du har ingen hytter ennå. Lag en ny, eller be om tilgang med koden til en hytte.",
+    "none": "Du har ingen hytter ennå. Lag en ny, eller åpne en invitasjonslenke fra noen.",
     "name": "Hva heter hytta?",
     "namePlaceholder": "F.eks. Fjellro",
     "newHint": "Gi den et navn. Du blir eier og kan invitere resten av familien.",
     "create": "Lag hytta",
-    "adminModeOn": "Adminmodus er på: du ser alle hyttene.",
     "deleted": "Slettet",
     "demo": "Lag testhytte",
     "adminMode": "Adminmodus",
-    "adminModeHint": "Se alle hytter, for feilsøking",
+    "adminModeHint": "Gå inn i alle hytter, for feilsøking",
     "firstTitle": "Lag din første hytte",
     "inviteHint": "Har du fått en invitasjonslenke fra noen? Åpne den, så kommer du rett inn i hytta deres."
   },
@@ -609,5 +608,55 @@
     "missing": "Siden finnes ikke lenger.",
     "pick": "Velg en side, eller lag en ny.",
     "deleteTitle": "Slette siden?"
+  },
+  "admin": {
+    "title": "Admin",
+    "cabins": "Hytter",
+    "users": "Brukere",
+    "notAllowed": "Bare systemadministratorer har tilgang hit.",
+    "search": {
+      "cabins": "Søk etter hytte, eier eller e-post",
+      "users": "Søk etter navn eller e-post"
+    },
+    "sortBy": "Sorter etter",
+    "sort": {
+      "active": "Sist aktiv",
+      "name": "Navn",
+      "members": "Flest medlemmer",
+      "created": "Nyeste først"
+    },
+    "filter": "Filter",
+    "filters": {
+      "ALL": "Alle",
+      "ACTIVE": "Aktive",
+      "INACTIVE": "Inaktive",
+      "EMPTY": "Uten eier",
+      "DELETED": "Slettet",
+      "GOOGLE": "Google",
+      "PASSWORD": "Passord",
+      "NONE": "Uten hytte"
+    },
+    "nothing": "Ingen treff.",
+    "shown": "Viser {from}–{to} av {total}",
+    "noOwner": "Ingen eier",
+    "members": "Medlemmer",
+    "lastActive": "Sist et medlem logget inn",
+    "never": "Aldri",
+    "created": "Opprettet",
+    "open": "Åpne",
+    "passwordBadge": "Passord",
+    "lastLogin": "Sist innlogget"
+  },
+  "profile": {
+    "title": "Min profil",
+    "since": "Bruker siden",
+    "noCabins": "Ingen hytter ennå.",
+    "current": "Nåværende passord",
+    "newPassword": "Nytt passord",
+    "wrongPassword": "Nåværende passord er feil.",
+    "changeHint": "Skriv det du har nå, og velg et nytt.",
+    "addHint": "Du logger inn med Google. Legg til et passord hvis du også vil logge inn med e-post og passord.",
+    "setHint": "Eller sett et nytt passord og fortell det til personen, f.eks. på telefon.",
+    "resetLinkHint": "Lag en lenke som du sender til personen, så velger de passordet selv. Lenken virker én gang, i ett døgn."
   }
 }

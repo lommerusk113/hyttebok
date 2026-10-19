@@ -17,8 +17,7 @@ import io.micronaut.serde.annotation.Serdeable;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Pattern;
 import no.hyttebok.auth.AppUserRepository;
-import no.hyttebok.auth.PasswordReset;
-import no.hyttebok.auth.PasswordResetRepository;
+import no.hyttebok.auth.Profiles;
 import no.hyttebok.cabin.CabinContext;
 import no.hyttebok.cabin.CabinInfoRepository;
 
@@ -41,7 +40,6 @@ import java.util.stream.Collectors;
 public class AccessController {
 
     private static final Duration INVITE_VALID = Duration.ofDays(14);
-    private static final Duration RESET_VALID = Duration.ofDays(1);
     private static final int TOKEN_BYTES = 18;
 
     private final AccessService access;
@@ -49,19 +47,19 @@ public class AccessController {
     private final MembershipRepository memberships;
     private final InvitationRepository invitations;
     private final CabinInfoRepository cabins;
-    private final PasswordResetRepository resets;
+    private final Profiles profiles;
     private final boolean chatConfigured;
     private final SecureRandom random = new SecureRandom();
 
     public AccessController(AccessService access, AppUserRepository users, MembershipRepository memberships, InvitationRepository invitations,
-                            CabinInfoRepository cabins, PasswordResetRepository resets,
+                            CabinInfoRepository cabins, Profiles profiles,
                             @Value("${hyttebok.chat.api-key:}") String chatKey) {
         this.access = access;
         this.users = users;
         this.memberships = memberships;
         this.invitations = invitations;
         this.cabins = cabins;
-        this.resets = resets;
+        this.profiles = profiles;
         this.chatConfigured = !chatKey.isBlank();
     }
 
@@ -83,10 +81,6 @@ public class AccessController {
 
     @Serdeable
     public record RoleBody(@Pattern(regexp = "OWNER|MEMBER") String role) {
-    }
-
-    @Serdeable
-    public record ResetLink(String token, Instant expiresAt) {
     }
 
     /** {@code configured}: the server has an AI key (without one, the switch does nothing yet). */
@@ -172,15 +166,14 @@ public class AccessController {
 
     /** For members of this cabin: a one-time link to set a new password, valid for a day. */
     @Post("/users/{userId}/password-reset")
-    public ResetLink passwordReset(Authentication auth, Long userId) {
+    public Profiles.ResetLink passwordReset(Authentication auth, Long userId) {
 
         access.requireManager(auth);
         if (!memberships.existsByUserIdAndCabinId(userId, CabinContext.require())) {
             throw new HttpStatusException(HttpStatus.NOT_FOUND, "Not a member");
         }
-        var reset = resets.save(new PasswordReset(token(), userId, AccessService.userId(auth), Instant.now().plus(RESET_VALID), false));
 
-        return new ResetLink(reset.token(), reset.expiresAt());
+        return profiles.resetLink(userId, AccessService.userId(auth));
     }
 
     // ---- invitations ----

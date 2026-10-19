@@ -81,7 +81,7 @@ public class AccessService {
         }
     }
 
-    void requireAdmin(Authentication authentication) {
+    public void requireAdmin(Authentication authentication) {
         if (!isAdmin(authentication)) {
             throw new HttpStatusException(HttpStatus.FORBIDDEN, "Only system admins can do this");
         }

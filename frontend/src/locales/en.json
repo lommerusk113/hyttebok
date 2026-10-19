@@ -440,7 +440,7 @@
     "wrongPassword": "Wrong email or password. After 5 failures you have to wait 15 minutes.",
     "offline": "Can't reach the server. Try again.",
     "forgot": "Forgot your password?",
-    "forgotHint": "Ask an owner of the cabin for a new-password link (under Access).",
+    "forgotHint": "Ask an owner of the cabin for a new-password link (under Access), or a system admin.",
     "newPassword": "Choose a new password",
     "savePassword": "Save password",
     "passwordSaved": "Your password is saved",
@@ -529,16 +529,15 @@
   "cabins": {
     "title": "My cabins",
     "new": "New cabin",
-    "none": "You don't have any cabins yet. Make a new one, or ask for access with a cabin's code.",
+    "none": "You don't have any cabins yet. Make one, or open an invitation link from someone.",
     "name": "What's the cabin called?",
     "namePlaceholder": "E.g. Fjellro",
     "newHint": "Give it a name. You'll be the owner and can invite the rest of the family.",
     "create": "Create cabin",
-    "adminModeOn": "Admin mode is on: you see every cabin.",
     "deleted": "Deleted",
     "demo": "Create test cabin",
     "adminMode": "Admin mode",
-    "adminModeHint": "See every cabin, for troubleshooting",
+    "adminModeHint": "Go into any cabin, for troubleshooting",
     "firstTitle": "Create your first cabin",
     "inviteHint": "Got an invitation link from someone? Open it and you go straight into their cabin."
   },
@@ -609,5 +608,55 @@
     "missing": "This page no longer exists.",
     "pick": "Pick a page, or make a new one.",
     "deleteTitle": "Delete this page?"
+  },
+  "admin": {
+    "title": "Admin",
+    "cabins": "Cabins",
+    "users": "Users",
+    "notAllowed": "Only system admins have access here.",
+    "search": {
+      "cabins": "Search for a cabin, owner or email",
+      "users": "Search for a name or email"
+    },
+    "sortBy": "Sort by",
+    "sort": {
+      "active": "Last active",
+      "name": "Name",
+      "members": "Most members",
+      "created": "Newest first"
+    },
+    "filter": "Filter",
+    "filters": {
+      "ALL": "All",
+      "ACTIVE": "Active",
+      "INACTIVE": "Inactive",
+      "EMPTY": "No owner",
+      "DELETED": "Deleted",
+      "GOOGLE": "Google",
+      "PASSWORD": "Password",
+      "NONE": "No cabin"
+    },
+    "nothing": "No matches.",
+    "shown": "Showing {from}–{to} of {total}",
+    "noOwner": "No owner",
+    "members": "Members",
+    "lastActive": "Last time a member logged in",
+    "never": "Never",
+    "created": "Created",
+    "open": "Open",
+    "passwordBadge": "Password",
+    "lastLogin": "Last login"
+  },
+  "profile": {
+    "title": "My profile",
+    "since": "Member since",
+    "noCabins": "No cabins yet.",
+    "current": "Current password",
+    "newPassword": "New password",
+    "wrongPassword": "The current password is wrong.",
+    "changeHint": "Type the one you have now, and choose a new one.",
+    "addHint": "You log in with Google. Add a password if you also want to log in with email and password.",
+    "setHint": "Or set a new password and tell it to the person, e.g. on the phone.",
+    "resetLinkHint": "Make a link to send them, so they choose the password themselves. It works once, for a day."
   }
 }

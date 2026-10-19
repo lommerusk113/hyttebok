@@ -46,8 +46,12 @@ const router = createRouter({
     { path: '/app', component: () => import('./pages/AppPage.vue') },
     { path: '/invitasjon/:token', component: () => import('./pages/InvitePage.vue') },
     { path: '/nytt-passord/:token', component: () => import('./pages/ResetPasswordPage.vue') },
-    // "Mine hytter": the cabins you belong to, a new cabin, and asking for access with a join code.
+    // "Mine hytter": the cabins you belong to, and a new cabin.
     { path: '/', component: () => import('./pages/CabinsPage.vue') },
+    { path: '/profil', component: () => import('./pages/ProfilePage.vue') },
+    // System admins: every cabin and user (/admin, /admin/brukere), and one user's profile.
+    { path: '/admin/brukere/:userId(\\d+)', component: () => import('./pages/ProfilePage.vue') },
+    { path: '/admin/:tab(brukere)?', component: () => import('./pages/AdminPage.vue') },
     // One cabin: /h/<id>/<tab>/<section>. The id (not the name: names needn't be unique) picks the cabin.
     { path: '/h/:cabinId(\\d+)/:tab(booking|hyttebok|vedlikehold|handleliste|forum|wiki|tilgang)?/:sub?', component: () => import('./pages/HomePage.vue') },
     // Links without a cabin (inside the app, and in notifications sent before there were several cabins)

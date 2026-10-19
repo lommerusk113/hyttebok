@@ -46,6 +46,15 @@ async function installNow() {
 
     <div class="my-2 border-t border-zinc-200" role="separator" />
 
+    <RouterLink v-if="auth?.user" to="/profil" class="row" @click="emit('close')">
+      <i class="pi pi-user row-icon" /><span class="flex-1">{{ t('profile.title') }}</span><i class="pi pi-chevron-right text-xs text-zinc-400" />
+    </RouterLink>
+    <RouterLink v-if="auth?.admin" to="/admin" class="row" @click="emit('close')">
+      <i class="pi pi-shield row-icon" /><span class="flex-1">{{ t('admin.title') }}</span><i class="pi pi-chevron-right text-xs text-zinc-400" />
+    </RouterLink>
+
+    <div class="my-2 border-t border-zinc-200" role="separator" />
+
     <!-- The cabin -->
     <RouterLink to="/?alle=1" class="row" @click="emit('close')">
       <i class="pi pi-home row-icon" /><span class="flex-1">{{ t('cabins.title') }}</span><i class="pi pi-chevron-right text-xs text-zinc-400" />

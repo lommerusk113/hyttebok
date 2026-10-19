@@ -14,7 +14,8 @@ Slik inviterer du noen:
 
 Innlogging:
 - Logg inn med Google, eller med e-post og passord.
-- Har du glemt passordet, kan en eier av hytta lage en lenke for nytt passord til deg under Tilgang → Medlemmer.
+- Har du glemt passordet, kan en eier av hytta lage en lenke for nytt passord til deg under Tilgang → Medlemmer, eller en systemadministrator kan hjelpe deg.
+- Under «Min profil» i menyen ser du kontoen og hyttene dine, og kan bytte passord (eller legge til et passord hvis du logger inn med Google).
 
 Slik installerer du appen på mobilen:
 - iPhone: Åpne siden i Safari, trykk Del-knappen nederst, velg «Legg til på Hjem-skjerm» og trykk «Legg til».

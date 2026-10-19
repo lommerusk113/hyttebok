@@ -56,7 +56,7 @@ public class CabinsController {
     public record DemoRequest(@Nullable String lang) {
     }
 
-    /** Your cabins with your role. Admins in admin mode see every cabin, the deleted ones too. */
+    /** Your cabins with your role (admins find every cabin in the admin console). */
     @Get
     public List<Cabin> mine(@Nullable Authentication auth) {
 
@@ -66,9 +66,6 @@ public class CabinsController {
                 .map(c -> summary(c, Membership.OWNER, false)).toList();
         }
         var roles = memberships.findByUserId(AccessService.userId(auth)).stream().collect(Collectors.toMap(Membership::cabinId, Membership::role));
-        if (access.adminMode(auth)) {
-            return cabins.listOrderByName().stream().map(c -> summary(c, roles.get(c.id()), deleted.contains(c.id()))).toList();
-        }
         roles.keySet().removeAll(deleted);
         if (roles.isEmpty()) {
             return List.of();
@@ -100,7 +97,7 @@ public class CabinsController {
     /** System admins: brings a deleted cabin back, as it was. */
     @Post("/{id}/restore")
     public void restore(Authentication auth, Long id) {
-        requireAdmin(auth);
+        access.requireAdmin(auth);
         cabins.updateDeleted(id, null, null);
     }
 
@@ -108,16 +105,10 @@ public class CabinsController {
     @Post("/demo")
     public Cabin createDemo(Authentication auth, @Body DemoRequest body) {
 
-        requireAdmin(auth);
+        access.requireAdmin(auth);
         var cabin = demo.create(AccessService.userId(auth), String.valueOf(auth.getAttributes().get("name")), body.lang());
 
         return summary(cabin, Membership.OWNER, false);
-    }
-
-    private void requireAdmin(Authentication auth) {
-        if (!access.isAdmin(auth)) {
-            throw new HttpStatusException(HttpStatus.FORBIDDEN, "Only system admins can do this");
-        }
     }
 
     private static Cabin summary(CabinInfo cabin, @Nullable String role, boolean deleted) {
