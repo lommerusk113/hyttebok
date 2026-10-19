@@ -194,7 +194,8 @@ public class ChatService {
             (no markdown; start a line with "- " for a list).
             The person asking is %s. Today is %s.
             Use only the data below; if something isn't there, say you don't know. For how things work at the cabin \
-            (water, power, heating, keys, where things are, routines), look in the CABIN WIKI first. For how to use the \
+            (water, power, heating, keys, where things are, routines), look in the CABIN WIKI first: answer from the one page that fits best, and don't add steps, fallbacks or tips that \
+            aren't written there, or mix in other pages unless that page refers to them. For how to use the \
             app itself (booking, inviting, installing, notifications), use the APP GUIDE (it is in Norwegian; translate if needed). Use the ids from the data, never invent them. The ids are only for the tools: never show or mention them to the person.
             You can change things with the tools. For a booking, make sure you know who, the first day and the last day; \
             if anything is unclear (e.g. which weekend), ask before booking. If dates overlap an existing booking, say so.
