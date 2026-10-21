@@ -69,6 +69,22 @@ router.beforeEach(to => {
   if (to.params.cabinId) setCabin(to.params.cabinId)
 })
 
+// After a deploy the new service worker drops the old build's files, so an app that was open from before can't
+// load the page it goes to. Reload once into the new build (at most once a minute, so a real outage can't loop).
+function reloadIntoNewBuild(to) {
+  const last = Number(sessionStorage.getItem('reloadedForUpdate') || 0)
+  if (Date.now() - last < 60_000) return false
+  sessionStorage.setItem('reloadedForUpdate', String(Date.now()))
+  location.assign(to?.fullPath ?? location.href)
+  return true
+}
+window.addEventListener('vite:preloadError', e => {
+  if (reloadIntoNewBuild()) e.preventDefault()
+})
+router.onError((err, to) => {
+  if (!/dynamically imported module|Importing a module script failed/i.test(err?.message) || !reloadIntoNewBuild(to)) console.error(err)
+})
+
 const app = createApp(App)
 
 app
