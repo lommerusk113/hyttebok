@@ -12,7 +12,9 @@ import { t } from '../i18n'
 // What's wrong is shown under the field it's about, checked here first and again by the server.
 const MIN_PASSWORD = 6
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-const mode = ref('login')
+// `initialMode`: 'signup' to open on "Lag konto" (the landing page's "Kom i gang").
+const props = defineProps({ initialMode: { type: String, default: 'login' } })
+const mode = ref(props.initialMode)
 const form = ref({ name: '', email: '', password: '' })
 const fieldErrors = ref({}) // name / email / password -> text key
 const error = ref(null) // about the whole form (wrong password, no connection)

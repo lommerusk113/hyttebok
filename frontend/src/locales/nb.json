@@ -784,5 +784,114 @@
     "thanks": "Takk for besøket!",
     "thanksText": "Du er sjekket ut av {cabin}. Skriv gjerne noen ord i hytteboka om oppholdet.",
     "writeLog": "Skriv i hytteboka"
+  },
+  "landing": {
+    "login": "Logg inn",
+    "start": "Kom i gang",
+    "startLong": "Lag hytta deres",
+    "loginTitle": "Logg inn",
+    "signupTitle": "Lag konto",
+    "eyebrow": "For familiehytta",
+    "title": "Hytta, samlet på ett sted.",
+    "subtitle": "Booking, hyttebok, handleliste og vedlikehold for hele familien – i én app som virker på mobil og PC, også uten dekning.",
+    "alt": {
+      "desktop": "Oversikten for en hytte i Hyttebok på PC",
+      "phone": "Hyttebok på mobilen: hvem som er på hytta nå, og info om hytta"
+    },
+    "featuresTitle": "Alt dere trenger for hytta",
+    "featuresText": "Slutt å lete i familiechatten. Alt om hytta ligger samlet, og alle med tilgang ser det samme.",
+    "features": {
+      "booking": {
+        "title": "Booking",
+        "text": "Se hvem som er på hytta når, med værmeldingen for hvert opphold."
+      },
+      "stay": {
+        "title": "Sjekk inn og ut",
+        "text": "En velkomst og en «kom i gang»-liste når du kommer, og en sjekkliste når du drar."
+      },
+      "logbook": {
+        "title": "Hytteboka",
+        "text": "Skriv om oppholdet og legg til bilder. Historien samles, år for år."
+      },
+      "shopping": {
+        "title": "Handleliste",
+        "text": "Det som er tomt havner på lista, så den neste som drar tar det med."
+      },
+      "maintenance": {
+        "title": "Vedlikehold",
+        "text": "Faste oppgaver med påminnelser, og hvem som tar hva."
+      },
+      "expenses": {
+        "title": "Utgifter",
+        "text": "Hvem har lagt ut for hva, og hvem skylder hvem."
+      },
+      "forum": {
+        "title": "Forum og hyttewiki",
+        "text": "Diskuter planer, og samle hvordan alt fungerer på hytta."
+      },
+      "offline": {
+        "title": "Virker uten dekning",
+        "text": "Installer appen på mobilen. Endringer sendes når du får nett igjen."
+      }
+    },
+    "spotlights": {
+      "stay": {
+        "eyebrow": "Sjekk inn og ut",
+        "title": "Fra du kommer til du låser døra.",
+        "text": "Når du sjekker inn, får du alt du trenger for å komme i gang. Når du drar, går du gjennom det som må gjøres – og de andre ser at hytta er stengt.",
+        "points": [
+          "Ankomst og avreise som sjekklister du krysser av",
+          "Kryss av oppgaver du fikk gjort mens du var der",
+          "Det som snart er tomt havner rett på handlelista"
+        ]
+      },
+      "calendar": {
+        "eyebrow": "Booking",
+        "title": "Ingen dobbeltbookinger i påska.",
+        "text": "Kalenderen viser hvem som har hytta når, så alle kan planlegge. Varsler når noen booker, og værmeldingen for oppholdet ditt.",
+        "points": [
+          "Varsel på mobilen når noen booker",
+          "Værmelding for hvert opphold",
+          "Se hvem som er på hytta akkurat nå"
+        ]
+      },
+      "expenses": {
+        "eyebrow": "Utgifter",
+        "title": "Strømregninga, uten regnestykket.",
+        "text": "Før opp hvem som har betalt hva. Del en utgift likt eller ujevnt, så regner appen ut hvem som skylder hvem.",
+        "points": [
+          "Del likt eller med egne beløp per person",
+          "Forslag til hvem som skal betale hvem",
+          "Se hvem som har lagt ut mest i år"
+        ]
+      },
+      "offline": {
+        "eyebrow": "Virker på hytta",
+        "title": "Dårlig dekning? Det går fint.",
+        "text": "Installer Hyttebok på hjemskjermen. Den åpner seg uten nett, og det du endrer sendes automatisk når du får dekning igjen.",
+        "points": [
+          "Fungerer på iPhone, Android og PC",
+          "Ingen app-butikk – åpne nettsiden og legg den til",
+          "Handlelista og sjekklista virker uten nett"
+        ]
+      }
+    },
+    "stepsTitle": "I gang på fem minutter",
+    "steps": [
+      {
+        "title": "Lag hytta",
+        "text": "Lag en konto, gi hytta et navn og legg inn det viktigste: ankomst, avreise og WiFi."
+      },
+      {
+        "title": "Inviter familien",
+        "text": "Del en invitasjonslenke i familiechatten. De som åpner den, er med med en gang."
+      },
+      {
+        "title": "Bruk den",
+        "text": "Book, skriv i hytteboka og hold orden på lister og oppgaver – sammen."
+      }
+    ],
+    "ctaTitle": "Klar for neste tur til hytta?",
+    "ctaText": "Lag hytta deres og inviter familien. Det tar fem minutter."
   }
 }

@@ -784,5 +784,114 @@
     "thanks": "Thanks for the visit!",
     "thanksText": "You've checked out of {cabin}. Do write a few words in the cabin book about the stay.",
     "writeLog": "Write in the cabin book"
+  },
+  "landing": {
+    "login": "Log in",
+    "start": "Get started",
+    "startLong": "Create your cabin",
+    "loginTitle": "Log in",
+    "signupTitle": "Create an account",
+    "eyebrow": "For the family cabin",
+    "title": "The cabin, all in one place.",
+    "subtitle": "Bookings, the cabin book, shopping and upkeep for the whole family – in one app that works on phone and computer, even without coverage.",
+    "alt": {
+      "desktop": "A cabin's overview in Hyttebok on a computer",
+      "phone": "Hyttebok on a phone: who's at the cabin now, and info about the cabin"
+    },
+    "featuresTitle": "Everything your cabin needs",
+    "featuresText": "Stop digging through the family chat. Everything about the cabin is in one place, and everyone with access sees the same.",
+    "features": {
+      "booking": {
+        "title": "Bookings",
+        "text": "See who's at the cabin when, with the weather forecast for every stay."
+      },
+      "stay": {
+        "title": "Check in and out",
+        "text": "A welcome and a getting-started list when you arrive, and a checklist when you leave."
+      },
+      "logbook": {
+        "title": "The cabin book",
+        "text": "Write about your stay and add photos. The story builds up, year by year."
+      },
+      "shopping": {
+        "title": "Shopping list",
+        "text": "What's run out goes on the list, so the next one going brings it."
+      },
+      "maintenance": {
+        "title": "Upkeep",
+        "text": "Recurring tasks with reminders, and who's doing what."
+      },
+      "expenses": {
+        "title": "Expenses",
+        "text": "Who paid for what, and who owes whom."
+      },
+      "forum": {
+        "title": "Forum and cabin wiki",
+        "text": "Discuss plans, and collect how everything works at the cabin."
+      },
+      "offline": {
+        "title": "Works without coverage",
+        "text": "Install the app on your phone. Changes are sent when you're back online."
+      }
+    },
+    "spotlights": {
+      "stay": {
+        "eyebrow": "Check in and out",
+        "title": "From arrival to locking the door.",
+        "text": "Checking in gives you everything you need to get started. When you leave, you go through what needs doing – and the others see the cabin is closed.",
+        "points": [
+          "Arrival and departure as checklists you tick off",
+          "Tick off tasks you got done while you were there",
+          "Whatever's running out goes straight on the shopping list"
+        ]
+      },
+      "calendar": {
+        "eyebrow": "Bookings",
+        "title": "No double bookings at Easter.",
+        "text": "The calendar shows who has the cabin when, so everyone can plan. Notifications when someone books, and the forecast for your stay.",
+        "points": [
+          "A notification on your phone when someone books",
+          "Weather forecast for every stay",
+          "See who's at the cabin right now"
+        ]
+      },
+      "expenses": {
+        "eyebrow": "Expenses",
+        "title": "The power bill, without the maths.",
+        "text": "Note who paid for what. Split an expense evenly or unevenly, and the app works out who owes whom.",
+        "points": [
+          "Split evenly or with amounts per person",
+          "Suggestions for who should pay whom",
+          "See who has paid the most this year"
+        ]
+      },
+      "offline": {
+        "eyebrow": "Works at the cabin",
+        "title": "Poor coverage? No problem.",
+        "text": "Add Hyttebok to your home screen. It opens without internet, and your changes are sent automatically when you're back in range.",
+        "points": [
+          "Works on iPhone, Android and computers",
+          "No app store – open the website and add it",
+          "The shopping list and checklist work offline"
+        ]
+      }
+    },
+    "stepsTitle": "Up and running in five minutes",
+    "steps": [
+      {
+        "title": "Create the cabin",
+        "text": "Make an account, name the cabin and add the essentials: arrival, departure and WiFi."
+      },
+      {
+        "title": "Invite the family",
+        "text": "Share an invitation link in the family chat. Whoever opens it is in straight away."
+      },
+      {
+        "title": "Use it",
+        "text": "Book, write in the cabin book and keep lists and tasks in order – together."
+      }
+    ],
+    "ctaTitle": "Ready for the next cabin trip?",
+    "ctaText": "Create your cabin and invite the family. It takes five minutes."
   }
 }

@@ -19,7 +19,9 @@ import { userName, askName } from './user'
 import { initials, colorFor } from './utils'
 import { locale, primeLocale, t } from './i18n'
 import { online, pending } from './offline'
+import LandingPage from './components/LandingPage.vue'
 import LoginPage from './components/LoginPage.vue'
+import { installed } from './install'
 import NoAccessPage from './components/NoAccessPage.vue'
 import { auth, authReady, loadAuth, needsLogin, noAccess } from './auth'
 import { cabinId } from './hytte'
@@ -111,6 +113,8 @@ function saveName(name = draftName.value) {
   <template v-if="!auth" />
   <!-- Invitation and new-password links work before login and before access: the pages handle both -->
   <main v-else-if="route.path.startsWith('/invitasjon/') || route.path.startsWith('/nytt-passord/')" class="px-4"><RouterView /></main>
+  <!-- The front page explains the app; the installed app (and deep links) go straight to logging in -->
+  <LandingPage v-else-if="needsLogin && route.path === '/' && !installed" />
   <LoginPage v-else-if="needsLogin && route.path !== '/app'" />
   <div v-else class="min-h-screen">
     <header class="sticky top-0 z-30 border-b border-zinc-200 bg-surface/85 text-zinc-950 backdrop-blur">
