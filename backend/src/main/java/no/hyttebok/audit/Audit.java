@@ -44,6 +44,7 @@ public class Audit {
     public static final String EXPORTED = "EXPORTED";
     public static final String GUEST_LINK_CREATED = "GUEST_LINK_CREATED";
     public static final String GUEST_LINK_REVOKED = "GUEST_LINK_REVOKED";
+    public static final String RESET_EMAIL = "RESET_EMAIL";
 
     private static final String SELECT = """
         SELECT e.*, c.name AS cabin_name, count(*) OVER () AS total

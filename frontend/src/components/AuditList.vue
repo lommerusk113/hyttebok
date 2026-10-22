@@ -8,7 +8,7 @@ defineProps({ events: { type: Array, required: true }, withCabin: Boolean })
 const ICON = {
   ROLE_CHANGED: 'pi-user-edit', MEMBER_REMOVED: 'pi-user-minus', MEMBER_LEFT: 'pi-sign-out', MEMBER_JOINED: 'pi-user-plus', ADMIN_JOINED: 'pi-shield',
   INVITE_CREATED: 'pi-link', INVITE_REVOKED: 'pi-times', CABIN_CREATED: 'pi-home', CABIN_DELETED: 'pi-trash', CABIN_RESTORED: 'pi-replay',
-  CHAT_CHANGED: 'pi-comments', GUEST_LINK_CREATED: 'pi-key', GUEST_LINK_REVOKED: 'pi-times', EXPORTED: 'pi-download', ACCOUNT_DELETED: 'pi-user-minus', RESET_LINK: 'pi-key', PASSWORD_SET: 'pi-key', PASSWORD_RESET: 'pi-key', RECOVERY_USED: 'pi-key', SIGNED_OUT_EVERYWHERE: 'pi-sign-out',
+  CHAT_CHANGED: 'pi-comments', GUEST_LINK_CREATED: 'pi-key', GUEST_LINK_REVOKED: 'pi-times', EXPORTED: 'pi-download', RESET_EMAIL: 'pi-envelope', ACCOUNT_DELETED: 'pi-user-minus', RESET_LINK: 'pi-key', PASSWORD_SET: 'pi-key', PASSWORD_RESET: 'pi-key', RECOVERY_USED: 'pi-key', SIGNED_OUT_EVERYWHERE: 'pi-sign-out',
 }
 
 function text(e) {

@@ -26,6 +26,13 @@ services:
       GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
       # System admins, comma-separated emails (e.g. you@gmail.com): manage access on the "Tilgang" page.
       ADMIN_EMAILS: ${ADMIN_EMAILS:-}
+      # Email (optional, any SMTP provider): password links and invitations. PUBLIC_URL goes into the links.
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USERNAME: ${SMTP_USERNAME:-}
+      SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+      MAIL_FROM: ${MAIL_FROM:-}
+      PUBLIC_URL: ${PUBLIC_URL:-}
     volumes:
       - uploads:/data/uploads
     depends_on:

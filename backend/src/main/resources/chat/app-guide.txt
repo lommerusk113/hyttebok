@@ -18,7 +18,7 @@ Slik inviterer du noen:
 
 Innlogging:
 - Logg inn med Google, eller med e-post og passord.
-- Har du glemt passordet: har du lagret gjenopprettingskoder, trykk «Glemt passordet?» på innloggingen og bruk en kode. Ellers kan en systemadministrator lage en lenke for nytt passord til deg.
+- Har du glemt passordet: trykk «Glemt passordet?» på innloggingen. Der kan du få en lenke på e-post (hvis appen sender e-post), eller bruke en gjenopprettingskode du har lagret. Ellers kan en systemadministrator lage en lenke for nytt passord til deg.
 - Under «Min profil» i menyen ser du kontoen og hyttene dine, og kan bytte passord (eller legge til et passord hvis du logger inn med Google).
 - Nytt passord logger deg ut på alle andre enheter. Under «Min profil» → Sikkerhet kan du også lage gjenopprettingskoder og «Logg ut overalt» (f.eks. hvis du har mistet telefonen).
 - Vil du ikke lenger være med i en hytte, trykk «Forlat hytta» ved hytta under «Min profil». Eneste eier må gjøre en annen til eier først.

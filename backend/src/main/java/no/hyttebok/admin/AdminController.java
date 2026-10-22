@@ -2,12 +2,14 @@ package no.hyttebok.admin;
 
 import io.micronaut.core.annotation.Nullable;
 import io.micronaut.data.jdbc.runtime.JdbcOperations;
+import io.micronaut.http.HttpStatus;
 import io.micronaut.http.annotation.Body;
 import io.micronaut.http.annotation.Controller;
 import io.micronaut.http.annotation.Get;
 import io.micronaut.http.annotation.Post;
 import io.micronaut.http.annotation.Put;
 import io.micronaut.http.annotation.QueryValue;
+import io.micronaut.http.exceptions.HttpStatusException;
 import io.micronaut.security.annotation.Secured;
 import io.micronaut.security.authentication.Authentication;
 import io.micronaut.security.rules.SecurityRule;
@@ -18,9 +20,12 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 import no.hyttebok.access.AccessService;
 import no.hyttebok.audit.Audit;
+import no.hyttebok.auth.AppUserRepository;
 import no.hyttebok.auth.Passwords;
 import no.hyttebok.auth.Profiles;
 import no.hyttebok.chat.ChatBudget;
+import no.hyttebok.mail.Links;
+import no.hyttebok.mail.Mailer;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -115,13 +120,20 @@ public class AdminController {
     private final Profiles profiles;
     private final ChatBudget budget;
     private final Audit audit;
+    private final Mailer mailer;
+    private final Links links;
+    private final AppUserRepository users;
 
-    public AdminController(JdbcOperations jdbc, AccessService access, Profiles profiles, ChatBudget budget, Audit audit) {
+    public AdminController(JdbcOperations jdbc, AccessService access, Profiles profiles, ChatBudget budget, Audit audit, Mailer mailer, Links links,
+                           AppUserRepository users) {
         this.jdbc = jdbc;
         this.access = access;
         this.profiles = profiles;
         this.budget = budget;
         this.audit = audit;
+        this.mailer = mailer;
+        this.links = links;
+        this.users = users;
     }
 
     /** {@code counts}: how many match the search for each filter (ALL, ACTIVE, ... for cabins; ALL, GOOGLE, ... for users). */
@@ -265,6 +277,22 @@ public class AdminController {
         audit.log(null, auth, Audit.RESET_LINK, id, null);
 
         return profiles.resetLink(id, AccessService.userId(auth));
+    }
+
+    /** The same one-time link, sent to the user's email (when email is set up). */
+    @Post("/users/{id}/password-reset-email")
+    public void resetLinkByEmail(Authentication auth, Long id) {
+
+        access.requireAdmin(auth);
+        if (!mailer.enabled()) {
+            throw new HttpStatusException(HttpStatus.NOT_FOUND, "Email is not set up");
+        }
+        var user = users.findById(id).orElseThrow(() -> new HttpStatusException(HttpStatus.NOT_FOUND, "No such user"));
+        var link = links.to("/nytt-passord/" + profiles.resetLink(id, AccessService.userId(auth)).token());
+        mailer.send(user.email(), "Nytt passord til Hyttebok / New password for Hyttebok",
+            "Hei! Her er en lenke for å velge nytt passord til Hyttebok. Den virker én gang, i 24 timer:\n\n" + link
+                + "\n\nHi! Here's a link to choose a new password for Hyttebok. It works once, for 24 hours.\n");
+        audit.log(null, auth, Audit.RESET_EMAIL, id, null);
     }
 
     /** For helping someone on the phone: the admin picks the password and tells them. */

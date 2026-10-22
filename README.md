@@ -36,6 +36,21 @@ Forgotten password (there is no email service): a recovery code saved earlier on
 *new password* link made by a system admin (on the user's page in the admin console).
 Admins must log in with Google at least once: a password account doesn't prove the email is theirs.
 
+## Email (optional)
+
+Without email, forgotten passwords go through recovery codes or an admin. With it, people get a "send me a link"
+button, owners can send invitations by email, and admins can email reset links. Any SMTP provider works; put this
+in `.env` (port 465 = SSL, otherwise STARTTLS) and set up SPF/DKIM for the sender's domain with the provider:
+
+```
+SMTP_HOST=smtp-relay.example.com
+SMTP_PORT=587
+SMTP_USERNAME=...
+SMTP_PASSWORD=...
+MAIL_FROM=hyttebok@your-domain.no
+PUBLIC_URL=https://your-domain.no
+```
+
 ## AI chat
 
 Set `OPENAI_API_KEY`, then a system admin switches the chat on per cabin (*Tilgang*). Each cabin may use $1 a month

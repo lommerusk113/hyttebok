@@ -478,7 +478,11 @@
     "codeMissing": "Skriv e-posten din over og en gjenopprettingskode.",
     "codeWrong": "Koden passer ikke til denne e-posten, eller er brukt før.",
     "termsBefore": "Ved å lage konto godtar du",
-    "termsLink": "vilkårene og personvernerklæringen"
+    "termsLink": "vilkårene og personvernerklæringen",
+    "emailHint": "Skriv e-posten din over, så sender vi en lenke for å velge nytt passord.",
+    "emailLink": "Send meg en lenke",
+    "emailSent": "Hvis det finnes en konto for {email}, har vi sendt en lenke dit. Sjekk også søppelposten.",
+    "orCode": "Eller med en gjenopprettingskode"
   },
   "access": {
     "title": "Tilgang",
@@ -557,7 +561,12 @@
     "guestFor": "Hvem er den for?",
     "guestForPlaceholder": "F.eks. Familien Hansen",
     "guestLastDay": "Siste dag lenken virker",
-    "guestShows": "Gjesten ser bare forsidebildet og kortene for ankomst, WiFi, nøkler, adresse og avreise (de dere ikke har skjult)."
+    "guestShows": "Gjesten ser bare forsidebildet og kortene for ankomst, WiFi, nøkler, adresse og avreise (de dere ikke har skjult).",
+    "inviteEmail": "Send til e-post (valgfritt)",
+    "inviteEmailPlaceholder": "navn{'@'}eksempel.no",
+    "inviteEmailHint": "Vi sender lenken dit. En lenke på e-post virker bare én gang.",
+    "sendInvite": "Send invitasjon",
+    "inviteEmailed": "Invitasjonen er sendt til {email}"
   },
   "checklist": {
     "title": "Sjekkliste",
@@ -758,7 +767,9 @@
     "deleteTitle": "Slette kontoen?",
     "deleteMessage": "Kontoen din slettes for godt. Hytter der bare du er med, slettes med alt innhold. I hytter du deler med andre blir det du har skrevet stående.",
     "deleteLastOwner": "Du er eneste eier av en hytte andre er med i. Gjør en annen til eier først (under Tilgang).",
-    "deleteHint": "Sletter kontoen og hytter der bare du er med. Les mer i"
+    "deleteHint": "Sletter kontoen og hytter der bare du er med. Les mer i",
+    "resetEmail": "Send på e-post",
+    "resetEmailed": "Lenken er sendt til {email}"
   },
   "audit": {
     "title": "Endringslogg",
@@ -784,7 +795,8 @@
     "ACCOUNT_DELETED": "{actor} slettet kontoen sin",
     "EXPORTED": "{actor} lastet ned en kopi av hytta",
     "GUEST_LINK_CREATED": "{actor} lagde en gjestelenke for {detail}",
-    "GUEST_LINK_REVOKED": "{actor} trakk tilbake gjestelenken for {detail}"
+    "GUEST_LINK_REVOKED": "{actor} trakk tilbake gjestelenken for {detail}",
+    "RESET_EMAIL": "En lenke for nytt passord ble sendt på e-post til {target}"
   },
   "expenses": {
     "title": "Utgifter",

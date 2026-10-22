@@ -5,7 +5,7 @@ import InputText from 'primevue/inputtext'
 import Password from 'primevue/password'
 import SelectButton from 'primevue/selectbutton'
 import { auth, login } from '../auth'
-import { t } from '../i18n'
+import { locale, t } from '../i18n'
 
 // Log in or sign up with email + password, or with Google (when it's set up). Used on the login page and on
 // invitation links. A new account starts without access, like a first Google login.
@@ -22,6 +22,24 @@ const busy = ref(false)
 const showForgot = ref(false)
 const code = ref('')
 const codeError = ref(null)
+const emailSent = ref(false)
+
+// Forgot the password, with email set up on the server: a one-time link to the address typed above.
+async function emailLink() {
+  codeError.value = null
+  const email = form.value.email.trim()
+  if (!EMAIL.test(email)) {
+    codeError.value = 'login.errors.emailInvalid'
+    return
+  }
+  try {
+    const res = await fetch('/api/auth/forgot', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email, lang: locale.value }) })
+    if (!res.ok) throw new Error(res.status)
+    emailSent.value = true
+  } catch {
+    codeError.value = 'login.offline'
+  }
+}
 
 // Forgot the password: a recovery code saved on "Min profil" opens the one-time new-password page.
 async function recover() {
@@ -168,6 +186,14 @@ async function submit() {
       <template v-if="mode === 'login'">
         <button type="button" class="min-h-11 text-sm text-zinc-500 underline-offset-4 hover:underline" @click="showForgot = !showForgot">{{ t('login.forgot') }}</button>
         <div v-if="showForgot" class="flex flex-col gap-3 rounded-lg bg-zinc-50 p-4">
+          <template v-if="auth?.emailEnabled">
+            <p v-if="emailSent" class="rounded-lg bg-emerald-50 p-3 text-sm text-emerald-800" role="status">{{ t('login.emailSent', { email: form.email.trim() }) }}</p>
+            <template v-else>
+              <p class="text-sm text-zinc-600">{{ t('login.emailHint') }}</p>
+              <Button type="button" :label="t('login.emailLink')" icon="pi pi-envelope" @click="emailLink" />
+            </template>
+            <p class="border-t border-zinc-200 pt-3 text-xs font-medium uppercase tracking-wider text-zinc-500">{{ t('login.orCode') }}</p>
+          </template>
           <p class="text-sm text-zinc-600">{{ t('login.forgotHint') }}</p>
           <label class="flex flex-col gap-1.5 text-sm font-medium">{{ t('login.recoveryCode') }}
             <InputText v-model="code" autocomplete="one-time-code" autocapitalize="off" spellcheck="false" class="font-mono" :invalid="!!codeError" @keydown.enter.prevent="recover" />

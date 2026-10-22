@@ -111,12 +111,12 @@ public class CabinsController {
         audit.log(id, auth, Audit.CABIN_DELETED, null, null);
     }
 
-    /** The example cabin for the landing page ("Se en eksempelhytte"), if a system admin picked one. */
+    /** The example cabin for the landing page ("Se en eksempelhytte"), if a system admin picked one (else 204, no content). */
     @Get("/example")
     @Secured(SecurityRule.IS_ANONYMOUS)
     public HttpResponse<Example> example() {
         return cabins.findExampleId().flatMap(cabins::findById).map(c -> HttpResponse.ok(new Example(c.id(), c.name())))
-            .orElse(HttpResponse.notFound());
+            .orElse(HttpResponse.noContent());
     }
 
     /** System admins: makes this cabin the example anyone can read without logging in (or stops it being one). */

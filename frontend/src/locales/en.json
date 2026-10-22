@@ -478,7 +478,11 @@
     "codeMissing": "Type your email above and a recovery code.",
     "codeWrong": "The code doesn't match this email, or was used before.",
     "termsBefore": "By creating an account you accept",
-    "termsLink": "the terms and privacy policy"
+    "termsLink": "the terms and privacy policy",
+    "emailHint": "Type your email above and we'll send a link to choose a new password.",
+    "emailLink": "Send me a link",
+    "emailSent": "If there's an account for {email}, we've sent a link there. Check the spam folder too.",
+    "orCode": "Or with a recovery code"
   },
   "access": {
     "title": "Access",
@@ -557,7 +561,12 @@
     "guestFor": "Who is it for?",
     "guestForPlaceholder": "E.g. the Hansen family",
     "guestLastDay": "Last day the link works",
-    "guestShows": "The guest only sees the cover photo and the cards for arrival, WiFi, keys, address and departure (those you haven't hidden)."
+    "guestShows": "The guest only sees the cover photo and the cards for arrival, WiFi, keys, address and departure (those you haven't hidden).",
+    "inviteEmail": "Send to email (optional)",
+    "inviteEmailPlaceholder": "name{'@'}example.com",
+    "inviteEmailHint": "We'll send the link there. A link sent by email only works once.",
+    "sendInvite": "Send invitation",
+    "inviteEmailed": "The invitation was sent to {email}"
   },
   "checklist": {
     "title": "Checklist",
@@ -758,7 +767,9 @@
     "deleteTitle": "Delete your account?",
     "deleteMessage": "Your account is deleted for good. Cabins where you're the only member are deleted with everything in them. In cabins you share, what you wrote stays.",
     "deleteLastOwner": "You're the only owner of a cabin others are in. Make someone else owner first (under Access).",
-    "deleteHint": "Deletes your account and cabins where you're the only member. Read more in"
+    "deleteHint": "Deletes your account and cabins where you're the only member. Read more in",
+    "resetEmail": "Send by email",
+    "resetEmailed": "The link was sent to {email}"
   },
   "audit": {
     "title": "Change log",
@@ -784,7 +795,8 @@
     "ACCOUNT_DELETED": "{actor} deleted their account",
     "EXPORTED": "{actor} downloaded a copy of the cabin",
     "GUEST_LINK_CREATED": "{actor} made a guest link for {detail}",
-    "GUEST_LINK_REVOKED": "{actor} revoked the guest link for {detail}"
+    "GUEST_LINK_REVOKED": "{actor} revoked the guest link for {detail}",
+    "RESET_EMAIL": "A new-password link was emailed to {target}"
   },
   "expenses": {
     "title": "Expenses",

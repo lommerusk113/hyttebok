@@ -8,7 +8,7 @@ const router = useRouter()
 
 onMounted(async () => {
   const res = await fetch('/api/cabins/example').catch(() => null)
-  if (!res?.ok) return router.replace('/')
+  if (res?.status !== 200) return router.replace('/')
   const { id } = await res.json()
   enterExample(id)
   router.replace(`/h/${id}`)

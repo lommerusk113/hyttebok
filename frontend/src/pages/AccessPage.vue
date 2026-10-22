@@ -19,7 +19,7 @@ import { cabin } from '../cabin'
 import { cabinId, setCabin } from '../hytte'
 import { colorFor, formatDate, initials } from '../utils'
 import { parseIsoDate, toIsoDate } from '../dates'
-import { t } from '../i18n'
+import { locale, t } from '../i18n'
 
 // "Tilgang": invitation links, and members with their roles. There is no list of everyone who has logged in:
 // access is given through invitations.
@@ -65,10 +65,12 @@ async function changed() {
 }
 
 async function createInvite() {
-  const invite = await api.post('/access/invites', inviteForm.value)
+  const email = inviteForm.value.email?.trim()
+  const invite = await api.post('/access/invites', { ...inviteForm.value, email: email || null, lang: locale.value })
   inviteForm.value = null
   await load()
-  share(invite)
+  if (email) toast.add({ severity: 'success', summary: t('access.inviteEmailed', { email }), life: 4000 })
+  else share(invite)
 }
 
 const guestUrl = token => `${location.origin}/gjest/${token}`
@@ -308,14 +310,18 @@ function deleteCabin() {
           <Select v-model="inviteForm.role" :options="ROLES" option-label="label" option-value="value" />
           <span class="text-xs font-normal text-zinc-500">{{ inviteForm.role === 'OWNER' ? t('access.inviteOwnerHint') : t('access.inviteMemberHint') }}</span>
         </label>
-        <label class="flex cursor-pointer items-start gap-3">
+        <label v-if="auth.emailEnabled" class="flex flex-col gap-1.5 text-sm font-medium">{{ t('access.inviteEmail') }}
+          <InputText v-model="inviteForm.email" type="email" inputmode="email" autocomplete="off" :placeholder="t('access.inviteEmailPlaceholder')" />
+          <span class="text-xs font-normal text-zinc-500">{{ t('access.inviteEmailHint') }}</span>
+        </label>
+        <label v-if="!inviteForm.email?.trim()" class="flex cursor-pointer items-start gap-3">
           <Checkbox v-model="inviteForm.singleUse" binary class="mt-0.5" />
           <span class="text-sm"><span class="block font-medium">{{ t('access.singleUseLabel') }}</span><span class="block text-xs text-zinc-500">{{ t('access.singleUseHint') }}</span></span>
         </label>
       </div>
       <template #footer>
         <Button :label="t('common.cancel')" text severity="secondary" @click="inviteForm = null" />
-        <Button :label="t('access.makeLink')" icon="pi pi-link" @click="createInvite" />
+        <Button :label="inviteForm?.email?.trim() ? t('access.sendInvite') : t('access.makeLink')" :icon="inviteForm?.email?.trim() ? 'pi pi-send' : 'pi pi-link'" @click="createInvite" />
       </template>
     </Dialog>
   </div>

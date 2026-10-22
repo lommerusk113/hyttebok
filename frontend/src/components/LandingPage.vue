@@ -19,7 +19,7 @@ if (params.has('logginn')) formMode.value = 'login'
 const example = ref(null)
 onMounted(async () => {
   const res = await fetch('/api/cabins/example').catch(() => null)
-  if (res?.ok) example.value = await res.json()
+  if (res?.status === 200) example.value = await res.json()
 })
 
 const FEATURES = [

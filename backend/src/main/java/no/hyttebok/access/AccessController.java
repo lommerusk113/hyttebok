@@ -16,12 +16,16 @@ import io.micronaut.security.authentication.Authentication;
 import io.micronaut.security.rules.SecurityRule;
 import io.micronaut.serde.annotation.Serdeable;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.Size;
 import no.hyttebok.audit.Audit;
 import no.hyttebok.auth.AppUserRepository;
 import no.hyttebok.cabin.CabinContext;
 import no.hyttebok.cabin.CabinInfoRepository;
 import no.hyttebok.chat.ChatBudget;
+import no.hyttebok.mail.Links;
+import no.hyttebok.mail.Mailer;
 import no.hyttebok.push.Notifier;
 
 import java.io.IOException;
@@ -57,11 +61,13 @@ public class AccessController {
     private final ChatBudget budget;
     private final Notifier notifier;
     private final CabinExport exporter;
+    private final Mailer mailer;
+    private final Links links;
     private final boolean chatConfigured;
     private final SecureRandom random = new SecureRandom();
 
     public AccessController(AccessService access, AppUserRepository users, MembershipRepository memberships, InvitationRepository invitations,
-                            CabinInfoRepository cabins, Audit audit, ChatBudget budget, Notifier notifier, CabinExport exporter,
+                            CabinInfoRepository cabins, Audit audit, ChatBudget budget, Notifier notifier, CabinExport exporter, Mailer mailer, Links links,
                             @Value("${hyttebok.chat.api-key:}") String chatKey) {
         this.access = access;
         this.users = users;
@@ -72,6 +78,8 @@ public class AccessController {
         this.budget = budget;
         this.notifier = notifier;
         this.exporter = exporter;
+        this.mailer = mailer;
+        this.links = links;
         this.chatConfigured = !chatKey.isBlank();
     }
 
@@ -84,8 +92,10 @@ public class AccessController {
     public record Invite(Long id, String token, @Nullable String createdBy, Instant expiresAt, int uses, String role, boolean singleUse) {
     }
 
+    /** {@code email}: also send the link there (then it works once). {@code lang}: the email's language. */
     @Serdeable
-    public record NewInvite(@Nullable @Pattern(regexp = "OWNER|MEMBER") String role, boolean singleUse) {
+    public record NewInvite(@Nullable @Pattern(regexp = "OWNER|MEMBER") String role, boolean singleUse, @Nullable @Email @Size(max = 200) String email,
+                            @Nullable String lang) {
     }
 
     @Serdeable
@@ -250,11 +260,15 @@ public class AccessController {
 
         access.requireManager(auth);
         var role = body == null || body.role() == null ? Membership.MEMBER : body.role();
-        var singleUse = body != null && body.singleUse();
+        var email = body == null || body.email() == null || body.email().isBlank() || !mailer.enabled() ? null : body.email().trim();
+        var singleUse = email != null || body != null && body.singleUse();
         var now = Instant.now();
         var saved = invitations.save(new Invitation(null, CabinContext.require(), token(), AccessService.userId(auth), now, now.plus(INVITE_VALID), false, 0,
             role, singleUse ? 1 : null));
         audit.log(saved.cabinId(), auth, Audit.INVITE_CREATED, null, Membership.OWNER.equals(role) ? role : null);
+        if (email != null) {
+            mailInvite(email, String.valueOf(auth.getAttributes().get("name")), saved, "en".equals(body.lang()));
+        }
 
         return new Invite(saved.id(), saved.token(), String.valueOf(auth.getAttributes().get("name")), saved.expiresAt(), 0, role, singleUse);
     }
@@ -297,6 +311,17 @@ public class AccessController {
         }
 
         return new Accepted(invite.cabinId());
+    }
+
+    private void mailInvite(String email, String from, Invitation invite, boolean en) {
+
+        var cabin = cabins.findById(invite.cabinId()).map(c -> c.name()).orElse("Hyttebok");
+        var link = links.to("/invitasjon/" + invite.token());
+        mailer.send(email, en ? from + " invited you to " + cabin : from + " har invitert deg til " + cabin, en
+            ? "Hi!\n\n" + from + " has invited you to " + cabin + " in Hyttebok, where you book the cabin, write in the cabin book and keep the lists together.\n\n"
+                + "Open the link and log in or create an account:\n\n" + link + "\n\nThe link works once, for 14 days.\n"
+            : "Hei!\n\n" + from + " har invitert deg til " + cabin + " i Hyttebok, der dere booker hytta, skriver i hytteboka og holder orden på listene sammen.\n\n"
+                + "Åpne lenken og logg inn eller lag en konto:\n\n" + link + "\n\nLenken virker én gang, i 14 dager.\n");
     }
 
     /** Not expired or revoked, and its cabin isn't deleted. */

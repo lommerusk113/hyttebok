@@ -127,7 +127,12 @@ function logOutEverywhere() {
   })
 }
 
-// No email service: the admin sends the link themselves (chat, SMS).
+async function emailResetLink() {
+  await api.post(`/admin/users/${userId.value}/password-reset-email`)
+  toast.add({ severity: 'success', summary: t('profile.resetEmailed', { email: profile.value.email }), life: 4000 })
+}
+
+// Without email: the admin sends the link themselves (chat, SMS).
 async function resetLink() {
   const reset = await api.post(`/admin/users/${userId.value}/password-reset`)
   const url = `${location.origin}/nytt-passord/${reset.token}`
@@ -197,6 +202,7 @@ const ROLE = { OWNER: 'access.roles.OWNER', MEMBER: 'access.roles.MEMBER' }
       <DashCard :title="t('login.password')" icon="pi pi-key" tint="bg-violet-50 text-violet-700">
         <div v-if="asAdmin" class="mb-4 flex flex-wrap items-center gap-3 border-b border-zinc-100 pb-4">
           <p class="min-w-0 flex-1 text-sm text-zinc-500">{{ t('profile.resetLinkHint') }}</p>
+          <Button v-if="auth?.emailEnabled" :label="t('profile.resetEmail')" icon="pi pi-envelope" size="small" outlined @click="emailResetLink" />
           <Button :label="t('access.resetLink')" icon="pi pi-link" size="small" outlined @click="resetLink" />
         </div>
         <p class="mb-3 text-sm text-zinc-500">
