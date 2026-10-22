@@ -1,5 +1,5 @@
 <script setup>
-import { ref } from 'vue'
+import { onMounted, ref } from 'vue'
 import Button from 'primevue/button'
 import Dialog from 'primevue/dialog'
 import LanguageToggle from './LanguageToggle.vue'
@@ -9,8 +9,18 @@ import { t } from '../i18n'
 // The front page for visitors who aren't logged in: what Hyttebok is, with screenshots from a test cabin
 // (public/landing). "Kom i gang" opens sign-up, "Logg inn" the login form; both in a dialog over the page.
 const formMode = ref(null) // 'signup' | 'login' | null
-const failed = new URLSearchParams(location.search).get('login') === 'failed'
+const params = new URLSearchParams(location.search)
+const failed = params.get('login') === 'failed'
 if (failed) formMode.value = 'login'
+if (params.has('signup')) formMode.value = 'signup' // "Lag din egen hytte" from the example cabin
+if (params.has('logginn')) formMode.value = 'login'
+
+// "Se en eksempelhytte" only when a system admin has picked one.
+const example = ref(null)
+onMounted(async () => {
+  const res = await fetch('/api/cabins/example').catch(() => null)
+  if (res?.ok) example.value = await res.json()
+})
 
 const FEATURES = [
   { key: 'booking', icon: 'pi pi-calendar', tint: 'bg-sky-50 text-sky-700' },
@@ -60,7 +70,10 @@ const SPOTLIGHTS = [
           <p class="mx-auto mt-5 max-w-2xl text-pretty text-lg text-zinc-600 sm:text-xl">{{ t('landing.subtitle') }}</p>
           <div class="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
             <Button :label="t('landing.startLong')" icon="pi pi-arrow-right" icon-pos="right" size="large" class="w-full sm:w-auto" @click="formMode = 'signup'" />
-            <Button :label="t('landing.login')" size="large" severity="secondary" outlined class="w-full sm:w-auto" @click="formMode = 'login'" />
+            <RouterLink v-if="example" to="/eksempel" class="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-md border border-zinc-300 px-5 font-medium transition hover:border-zinc-400 hover:bg-surface sm:w-auto">
+              <i class="pi pi-eye text-sm" />{{ t('landing.example') }}
+            </RouterLink>
+            <Button v-else :label="t('landing.login')" size="large" severity="secondary" outlined class="w-full sm:w-auto" @click="formMode = 'login'" />
           </div>
         </div>
 
@@ -140,8 +153,13 @@ const SPOTLIGHTS = [
         <div class="mx-auto max-w-3xl px-4 py-24 text-center text-white">
           <h2 class="text-balance text-3xl font-semibold tracking-tight sm:text-5xl">{{ t('landing.ctaTitle') }}</h2>
           <p class="mx-auto mt-4 max-w-xl text-lg text-white/80">{{ t('landing.ctaText') }}</p>
-          <Button :label="t('landing.startLong')" icon="pi pi-arrow-right" icon-pos="right" size="large" severity="contrast"
-                  class="mt-8 !bg-white !text-zinc-950 hover:!bg-zinc-100" @click="formMode = 'signup'" />
+          <div class="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
+            <Button :label="t('landing.startLong')" icon="pi pi-arrow-right" icon-pos="right" size="large" severity="contrast"
+                    class="!bg-white !text-zinc-950 hover:!bg-zinc-100" @click="formMode = 'signup'" />
+            <RouterLink v-if="example" to="/eksempel" class="inline-flex min-h-12 items-center gap-2 rounded-md px-5 font-medium text-white/90 underline-offset-4 hover:underline">
+              <i class="pi pi-eye text-sm" />{{ t('landing.example') }}
+            </RouterLink>
+          </div>
         </div>
       </section>
     </main>
@@ -150,6 +168,7 @@ const SPOTLIGHTS = [
       <div class="mx-auto flex max-w-6xl flex-col items-center justify-between gap-4 px-4 py-8 text-sm text-zinc-500 sm:flex-row">
         <span class="flex items-center gap-2"><img src="/mark.png" alt="" class="h-5 w-auto invert dark:invert-0">Hyttebok {{ t('app.by') }} Ravnsmark</span>
         <span class="flex items-center gap-4">
+          <RouterLink to="/personvern" class="underline-offset-4 hover:text-zinc-950 hover:underline">{{ t('privacy.title') }}</RouterLink>
           <RouterLink to="/app" class="underline-offset-4 hover:text-zinc-950 hover:underline">{{ t('app.install') }}</RouterLink>
           <button type="button" class="underline-offset-4 hover:text-zinc-950 hover:underline" @click="formMode = 'login'">{{ t('landing.login') }}</button>
           <LanguageToggle />

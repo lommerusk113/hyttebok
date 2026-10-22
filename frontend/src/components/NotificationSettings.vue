@@ -1,9 +1,10 @@
 <script setup>
-import { onMounted, onUnmounted, ref } from 'vue'
+import { computed, onMounted, onUnmounted, ref } from 'vue'
 import Button from 'primevue/button'
 import ToggleSwitch from 'primevue/toggleswitch'
 import { needsInstall, permission, refreshPermission, sendTest, setTopics, supported, TOPICS, topics } from '../push'
 import { askName, userName } from '../user'
+import { auth } from '../auth'
 import { locale, t } from '../i18n'
 
 const busy = ref(false)
@@ -40,6 +41,8 @@ async function test() {
   await sendTest()
   testSent.value = true
 }
+// "Nye medlemmer og AI-kvoten" is only sent to owners, so only they see it.
+const shownTopics = computed(() => TOPICS.filter(x => x !== 'MEMBERS' || auth.value?.role === 'OWNER'))
 </script>
 
 <template>
@@ -56,7 +59,7 @@ async function test() {
     <p class="mb-3 text-sm text-zinc-600">{{ t('push.intro') }}</p>
 
     <ul class="divide-y divide-zinc-100">
-      <li v-for="topic in TOPICS" :key="topic">
+      <li v-for="topic in shownTopics" :key="topic">
         <label class="flex min-h-14 cursor-pointer items-center gap-3 py-2">
           <span class="min-w-0 flex-1">
             <span class="block text-sm font-medium">{{ t(`push.topics.${topic}.title`) }}</span>

@@ -63,6 +63,15 @@ public class ProfileController {
         profiles.setPassword(userId, body.password());
     }
 
+    /** "Slett kontoen min" (see {@link Profiles#deleteAccount}). */
+    @Delete
+    public void deleteAccount(Authentication auth) {
+
+        var userId = AccessService.userId(auth);
+        audit.log(null, auth, Audit.ACCOUNT_DELETED, null, null);
+        profiles.deleteAccount(userId);
+    }
+
     @Post("/logout-everywhere")
     public void logOutEverywhere(Authentication auth) {
 

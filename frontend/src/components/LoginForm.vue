@@ -162,6 +162,9 @@ async function submit() {
       <p v-if="error" class="rounded-lg bg-amber-50 p-3 text-sm text-amber-800" role="alert">{{ t(error) }}</p>
 
       <Button type="submit" :label="mode === 'signup' ? t('login.createAccount') : t('login.login')" :loading="busy" class="mt-1" />
+      <p v-if="mode === 'signup'" class="text-center text-xs text-zinc-500">
+        {{ t('login.termsBefore') }} <a href="/personvern" target="_blank" class="underline underline-offset-2 hover:text-zinc-900">{{ t('login.termsLink') }}</a>.
+      </p>
       <template v-if="mode === 'login'">
         <button type="button" class="min-h-11 text-sm text-zinc-500 underline-offset-4 hover:underline" @click="showForgot = !showForgot">{{ t('login.forgot') }}</button>
         <div v-if="showForgot" class="flex flex-col gap-3 rounded-lg bg-zinc-50 p-4">

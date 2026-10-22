@@ -1,17 +1,20 @@
 package no.hyttebok.cabin;
 
 import io.micronaut.core.annotation.Nullable;
+import io.micronaut.http.HttpResponse;
 import io.micronaut.http.HttpStatus;
 import io.micronaut.http.annotation.Body;
 import io.micronaut.http.annotation.Controller;
 import io.micronaut.http.annotation.Delete;
 import io.micronaut.http.annotation.Get;
 import io.micronaut.http.annotation.Post;
+import io.micronaut.http.annotation.Put;
 import io.micronaut.http.exceptions.HttpStatusException;
 import io.micronaut.security.annotation.Secured;
 import io.micronaut.security.authentication.Authentication;
 import io.micronaut.security.rules.SecurityRule;
 import io.micronaut.serde.annotation.Serdeable;
+import io.micronaut.transaction.annotation.Transactional;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
@@ -53,6 +56,14 @@ public class CabinsController {
 
     @Serdeable
     public record NewCabin(@NotBlank @Size(max = 80) String name) {
+    }
+
+    @Serdeable
+    public record Example(Long id, String name) {
+    }
+
+    @Serdeable
+    public record ExampleSwitch(boolean on) {
     }
 
     /** {@code lang}: the app's language, so the test cabin's texts match it. */
@@ -98,6 +109,29 @@ public class CabinsController {
         }
         cabins.updateDeleted(id, Instant.now(), AccessService.userId(auth));
         audit.log(id, auth, Audit.CABIN_DELETED, null, null);
+    }
+
+    /** The example cabin for the landing page ("Se en eksempelhytte"), if a system admin picked one. */
+    @Get("/example")
+    @Secured(SecurityRule.IS_ANONYMOUS)
+    public HttpResponse<Example> example() {
+        return cabins.findExampleId().flatMap(cabins::findById).map(c -> HttpResponse.ok(new Example(c.id(), c.name())))
+            .orElse(HttpResponse.notFound());
+    }
+
+    /** System admins: makes this cabin the example anyone can read without logging in (or stops it being one). */
+    @Put("/{id}/example")
+    @Transactional
+    public void setExample(Authentication auth, Long id, @Body ExampleSwitch body) {
+
+        access.requireAdmin(auth);
+        var isExample = cabins.findExampleId().filter(id::equals).isPresent();
+        if (body.on() != isExample) {
+            cabins.clearExample();
+        }
+        if (body.on() && !isExample) {
+            cabins.updateExample(id);
+        }
     }
 
     /** System admins: brings a deleted cabin back, as it was. */

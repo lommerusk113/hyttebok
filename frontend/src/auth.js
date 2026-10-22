@@ -1,7 +1,7 @@
 import { computed, ref } from 'vue'
 import { del } from 'idb-keyval'
 import { askName, userName } from './user'
-import { cabinHeaders, cabinId, setAdminMode, setCabin } from './hytte'
+import { cabinHeaders, cabinId, setAdminMode, setCabin, viewingExample } from './hytte'
 
 // Who is logged in. /api/auth/me says whether login is on (GOOGLE_CLIENT_ID on the server) and who you are.
 // Offline, the service worker (or the copy kept below) answers with the last known reply, so the app still opens at the cabin.
@@ -11,7 +11,7 @@ export const auth = ref(null)
 export const needsLogin = computed(() => !!auth.value?.loginEnabled && !auth.value.user)
 // Logged in, in a cabin, but not a member of it (and not an admin in admin mode): show "no access" instead.
 export const noAccess = computed(() => !!auth.value?.user && !!cabinId.value && auth.value.forCabin === cabinId.value
-  && !auth.value.role && !auth.value.adminMode)
+  && !auth.value.role && !auth.value.adminMode && !viewingExample.value)
 // The answer is about the cabin on screen (after switching cabin, a new one is on its way).
 export const authReady = computed(() => !cabinId.value || auth.value?.forCabin === cabinId.value || !auth.value?.loginEnabled)
 

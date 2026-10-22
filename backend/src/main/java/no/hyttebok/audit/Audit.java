@@ -40,6 +40,8 @@ public class Audit {
     public static final String PASSWORD_RESET = "PASSWORD_RESET";
     public static final String RECOVERY_USED = "RECOVERY_USED";
     public static final String SIGNED_OUT_EVERYWHERE = "SIGNED_OUT_EVERYWHERE";
+    public static final String ACCOUNT_DELETED = "ACCOUNT_DELETED";
+    public static final String EXPORTED = "EXPORTED";
 
     private static final String SELECT = """
         SELECT e.*, c.name AS cabin_name, count(*) OVER () AS total

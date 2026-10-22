@@ -373,6 +373,14 @@
       "FORUM": {
         "title": "Forumet",
         "hint": "Nye innlegg, og svar i tråder du er med i"
+      },
+      "STAY": {
+        "title": "Sjekk inn og ut",
+        "hint": "Når noen kommer til eller drar fra hytta, og påminnelser om ditt eget opphold"
+      },
+      "MEMBERS": {
+        "title": "Nye medlemmer og AI-kvoten",
+        "hint": "For eiere: når noen blir med, og når chatten nærmer seg månedens kvote"
       }
     },
     "recheck": "Sjekk på nytt",
@@ -468,7 +476,9 @@
     "recoveryHint": "F.eks. abcde-fghjk. Hver kode virker én gang.",
     "useCode": "Bruk koden",
     "codeMissing": "Skriv e-posten din over og en gjenopprettingskode.",
-    "codeWrong": "Koden passer ikke til denne e-posten, eller er brukt før."
+    "codeWrong": "Koden passer ikke til denne e-posten, eller er brukt før.",
+    "termsBefore": "Ved å lage konto godtar du",
+    "termsLink": "vilkårene og personvernerklæringen"
   },
   "access": {
     "title": "Tilgang",
@@ -522,7 +532,22 @@
     "chatToggle": "KI-chat for denne hytta",
     "chatHint": "Alle med tilgang til hytta får chat-knappen. Bare systemadministratorer ser denne bryteren.",
     "chatNoKey": "Serveren mangler OPENAI_API_KEY, så chatten virker ikke ennå selv om den er slått på.",
-    "chatBudget": "Brukt av månedens AI-kvote"
+    "chatBudget": "Brukt av månedens AI-kvote",
+    "singleUse": "Én gang",
+    "inviteAs": "Inviter som",
+    "inviteOwnerHint": "Eiere kan invitere andre, endre tilgang og slette hytta.",
+    "inviteMemberHint": "Medlemmer kan bruke alt i hytta, men ikke styre tilgang.",
+    "singleUseLabel": "Kan bare brukes én gang",
+    "singleUseHint": "For én bestemt person. Ellers virker lenken for alle som får den, i 14 dager.",
+    "makeLink": "Lag lenke",
+    "chatUsageTitle": "AI-chatten denne måneden",
+    "chatUsedUp": "Månedens kvote er brukt opp. Chatten virker igjen fra den 1.",
+    "chatNearlyUsed": "Det meste av månedens kvote er brukt.",
+    "chatWho": "Hvem som har brukt den",
+    "chatNobody": "Ingen har brukt chatten denne måneden.",
+    "exportTitle": "Last ned en kopi",
+    "exportHint": "Alt i hytta – bookinger, hytteboka, lister, utgifter, wiki og bilder – som en ZIP-fil du kan ta vare på.",
+    "exportButton": "Last ned (ZIP)"
   },
   "checklist": {
     "title": "Sjekkliste",
@@ -661,7 +686,29 @@
     "passwordBadge": "Passord",
     "lastLogin": "Sist innlogget",
     "log": "Logg",
-    "chatUsed": "Brukt av månedens AI-kvote"
+    "chatUsed": "Brukt av månedens AI-kvote",
+    "feedback": "Tilbakemeldinger",
+    "feedbackDone": "Ferdig",
+    "feedbackReopen": "Åpne igjen",
+    "example": "Eksempel",
+    "exampleTitle": "Gjøre til eksempelhytte?",
+    "exampleMessage": "Alt i «{name}» blir synlig for alle, også uten innlogging (bare lesing). Bruk en testhytte, aldri en ekte.",
+    "exampleOn": "Gjør til eksempelhytte",
+    "exampleOff": "Fjern som eksempelhytte",
+    "stats": {
+      "title": "Status",
+      "cabins": "Hytter",
+      "active": "I bruk siste 30 dager",
+      "users": "Brukere",
+      "feedback": "Tilbakemeldinger",
+      "newIn": "+{week} siste uke · +{month} siste 30 dager",
+      "shared": "{n} med flere medlemmer · {avg} per hytte",
+      "unread": "ikke behandlet",
+      "cabinsPerWeek": "Nye hytter per uke",
+      "usersPerWeek": "Nye brukere per uke",
+      "thisWeek": "Denne uka",
+      "weeksAgo": "denne uka | for 1 uke siden | for {n} uker siden"
+    }
   },
   "profile": {
     "title": "Min profil",
@@ -691,7 +738,12 @@
     "everywhere": "Logg ut overalt",
     "everywhereHint": "Logger deg ut på alle telefoner og PC-er, også denne. Nyttig hvis du har mistet en telefon.",
     "everywhereTitle": "Logge ut overalt?",
-    "everywhereMessage": "Du blir logget ut på alle enheter, også denne, og må logge inn på nytt."
+    "everywhereMessage": "Du blir logget ut på alle enheter, også denne, og må logge inn på nytt.",
+    "deleteAccount": "Slett kontoen",
+    "deleteTitle": "Slette kontoen?",
+    "deleteMessage": "Kontoen din slettes for godt. Hytter der bare du er med, slettes med alt innhold. I hytter du deler med andre blir det du har skrevet stående.",
+    "deleteLastOwner": "Du er eneste eier av en hytte andre er med i. Gjør en annen til eier først (under Tilgang).",
+    "deleteHint": "Sletter kontoen og hytter der bare du er med. Les mer i"
   },
   "audit": {
     "title": "Endringslogg",
@@ -713,7 +765,9 @@
     "PASSWORD_SET": "{actor} satte nytt passord for {target}",
     "PASSWORD_RESET": "{target} satte nytt passord med en lenke",
     "RECOVERY_USED": "{target} brukte en gjenopprettingskode",
-    "SIGNED_OUT_EVERYWHERE": "{actor} logget ut på alle enheter"
+    "SIGNED_OUT_EVERYWHERE": "{actor} logget ut på alle enheter",
+    "ACCOUNT_DELETED": "{actor} slettet kontoen sin",
+    "EXPORTED": "{actor} lastet ned en kopi av hytta"
   },
   "expenses": {
     "title": "Utgifter",
@@ -892,6 +946,56 @@
       }
     ],
     "ctaTitle": "Klar for neste tur til hytta?",
-    "ctaText": "Lag hytta deres og inviter familien. Det tar fem minutter."
+    "ctaText": "Lag hytta deres og inviter familien. Det tar fem minutter.",
+    "example": "Se en eksempelhytte"
+  },
+  "example": {
+    "readOnly": "Dette er en eksempelhytte",
+    "readOnlyHint": "Her kan du se deg rundt, men ikke endre noe. Lag din egen hytte for å komme i gang.",
+    "banner": "Du ser på en eksempelhytte med oppdiktet innhold. Se deg rundt – endringer lagres ikke.",
+    "makeOwn": "Lag din egen hytte"
+  },
+  "privacy": {
+    "title": "Personvern og vilkår",
+    "updated": "Sist oppdatert oktober 2026"
+  },
+  "feedback": {
+    "title": "Gi tilbakemelding",
+    "hint": "Savner du noe, er noe tungvint, eller har du funnet en feil? Skriv det her – alt blir lest.",
+    "placeholder": "Hva tenker du?",
+    "send": "Send",
+    "thanks": "Takk for tilbakemeldingen!",
+    "failed": "Fikk ikke sendt. Sjekk nettet og prøv igjen."
+  },
+  "setup": {
+    "title": "Kom i gang med hytta",
+    "progress": "{done} av {total} er gjort",
+    "hide": "Skjul",
+    "steps": {
+      "cover": {
+        "title": "Legg til et forsidebilde",
+        "hint": "Et bilde av hytta øverst på alle sidene."
+      },
+      "arrival": {
+        "title": "Skriv ankomst og avreise",
+        "hint": "Hva gjør man når man kommer, og før man drar?"
+      },
+      "wifi": {
+        "title": "Legg inn WiFi",
+        "hint": "Nettverk og passord, så slipper folk å spørre."
+      },
+      "invite": {
+        "title": "Inviter familien",
+        "hint": "Del en lenke i familiechatten."
+      },
+      "booking": {
+        "title": "Legg inn første booking",
+        "hint": "Når er neste tur til hytta?"
+      },
+      "install": {
+        "title": "Installer appen",
+        "hint": "På hjemskjermen, og den virker uten dekning."
+      }
+    }
   }
 }

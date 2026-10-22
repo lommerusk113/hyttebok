@@ -10,6 +10,7 @@ import io.micronaut.http.annotation.Get;
 import io.micronaut.http.annotation.Post;
 import io.micronaut.http.annotation.Put;
 import io.micronaut.http.exceptions.HttpStatusException;
+import io.micronaut.http.server.types.files.StreamedFile;
 import io.micronaut.security.annotation.Secured;
 import io.micronaut.security.authentication.Authentication;
 import io.micronaut.security.rules.SecurityRule;
@@ -21,7 +22,9 @@ import no.hyttebok.auth.AppUserRepository;
 import no.hyttebok.cabin.CabinContext;
 import no.hyttebok.cabin.CabinInfoRepository;
 import no.hyttebok.chat.ChatBudget;
+import no.hyttebok.push.Notifier;
 
+import java.io.IOException;
 import java.security.SecureRandom;
 import java.time.Duration;
 import java.time.Instant;
@@ -29,6 +32,7 @@ import java.util.Base64;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -51,11 +55,13 @@ public class AccessController {
     private final CabinInfoRepository cabins;
     private final Audit audit;
     private final ChatBudget budget;
+    private final Notifier notifier;
+    private final CabinExport exporter;
     private final boolean chatConfigured;
     private final SecureRandom random = new SecureRandom();
 
     public AccessController(AccessService access, AppUserRepository users, MembershipRepository memberships, InvitationRepository invitations,
-                            CabinInfoRepository cabins, Audit audit, ChatBudget budget,
+                            CabinInfoRepository cabins, Audit audit, ChatBudget budget, Notifier notifier, CabinExport exporter,
                             @Value("${hyttebok.chat.api-key:}") String chatKey) {
         this.access = access;
         this.users = users;
@@ -64,6 +70,8 @@ public class AccessController {
         this.cabins = cabins;
         this.audit = audit;
         this.budget = budget;
+        this.notifier = notifier;
+        this.exporter = exporter;
         this.chatConfigured = !chatKey.isBlank();
     }
 
@@ -71,8 +79,13 @@ public class AccessController {
     public record Person(Long id, String name, String email, @Nullable String picture, @Nullable String role) {
     }
 
+    /** {@code role}: what the link makes people (OWNER or MEMBER). {@code singleUse}: it works once. */
     @Serdeable
-    public record Invite(Long id, String token, @Nullable String createdBy, Instant expiresAt, int uses) {
+    public record Invite(Long id, String token, @Nullable String createdBy, Instant expiresAt, int uses, String role, boolean singleUse) {
+    }
+
+    @Serdeable
+    public record NewInvite(@Nullable @Pattern(regexp = "OWNER|MEMBER") String role, boolean singleUse) {
     }
 
     @Serdeable
@@ -97,6 +110,11 @@ public class AccessController {
 
     @Serdeable
     public record ChatSwitch(boolean enabled) {
+    }
+
+    /** For owners: how much of this month's AI budget is used, and each person's share (percent of the budget). */
+    @Serdeable
+    public record ChatUsage(boolean enabled, int percentUsed, List<ChatBudget.PersonShare> people) {
     }
 
     // ---- members ----
@@ -136,6 +154,17 @@ public class AccessController {
         keepAnOwner(auth, member.get());
         memberships.deleteByUserIdAndCabinId(userId, cabin);
         audit.log(cabin, auth, Audit.MEMBER_REMOVED, userId, null);
+    }
+
+    /** Owners: everything in the cabin as a ZIP (see {@link CabinExport}). Linked as ?hytte=, since a download has no header. */
+    @Get("/export")
+    public StreamedFile export(Authentication auth) throws IOException {
+
+        access.requireManager(auth);
+        var cabin = CabinContext.require();
+        audit.log(cabin, auth, Audit.EXPORTED, null, null);
+
+        return exporter.export(cabin, cabins.findById(cabin).map(c -> c.name()).orElse("hytte"));
     }
 
     /** Owners: what changed about access to this cabin, newest first. */
@@ -182,6 +211,15 @@ public class AccessController {
         return new ChatSetting(cabins.findChatEnabled(cabin).orElse(false), chatConfigured, budget.percentUsed(cabin));
     }
 
+    @Get("/chat-usage")
+    public ChatUsage chatUsage(Authentication auth) {
+
+        access.requireManager(auth);
+        var cabin = CabinContext.require();
+
+        return new ChatUsage(chatConfigured && cabins.findChatEnabled(cabin).orElse(false), budget.percentUsed(cabin), budget.byPerson(cabin));
+    }
+
     @Put("/chat")
     public ChatSetting setChat(Authentication auth, @Body ChatSwitch body) {
 
@@ -204,18 +242,21 @@ public class AccessController {
         var people = people(active.stream().map(Invitation::createdBy).filter(Objects::nonNull).toList());
 
         return active.stream().map(i -> new Invite(i.id(), i.token(), i.createdBy() == null || !people.containsKey(i.createdBy()) ? null : people.get(i.createdBy()).name(),
-            i.expiresAt(), i.uses())).toList();
+            i.expiresAt(), i.uses(), i.role(), i.maxUses() != null)).toList();
     }
 
     @Post("/invites")
-    public Invite createInvite(Authentication auth) {
+    public Invite createInvite(Authentication auth, @Nullable @Body @Valid NewInvite body) {
 
         access.requireManager(auth);
+        var role = body == null || body.role() == null ? Membership.MEMBER : body.role();
+        var singleUse = body != null && body.singleUse();
         var now = Instant.now();
-        var saved = invitations.save(new Invitation(null, CabinContext.require(), token(), AccessService.userId(auth), now, now.plus(INVITE_VALID), false, 0));
-        audit.log(saved.cabinId(), auth, Audit.INVITE_CREATED, null, null);
+        var saved = invitations.save(new Invitation(null, CabinContext.require(), token(), AccessService.userId(auth), now, now.plus(INVITE_VALID), false, 0,
+            role, singleUse ? 1 : null));
+        audit.log(saved.cabinId(), auth, Audit.INVITE_CREATED, null, Membership.OWNER.equals(role) ? role : null);
 
-        return new Invite(saved.id(), saved.token(), String.valueOf(auth.getAttributes().get("name")), saved.expiresAt(), 0);
+        return new Invite(saved.id(), saved.token(), String.valueOf(auth.getAttributes().get("name")), saved.expiresAt(), 0, role, singleUse);
     }
 
     @Delete("/invites/{id}")
@@ -224,7 +265,7 @@ public class AccessController {
         access.requireManager(auth);
         var cabin = CabinContext.require();
         invitations.findById(id).filter(i -> i.cabinId().equals(cabin)).ifPresent(i -> {
-            invitations.update(new Invitation(i.id(), i.cabinId(), i.token(), i.createdBy(), i.createdAt(), i.expiresAt(), true, i.uses()));
+            invitations.update(i.withRevoked());
             audit.log(cabin, auth, Audit.INVITE_REVOKED, null, null);
         });
     }
@@ -249,10 +290,10 @@ public class AccessController {
             .orElseThrow(() -> new HttpStatusException(HttpStatus.GONE, "This invitation has expired or was revoked"));
         var userId = AccessService.userId(auth);
         if (!memberships.existsByUserIdAndCabinId(userId, invite.cabinId())) {
-            join(userId, invite.cabinId(), Membership.MEMBER);
-            invitations.update(new Invitation(invite.id(), invite.cabinId(), invite.token(), invite.createdBy(), invite.createdAt(), invite.expiresAt(), false,
-                invite.uses() + 1));
-            audit.log(invite.cabinId(), auth, Audit.MEMBER_JOINED, null, null);
+            join(userId, invite.cabinId(), invite.role());
+            invitations.update(invite.withUse());
+            audit.log(invite.cabinId(), auth, Audit.MEMBER_JOINED, null, Membership.OWNER.equals(invite.role()) ? invite.role() : null);
+            CabinContext.runAs(invite.cabinId(), () -> notifier.memberJoined(String.valueOf(auth.getAttributes().get("name")), owners(invite.cabinId(), userId)));
         }
 
         return new Accepted(invite.cabinId());
@@ -261,6 +302,11 @@ public class AccessController {
     /** Not expired or revoked, and its cabin isn't deleted. */
     private boolean open(Invitation invite) {
         return invite.usable(Instant.now()) && !cabins.findDeleted(invite.cabinId()).orElse(true);
+    }
+
+    /** The owners of the cabin, except {@code except} (who just joined, maybe as an owner). */
+    private Set<Long> owners(long cabinId, Long except) {
+        return memberships.findByCabinId(cabinId).stream().filter(m -> Membership.OWNER.equals(m.role()) && !m.userId().equals(except)).map(Membership::userId).collect(Collectors.toSet());
     }
 
     private void join(Long userId, Long cabinId, String role) {

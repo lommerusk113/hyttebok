@@ -19,6 +19,7 @@ import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Locale;
+import java.util.Set;
 import java.util.function.Function;
 
 /**
@@ -118,6 +119,55 @@ public class Notifier {
     public void forumReplied(ForumPost post, ForumReply reply, List<String> earlier) {
         notify(Topic.FORUM, s -> s.isFrom(reply.author()) || (!s.isFrom(post.author()) && earlier.stream().noneMatch(s::isFrom)) ? null : new Message(
             (en(s) ? "Comment: " : "Kommentar: ") + label(post), by(reply.author()) + (reply.body() == null ? "📷" : shorten(reply.body())), "/forum/" + post.id(), "forum-" + post.id()));
+    }
+
+    /** To the others in the cabin: someone arrived. */
+    public void checkedIn(Booking booking) {
+        notify(Topic.STAY, s -> s.isFrom(booking.checkedInBy()) ? null : new Message(
+            en(s) ? booking.guestName() + " is at the cabin" : booking.guestName() + " er på hytta",
+            en(s) ? "Checked in · until " + day(booking.endDate(), Locale.ENGLISH) : "Sjekket inn · til " + day(booking.endDate(), NB), "/", "stay-" + booking.id()));
+    }
+
+    /** To the others: the cabin is closed up (or someone left, if others are still there). */
+    public void checkedOut(Booking booking, @Nullable String by) {
+        var who = by == null ? booking.guestName() : by;
+        notify(Topic.STAY, s -> s.isFrom(who) ? null : new Message(
+            en(s) ? who + " has checked out" : who + " har sjekket ut", en(s) ? "The cabin is closed up." : "Hytta er stengt.", "/", "stay-" + booking.id()));
+    }
+
+    /** The evening before: to whoever the booking is for. */
+    public void arrivingTomorrow(Booking booking, String cabinName, int toBuy) {
+        notify(Topic.STAY, s -> !s.isFrom(booking.guestName()) ? null : new Message(
+            en(s) ? "Tomorrow: " + cabinName : "I morgen: " + cabinName,
+            en(s) ? "Have a good trip! " + (toBuy > 0 ? toBuy + " things on the shopping list." : "Remember to check in when you arrive.")
+                : "God tur! " + (toBuy > 0 ? toBuy + " ting på handlelista." : "Husk å sjekke inn når du kommer fram."),
+            "/handleliste", "arriving-" + booking.id()));
+    }
+
+    /** On the last day, to whoever is still checked in. */
+    public void stillCheckedIn(Booking booking) {
+        notify(Topic.STAY, s -> !(s.isFrom(booking.checkedInBy()) || s.isFrom(booking.guestName())) ? null : new Message(
+            en(s) ? "Leaving today?" : "Drar du i dag?", en(s) ? "Remember to check out: go through the departure list." : "Husk å sjekke ut: gå gjennom avreiselista.",
+            "/", "leaving-" + booking.id()));
+    }
+
+    /** To the cabin's owners: someone joined with an invitation link. */
+    public void memberJoined(String name, Set<Long> owners) {
+        notify(Topic.MEMBERS, s -> !owners.contains(s.userId()) ? null : new Message(
+            en(s) ? "New member" : "Nytt medlem", en(s) ? name + " joined the cabin." : name + " ble med i hytta.", "/tilgang", "member"));
+    }
+
+    /** To the cabin's owners: the AI chat has used {@code percent} (80 or 100) of this month's budget. */
+    public void chatBudget(int percent, Set<Long> owners) {
+        notify(Topic.MEMBERS, s -> !owners.contains(s.userId()) ? null : new Message(
+            en(s) ? "AI chat: " + percent + "% used" : "AI-chatten: " + percent + " % brukt",
+            percent >= 100 ? (en(s) ? "This month's allowance is used up; the chat works again on the 1st." : "Månedens kvote er brukt opp; chatten virker igjen den 1.")
+                : (en(s) ? "Most of this month's allowance is used. See who has used it under Access." : "Det meste av månedens kvote er brukt. Se hvem som har brukt den under Tilgang."),
+            "/tilgang", "chat-budget"));
+    }
+
+    private static String day(LocalDate date, Locale locale) {
+        return date.format(DateTimeFormatter.ofPattern(locale == NB ? "EEE d. MMM" : "EEE d MMM", locale));
     }
 
     static boolean en(PushSubscription subscription) {

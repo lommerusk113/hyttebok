@@ -10,10 +10,10 @@ import 'primeicons/primeicons.css'
 import './style.css'
 import App from './App.vue'
 import { i18n, primeLocale, t } from './i18n'
-import { startSync } from './api'
+import { ExampleError, startSync } from './api'
 import { dataVersion } from './offline'
 import './install'
-import { inCabin, setCabin } from './hytte'
+import { enterExample, exampleCabin, inCabin, leaveExample, setCabin } from './hytte'
 
 // Ravnsmark: monochrome, black is the accent.
 const preset = definePreset(Aura, {
@@ -44,6 +44,8 @@ const router = createRouter({
   history: createWebHistory(),
   routes: [
     { path: '/app', component: () => import('./pages/AppPage.vue') },
+    { path: '/eksempel', component: () => import('./pages/ExamplePage.vue') },
+    { path: '/personvern', component: () => import('./pages/PrivacyPage.vue') },
     { path: '/invitasjon/:token', component: () => import('./pages/InvitePage.vue') },
     { path: '/nytt-passord/:token', component: () => import('./pages/ResetPasswordPage.vue') },
     // "Mine hytter": the cabins you belong to, and a new cabin.
@@ -51,7 +53,7 @@ const router = createRouter({
     { path: '/profil', component: () => import('./pages/ProfilePage.vue') },
     // System admins: every cabin and user (/admin, /admin/brukere), and one user's profile.
     { path: '/admin/brukere/:userId(\\d+)', component: () => import('./pages/ProfilePage.vue') },
-    { path: '/admin/:tab(brukere|logg)?', component: () => import('./pages/AdminPage.vue') },
+    { path: '/admin/:tab(brukere|logg|tilbakemeldinger)?', component: () => import('./pages/AdminPage.vue') },
     // One cabin: /h/<id>/<tab>/<section>. The id (not the name: names needn't be unique) picks the cabin.
     { path: '/h/:cabinId(\\d+)/:tab(booking|hyttebok|vedlikehold|handleliste|utgifter|forum|wiki|tilgang)?/:sub?', component: () => import('./pages/HomePage.vue') },
     // Links without a cabin (inside the app, and in notifications sent before there were several cabins)
@@ -66,7 +68,11 @@ const router = createRouter({
 
 // The address decides the cabin; remember it so links without one, and the next visit, go back there.
 router.beforeEach(to => {
-  if (to.params.cabinId) setCabin(to.params.cabinId)
+  // Leaving the example cabin for anything but its own pages brings back the cabin you were in.
+  if (exampleCabin.value && String(to.params.cabinId) !== String(exampleCabin.value) && to.path !== '/eksempel' && to.path !== '/personvern') leaveExample()
+  const inExample = exampleCabin.value && String(to.params.cabinId) === String(exampleCabin.value)
+  if (inExample) enterExample(to.params.cabinId) // also after a reload: shown, but not remembered as your cabin
+  else if (to.params.cabinId) setCabin(to.params.cabinId)
 })
 
 // After a deploy the new service worker drops the old build's files, so an app that was open from before can't
@@ -100,6 +106,10 @@ app
 
 // Any failed API call or handler ends up here instead of failing silently.
 app.config.errorHandler = err => {
+  if (err instanceof ExampleError) {
+    app.config.globalProperties.$toast.add({ severity: 'info', summary: t('example.readOnly'), detail: t('example.readOnlyHint'), life: 5000 })
+    return
+  }
   console.error(err)
   app.config.globalProperties.$toast.add({ severity: 'error', summary: t('common.error'), detail: t('common.tryAgain'), life: 5000 })
 }

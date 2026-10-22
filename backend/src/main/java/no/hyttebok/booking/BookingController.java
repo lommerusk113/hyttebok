@@ -36,9 +36,20 @@ public class BookingController {
         return saved;
     }
 
+    /** Checking in or out (the check-in fields going from empty to set) tells the others. */
     @Put
     public Booking update(@Body @Valid Booking booking) {
-        return repository.update(booking);
+
+        var before = booking.id() == null ? null : repository.findById(booking.id()).orElse(null);
+        var saved = repository.update(booking);
+        if (before != null && before.checkedInAt() == null && saved.checkedInAt() != null) {
+            notifier.checkedIn(saved);
+        }
+        if (before != null && before.checkedOutAt() == null && saved.checkedOutAt() != null) {
+            notifier.checkedOut(saved, saved.checkedInBy());
+        }
+
+        return saved;
     }
 
     @Delete("/{id}")

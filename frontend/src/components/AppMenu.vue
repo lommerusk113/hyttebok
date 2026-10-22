@@ -14,7 +14,7 @@ import ToggleSwitch from 'primevue/toggleswitch'
 import { adminMode, setAdminMode } from '../hytte'
 
 // Everything personal in one place: the ☰ drawer on phones, the dropdown under your name on wide screens.
-const emit = defineEmits(['close', 'notifications'])
+const emit = defineEmits(['close', 'notifications', 'feedback'])
 
 // Admin mode changes what the server shows everywhere: reload the page you're on with it (switching it off in
 // a cabin you're not a member of shows "no access" there, with the way back to your cabins).
@@ -88,6 +88,12 @@ async function installNow() {
     </button>
     <RouterLink v-else-if="!installed" to="/app" class="row" @click="emit('close')">
       <i class="pi pi-mobile row-icon" /><span class="flex-1">{{ t('app.install') }}</span><i class="pi pi-chevron-right text-xs text-zinc-400" />
+    </RouterLink>
+    <button v-if="auth?.user" class="row" @click="emit('close'); emit('feedback')">
+      <i class="pi pi-megaphone row-icon" /><span class="flex-1 text-left">{{ t('feedback.title') }}</span>
+    </button>
+    <RouterLink to="/personvern" class="row" @click="emit('close')">
+      <i class="pi pi-lock row-icon" /><span class="flex-1">{{ t('privacy.title') }}</span><i class="pi pi-chevron-right text-xs text-zinc-400" />
     </RouterLink>
     <button v-if="auth?.user" class="row text-rose-700" @click="logout">
       <i class="pi pi-sign-out row-icon !text-rose-600" /><span class="flex-1 text-left">{{ t('login.logout') }}</span>

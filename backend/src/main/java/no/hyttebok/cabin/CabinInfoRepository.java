@@ -24,6 +24,17 @@ public interface CabinInfoRepository extends CrudRepository<CabinInfo, Long> {
 
     List<CabinInfo> listOrderByName();
 
+    /** The example cabin visitors can look around in, if a system admin picked one (and it isn't deleted). */
+    @Query("SELECT id FROM cabin_info WHERE public_example AND deleted_at IS NULL")
+    Optional<Long> findExampleId();
+
+    /** No example cabin (before picking a new one: there is at most one). */
+    @Query("UPDATE cabin_info SET public_example = false WHERE public_example")
+    void clearExample();
+
+    @Query("UPDATE cabin_info SET public_example = true WHERE id = :id")
+    void updateExample(Long id);
+
     @Query("SELECT chat_enabled FROM cabin_info WHERE id = :id")
     Optional<Boolean> findChatEnabled(Long id);
 

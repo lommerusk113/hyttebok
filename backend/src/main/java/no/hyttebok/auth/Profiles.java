@@ -1,16 +1,24 @@
 package no.hyttebok.auth;
 
+import io.micronaut.context.annotation.Value;
 import io.micronaut.core.annotation.Nullable;
+import io.micronaut.data.jdbc.runtime.JdbcOperations;
 import io.micronaut.http.HttpStatus;
 import io.micronaut.http.exceptions.HttpStatusException;
 import io.micronaut.serde.annotation.Serdeable;
 import io.micronaut.transaction.annotation.Transactional;
 import jakarta.inject.Singleton;
 import no.hyttebok.access.AccessService;
+import no.hyttebok.access.Membership;
 import no.hyttebok.access.MembershipRepository;
 import no.hyttebok.cabin.CabinInfoRepository;
+import no.hyttebok.push.PushSubscriptionRepository;
 
+import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
@@ -44,16 +52,23 @@ public class Profiles {
     private final PasswordResetRepository resets;
     private final RecoveryCodeRepository recoveryCodes;
     private final AccessService access;
+    private final PushSubscriptionRepository pushSubscriptions;
+    private final JdbcOperations jdbc;
+    private final Path uploadDir;
     private final SecureRandom random = new SecureRandom();
 
     public Profiles(AppUserRepository users, MembershipRepository memberships, CabinInfoRepository cabins, PasswordResetRepository resets,
-                    RecoveryCodeRepository recoveryCodes, AccessService access) {
+                    RecoveryCodeRepository recoveryCodes, AccessService access, PushSubscriptionRepository pushSubscriptions, JdbcOperations jdbc,
+                    @Value("${hyttebok.upload-dir}") String uploadDir) {
         this.users = users;
         this.memberships = memberships;
         this.cabins = cabins;
         this.resets = resets;
         this.recoveryCodes = recoveryCodes;
         this.access = access;
+        this.pushSubscriptions = pushSubscriptions;
+        this.jdbc = jdbc;
+        this.uploadDir = Path.of(uploadDir);
     }
 
     /**
@@ -102,6 +117,51 @@ public class Profiles {
         var reset = resets.save(new PasswordReset(Base64.getUrlEncoder().withoutPadding().encodeToString(bytes), userId, createdBy, Instant.now().plus(RESET_VALID), false));
 
         return new ResetLink(reset.token(), reset.expiresAt());
+    }
+
+    /**
+     * Deletes the account. Cabins where you're the only member are deleted with it, data and photos; in shared cabins
+     * what you wrote stays (under your name), and the cabin must keep an owner. Refused (409) while you're the last
+     * owner of a cabin others are in.
+     */
+    @Transactional
+    public void deleteAccount(Long userId) {
+
+        user(userId);
+        var alone = new ArrayList<Long>();
+        for (var m : memberships.findByUserId(userId)) {
+            var others = memberships.findByCabinId(m.cabinId()).stream().filter(o -> !o.userId().equals(userId)).toList();
+            if (others.isEmpty()) {
+                alone.add(m.cabinId());
+            } else if (Membership.OWNER.equals(m.role()) && others.stream().noneMatch(o -> Membership.OWNER.equals(o.role()))) {
+                throw new HttpStatusException(HttpStatus.CONFLICT, "Make someone else owner of your cabins first");
+            }
+        }
+
+        for (var cabinId : alone) {
+            var files = jdbc.prepareStatement("SELECT file_name FROM photo WHERE cabin_id = ?", statement -> {
+                statement.setLong(1, cabinId);
+                var names = new ArrayList<String>();
+                try (var rs = statement.executeQuery()) {
+                    while (rs.next()) {
+                        names.add(rs.getString(1));
+                    }
+                }
+                return names;
+            });
+            cabins.deleteById(cabinId); // everything in it goes with it (on delete cascade)
+            files.forEach(this::deleteFile);
+        }
+        pushSubscriptions.deleteByUserId(userId);
+        users.deleteById(userId);
+    }
+
+    private void deleteFile(String name) {
+        try {
+            Files.deleteIfExists(uploadDir.resolve(name));
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
     }
 
     /** Every device is logged out, this one too. */

@@ -24,7 +24,8 @@ import LoginPage from './components/LoginPage.vue'
 import { installed } from './install'
 import NoAccessPage from './components/NoAccessPage.vue'
 import { auth, authReady, loadAuth, needsLogin, noAccess } from './auth'
-import { cabinId } from './hytte'
+import { cabinId, leaveExample, viewingExample } from './hytte'
+import FeedbackDialog from './components/FeedbackDialog.vue'
 import { forgetWeather } from './weather'
 
 const primevue = usePrimeVue()
@@ -45,13 +46,25 @@ const route = useRoute()
 const menuOpen = ref(false)
 const menuPopover = ref()
 const notificationsOpen = ref(false)
+const feedbackOpen = ref(false)
+
+// The example cabin's banner: out of it, to your own cabins (or to sign up, for a visitor).
+function makeOwn() {
+  leaveExample()
+  router.push(auth.value?.user ? '/?alle=1' : '/?signup=1')
+}
+
+function logIn() {
+  leaveExample()
+  router.push('/?logginn=1')
+}
 
 // Where a logged-out visitor was heading (an invitation, a link from a notification): the login page shows
 // first, then they're taken there, also after Google's login, which always comes back to "/".
 const router = useRouter()
 const RETURN_KEY = 'hyttebok.returnTo'
 watch(needsLogin, locked => {
-  if (locked && route.fullPath !== '/') {
+  if (locked && route.fullPath !== '/' && !viewingExample.value && route.path !== '/eksempel') {
     try { localStorage.setItem(RETURN_KEY, route.fullPath) } catch { /* private mode */ }
   }
 }, { immediate: true })
@@ -112,10 +125,11 @@ function saveName(name = draftName.value) {
   <!-- Nothing until we know whether a login is needed, so the app doesn't flash before the login page -->
   <template v-if="!auth" />
   <!-- Invitation and new-password links work before login and before access: the pages handle both -->
-  <main v-else-if="route.path.startsWith('/invitasjon/') || route.path.startsWith('/nytt-passord/')" class="px-4"><RouterView /></main>
-  <!-- The front page explains the app; the installed app (and deep links) go straight to logging in -->
+  <main v-else-if="route.path.startsWith('/invitasjon/') || route.path.startsWith('/nytt-passord/') || route.path === '/personvern'" class="px-4"><RouterView /></main>
+  <!-- The front page explains the app; the installed app (and deep links) go straight to logging in. The example
+       cabin is open to visitors, read-only. -->
   <LandingPage v-else-if="needsLogin && route.path === '/' && !installed" />
-  <LoginPage v-else-if="needsLogin && route.path !== '/app'" />
+  <LoginPage v-else-if="needsLogin && route.path !== '/app' && route.path !== '/eksempel' && !viewingExample" />
   <div v-else class="min-h-screen">
     <header class="sticky top-0 z-30 border-b border-zinc-200 bg-surface/85 text-zinc-950 backdrop-blur">
       <div class="mx-auto flex h-14 max-w-6xl items-center justify-between gap-4 px-4 sm:h-16">
@@ -134,15 +148,17 @@ function saveName(name = draftName.value) {
             <i class="pi text-[10px]" :class="online ? 'pi-sync' : 'pi-wifi'" />
             {{ !online ? t('offline.offline') : '' }}{{ !online && pending ? ' · ' : '' }}{{ pending ? t('offline.pending', pending) : '' }}
           </span>
+          <!-- A visitor in the example cabin: no menu (nothing of theirs to show), a way to start instead -->
+          <Button v-if="!auth?.user && auth?.loginEnabled" :label="t('landing.login')" size="small" text severity="secondary" @click="logIn" />
           <!-- Wide screens: your name opens a dropdown with the same menu as the phone drawer -->
-          <button class="hidden items-center gap-2 rounded-full py-1 pl-1 pr-3 transition hover:bg-zinc-100 sm:flex"
+          <button v-if="auth?.user || !auth?.loginEnabled" class="hidden items-center gap-2 rounded-full py-1 pl-1 pr-3 transition hover:bg-zinc-100 sm:flex"
                   :aria-label="t('app.menu')" aria-haspopup="true" @click="menuPopover.toggle($event)">
             <img v-if="auth?.user?.picture" :src="auth.user.picture" alt="" referrerpolicy="no-referrer" class="size-8 rounded-full">
             <Avatar v-else :label="initials(userName)" shape="circle" :class="[colorFor(userName).bg, colorFor(userName).text]" class="!text-xs !font-semibold" />
             <span class="text-sm font-medium">{{ userName || t('app.whoAreYou') }}</span>
             <i class="pi pi-chevron-down text-xs text-zinc-500" />
           </button>
-          <button class="relative -mr-2 grid size-11 place-items-center rounded-full transition hover:bg-zinc-100 sm:hidden"
+          <button v-if="auth?.user || !auth?.loginEnabled" class="relative -mr-2 grid size-11 place-items-center rounded-full transition hover:bg-zinc-100 sm:hidden"
                   :aria-label="t('app.menu')" :aria-expanded="menuOpen" @click="menuOpen = true">
             <i class="pi pi-bars text-lg" />
           </button>
@@ -151,10 +167,10 @@ function saveName(name = draftName.value) {
     </header>
 
     <Drawer v-model:visible="menuOpen" position="right" :header="t('app.menu')" class="!w-[18rem]">
-      <AppMenu @close="menuOpen = false" @notifications="notificationsOpen = true" />
+      <AppMenu @close="menuOpen = false" @notifications="notificationsOpen = true" @feedback="feedbackOpen = true" />
     </Drawer>
     <Popover ref="menuPopover" class="w-72">
-      <AppMenu @close="menuPopover.hide()" @notifications="notificationsOpen = true" />
+      <AppMenu @close="menuPopover.hide()" @notifications="notificationsOpen = true" @feedback="feedbackOpen = true" />
     </Popover>
 
     <!-- The phone switched notifications off by itself (unused for a while): one tap to get them back -->
@@ -169,12 +185,23 @@ function saveName(name = draftName.value) {
       </div>
     </div>
 
+    <!-- The example cabin: made-up content, look but don't change -->
+    <div v-if="viewingExample" class="border-b border-sky-200 bg-sky-50 text-sky-900" role="status">
+      <div class="mx-auto flex max-w-6xl flex-wrap items-center gap-x-3 gap-y-2 px-4 py-2 text-sm">
+        <i class="pi pi-eye shrink-0" />
+        <span class="min-w-0 flex-1">{{ t('example.banner') }}</span>
+        <Button :label="t('example.makeOwn')" size="small" @click="makeOwn" />
+      </div>
+    </div>
+
     <main class="mx-auto max-w-6xl px-4 pb-12 pt-4">
       <!-- Only inside the cabin: «Mine hytter» stays open, so a removed member can get on to their other cabins -->
       <NoAccessPage v-if="noAccess && route.params.cabinId" />
       <!-- A new cabin gets fresh pages (nothing left over from the one before) -->
       <RouterView v-else-if="!route.params.cabinId || authReady" :key="route.params.cabinId || 'home'" />
     </main>
+
+    <FeedbackDialog v-model:visible="feedbackOpen" />
 
     <Drawer v-model:visible="notificationsOpen" position="right" :header="t('push.title')" class="!w-full sm:!w-[26rem]">
       <NotificationSettings />

@@ -373,6 +373,14 @@
       "FORUM": {
         "title": "The forum",
         "hint": "New posts, and replies in threads you take part in"
+      },
+      "STAY": {
+        "title": "Check in and out",
+        "hint": "When someone arrives at or leaves the cabin, and reminders about your own stay"
+      },
+      "MEMBERS": {
+        "title": "New members and the AI allowance",
+        "hint": "For owners: when someone joins, and when the chat nears this month's allowance"
       }
     },
     "recheck": "Check again",
@@ -468,7 +476,9 @@
     "recoveryHint": "E.g. abcde-fghjk. Each code works once.",
     "useCode": "Use the code",
     "codeMissing": "Type your email above and a recovery code.",
-    "codeWrong": "The code doesn't match this email, or was used before."
+    "codeWrong": "The code doesn't match this email, or was used before.",
+    "termsBefore": "By creating an account you accept",
+    "termsLink": "the terms and privacy policy"
   },
   "access": {
     "title": "Access",
@@ -522,7 +532,22 @@
     "chatToggle": "AI chat for this cabin",
     "chatHint": "Everyone with access to the cabin gets the chat button. Only system admins see this switch.",
     "chatNoKey": "The server has no OPENAI_API_KEY, so the chat won't work yet even when switched on.",
-    "chatBudget": "Used of this month's AI allowance"
+    "chatBudget": "Used of this month's AI allowance",
+    "singleUse": "Once",
+    "inviteAs": "Invite as",
+    "inviteOwnerHint": "Owners can invite others, change access and delete the cabin.",
+    "inviteMemberHint": "Members can use everything in the cabin, but not manage access.",
+    "singleUseLabel": "Can only be used once",
+    "singleUseHint": "For one particular person. Otherwise the link works for everyone who gets it, for 14 days.",
+    "makeLink": "Make link",
+    "chatUsageTitle": "The AI chat this month",
+    "chatUsedUp": "This month's allowance is used up. The chat works again from the 1st.",
+    "chatNearlyUsed": "Most of this month's allowance is used.",
+    "chatWho": "Who has used it",
+    "chatNobody": "Nobody has used the chat this month.",
+    "exportTitle": "Download a copy",
+    "exportHint": "Everything in the cabin – bookings, the cabin book, lists, expenses, wiki and photos – as a ZIP file to keep.",
+    "exportButton": "Download (ZIP)"
   },
   "checklist": {
     "title": "Checklist",
@@ -661,7 +686,29 @@
     "passwordBadge": "Password",
     "lastLogin": "Last login",
     "log": "Log",
-    "chatUsed": "Used of this month's AI allowance"
+    "chatUsed": "Used of this month's AI allowance",
+    "feedback": "Feedback",
+    "feedbackDone": "Done",
+    "feedbackReopen": "Reopen",
+    "example": "Example",
+    "exampleTitle": "Make it the example cabin?",
+    "exampleMessage": "Everything in “{name}” becomes visible to everyone, also without logging in (read only). Use a test cabin, never a real one.",
+    "exampleOn": "Make example cabin",
+    "exampleOff": "Stop being the example cabin",
+    "stats": {
+      "title": "Status",
+      "cabins": "Cabins",
+      "active": "In use, last 30 days",
+      "users": "Users",
+      "feedback": "Feedback",
+      "newIn": "+{week} last week · +{month} last 30 days",
+      "shared": "{n} with several members · {avg} per cabin",
+      "unread": "not handled",
+      "cabinsPerWeek": "New cabins per week",
+      "usersPerWeek": "New users per week",
+      "thisWeek": "This week",
+      "weeksAgo": "this week | 1 week ago | {n} weeks ago"
+    }
   },
   "profile": {
     "title": "My profile",
@@ -691,7 +738,12 @@
     "everywhere": "Log out everywhere",
     "everywhereHint": "Logs you out on every phone and computer, this one too. Useful if you've lost a phone.",
     "everywhereTitle": "Log out everywhere?",
-    "everywhereMessage": "You'll be logged out on every device, this one too, and need to log in again."
+    "everywhereMessage": "You'll be logged out on every device, this one too, and need to log in again.",
+    "deleteAccount": "Delete account",
+    "deleteTitle": "Delete your account?",
+    "deleteMessage": "Your account is deleted for good. Cabins where you're the only member are deleted with everything in them. In cabins you share, what you wrote stays.",
+    "deleteLastOwner": "You're the only owner of a cabin others are in. Make someone else owner first (under Access).",
+    "deleteHint": "Deletes your account and cabins where you're the only member. Read more in"
   },
   "audit": {
     "title": "Change log",
@@ -713,7 +765,9 @@
     "PASSWORD_SET": "{actor} set a new password for {target}",
     "PASSWORD_RESET": "{target} set a new password with a link",
     "RECOVERY_USED": "{target} used a recovery code",
-    "SIGNED_OUT_EVERYWHERE": "{actor} logged out on every device"
+    "SIGNED_OUT_EVERYWHERE": "{actor} logged out on every device",
+    "ACCOUNT_DELETED": "{actor} deleted their account",
+    "EXPORTED": "{actor} downloaded a copy of the cabin"
   },
   "expenses": {
     "title": "Expenses",
@@ -892,6 +946,56 @@
       }
     ],
     "ctaTitle": "Ready for the next cabin trip?",
-    "ctaText": "Create your cabin and invite the family. It takes five minutes."
+    "ctaText": "Create your cabin and invite the family. It takes five minutes.",
+    "example": "See an example cabin"
+  },
+  "example": {
+    "readOnly": "This is an example cabin",
+    "readOnlyHint": "You can look around, but not change anything. Create your own cabin to get started.",
+    "banner": "You're looking at an example cabin with made-up content. Look around – changes aren't saved.",
+    "makeOwn": "Create your own cabin"
+  },
+  "privacy": {
+    "title": "Privacy and terms",
+    "updated": "Last updated October 2026"
+  },
+  "feedback": {
+    "title": "Give feedback",
+    "hint": "Missing something, is something awkward, or did you find a bug? Write it here – everything is read.",
+    "placeholder": "What do you think?",
+    "send": "Send",
+    "thanks": "Thanks for the feedback!",
+    "failed": "Couldn't send it. Check your connection and try again."
+  },
+  "setup": {
+    "title": "Get your cabin started",
+    "progress": "{done} of {total} done",
+    "hide": "Hide",
+    "steps": {
+      "cover": {
+        "title": "Add a cover photo",
+        "hint": "A photo of the cabin at the top of every page."
+      },
+      "arrival": {
+        "title": "Write arrival and departure",
+        "hint": "What to do when you arrive, and before you leave?"
+      },
+      "wifi": {
+        "title": "Add the WiFi",
+        "hint": "Network and password, so nobody has to ask."
+      },
+      "invite": {
+        "title": "Invite the family",
+        "hint": "Share a link in the family chat."
+      },
+      "booking": {
+        "title": "Add the first booking",
+        "hint": "When is the next trip to the cabin?"
+      },
+      "install": {
+        "title": "Install the app",
+        "hint": "On your home screen, and it works without coverage."
+      }
+    }
   }
 }

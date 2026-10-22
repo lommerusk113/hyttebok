@@ -1,11 +1,18 @@
 import { applyPending, enqueue, hasQueue, localPhotoUrl, online, sync, tempId, watchConnection } from './offline'
 import { accessChanged, sessionEnded } from './auth'
-import { cabinHeaders, cabinId } from './hytte'
+import { cabinHeaders, cabinId, viewingExample } from './hytte'
 
 class ApiError extends Error {
   constructor(message, status) {
     super(message)
     this.status = status
+  }
+}
+
+/** A change tried in the example cabin, which is read-only (the app says so instead of "something went wrong"). */
+export class ExampleError extends Error {
+  constructor() {
+    super('example')
   }
 }
 
@@ -96,6 +103,8 @@ async function request(method, url, body) {
     lastSeen.set(`${cabin}|${url}`, data)
     return applyPending(url, plain(data), cabin)
   }
+
+  if (viewingExample.value) throw new ExampleError()
 
   // Waiting changes go first, so a new change is queued behind them to keep the order.
   const key = newKey()

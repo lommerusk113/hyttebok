@@ -6,6 +6,7 @@ import AvatarGroup from 'primevue/avatargroup'
 import Button from 'primevue/button'
 import Checkbox from 'primevue/checkbox'
 import CheckInDialog from '../components/CheckInDialog.vue'
+import SetupGuide from '../components/SetupGuide.vue'
 import CheckOutDialog from '../components/CheckOutDialog.vue'
 import DashCard from '../components/DashCard.vue'
 import RichText from '../components/RichText.vue'
@@ -19,6 +20,7 @@ import { dueLabel, overdueBadge, STATUS_STYLE } from '../maintenanceLabels'
 import { colorFor, formatDay, initials, parseIsoDate, timeAgo, toIsoDate } from '../utils'
 import { bookToday, isExpected, isHere } from '../stay'
 import { askName, userName } from '../user'
+import { auth } from '../auth'
 import { localeTag } from '../i18n'
 import { t } from '../i18n'
 
@@ -33,6 +35,7 @@ const bookings = ref([])
 const log = ref([])
 const photos = ref([])
 const suggestions = ref([])
+const loaded = ref(false)
 
 // Items ticked off here stay visible (struck through) until reload, so a mis-tap is easy to undo.
 const tickedHere = ref(new Set())
@@ -43,6 +46,7 @@ onMounted(async () => {
   [todos.value, shopping.value, bookings.value, log.value, photos.value, suggestions.value, maintenance.value] = await Promise.all(
     ['/todos', '/shopping', '/bookings', '/log', '/photos', '/suggestions', '/maintenance'].map(api.get),
   )
+  loaded.value = true
 })
 
 const today = toIsoDate(new Date())
@@ -147,6 +151,7 @@ function copy(text) {
       <span class="min-w-0 flex-1 text-sm"><b>{{ t('stay.bookedToday', { name: b.guestName }) }}</b> · {{ t('overview.until', { date: day(b.endDate) }) }}</span>
       <Button :label="t('stay.checkIn')" icon="pi pi-sign-in" size="small" @click="startCheckIn(b)" />
     </div>
+    <SetupGuide v-if="auth?.canManage && loaded" :bookings="bookings" />
     <CheckInDialog v-model:visible="checkingIn" :booking="stay" @saved="updated" />
     <CheckOutDialog v-model:visible="checkingOut" :booking="stay" @saved="updated" />
 

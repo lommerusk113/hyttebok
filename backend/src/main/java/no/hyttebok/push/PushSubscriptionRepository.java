@@ -25,4 +25,6 @@ public interface PushSubscriptionRepository extends CrudRepository<PushSubscript
     List<PushSubscription> findMembersByCabinId(Long cabinId);
 
     void deleteByEndpointAndCabinId(String endpoint, Long cabinId);
+
+    void deleteByUserId(Long userId);
 }

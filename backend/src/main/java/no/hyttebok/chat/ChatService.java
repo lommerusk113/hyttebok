@@ -166,7 +166,7 @@ public class ChatService {
             // The data is rebuilt each round, so a follow-up question sees what the tools just changed.
             messages.set(0, Map.of("role", "system", "content", instructions(user, english) + "\n\nAPP GUIDE (how Hyttebok works):\n" + APP_GUIDE
                 + "\n\n" + context()));
-            var message = generate(Map.of("model", model, "reasoning_effort", "low", "messages", messages, "tools", ChatTools.DECLARATIONS));
+            var message = generate(Map.of("model", model, "reasoning_effort", "low", "messages", messages, "tools", ChatTools.DECLARATIONS), user);
             if (message == null) {
                 break;
             }
@@ -459,7 +459,7 @@ public class ChatService {
 
     /** The reply message ({@code content} and/or {@code tool_calls}), or null if there was none. */
     @Nullable
-    private Map<?, ?> generate(Map<String, Object> body) {
+    private Map<?, ?> generate(Map<String, Object> body, @Nullable String person) {
 
         var response = send(body);
 
@@ -475,7 +475,7 @@ public class ChatService {
         try {
             Map<?, ?> result = json.readValue(response.body(), Argument.mapOf(String.class, Object.class));
             if (result.get("usage") instanceof Map<?, ?> usage) {
-                budget.record(CabinContext.require(), usage);
+                budget.record(CabinContext.require(), usage, person == null ? "?" : person);
             }
 
             var choices = result.get("choices") instanceof List<?> list ? list : List.of();

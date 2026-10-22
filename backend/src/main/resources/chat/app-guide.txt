@@ -10,6 +10,9 @@ Slik inviterer du noen:
 - Bare eiere av hytta kan invitere. Gå til fanen Tilgang.
 - Under «Invitasjonslenker», trykk «Ny lenke» og del den (f.eks. i familiechatten).
 - Den som åpner lenken og logger inn, blir medlem med en gang. Lenken gjelder i 14 dager.
+- Når du lager lenken, kan du velge at den gjør folk til eier, og at den bare kan brukes én gang (for én bestemt person).
+- Eiere får varsel når noen blir med (slå på «Nye medlemmer og AI-kvoten» under Varsler).
+- Eiere kan laste ned en kopi av alt i hytta som en ZIP-fil nederst på Tilgang.
 - Eiere kan endre rolle (eier/medlem) eller fjerne tilgang under «Medlemmer».
 
 Innlogging:
@@ -18,6 +21,9 @@ Innlogging:
 - Under «Min profil» i menyen ser du kontoen og hyttene dine, og kan bytte passord (eller legge til et passord hvis du logger inn med Google).
 - Nytt passord logger deg ut på alle andre enheter. Under «Min profil» → Sikkerhet kan du også lage gjenopprettingskoder og «Logg ut overalt» (f.eks. hvis du har mistet telefonen).
 - Vil du ikke lenger være med i en hytte, trykk «Forlat hytta» ved hytta under «Min profil». Eneste eier må gjøre en annen til eier først.
+- Under «Min profil» kan du også slette kontoen din. Hytter der bare du er med, slettes da med alt innhold.
+- «Personvern og vilkår» i menyen forteller hva som lagres og hvem som ser det.
+- Savner du noe eller har funnet en feil? Trykk «Gi tilbakemelding» i menyen.
 - Eiere ser en endringslogg nederst på Tilgang: hvem som har invitert, fjernet eller endret roller.
 
 Slik installerer du appen på mobilen:
@@ -34,6 +40,7 @@ Slik får du varsler:
 Sjekk inn og ut:
 - Når du kommer til hytta, trykk «Sjekk inn» på Oversikt. Da får du en velkomst, det som står under Ankomst som en sjekkliste, WiFi og det som bør gjøres. De andre ser at du er på hytta.
 - Er du på hytta uten booking, trykk «På hytta uten booking? Sjekk inn» under Kommende besøk.
+- Med varselet «Sjekk inn og ut» får du beskjed når noen kommer eller drar, en påminnelse kvelden før du skal på hytta, og en påminnelse om å sjekke ut på siste dag.
 - Når du drar, trykk «Sjekk ut»: kryss av oppgaver du har gjort, trykk på det som snart er tomt så havner det på handlelista, og gå gjennom Avreise-lista. Drar du tidligere enn booket, blir bookingen kortet ned til i dag.
 
 Handlelisten:
@@ -72,7 +79,7 @@ Mine hytter, navn og innstillinger:
 
 Chatten:
 - Trykk på den runde knappen nederst til høyre for å spørre om hytta, og «Ny samtale» for å begynne på nytt.
-- Hver hytte har en månedlig kvote for chatten. Er den brukt opp, virker chatten igjen fra den 1. neste måned.
+- Hver hytte har en månedlig kvote for chatten. Er den brukt opp, virker chatten igjen fra den 1. neste måned. Eiere ser på Tilgang hvor mye av kvoten som er brukt, og av hvem, og får varsel når 80 % er brukt.
 - Den svarer ut fra wikien, bookinger, handlelisten, oppgaver, vedlikehold og været for hytta du er i.
 - Den kan legge til på handlelisten, krysse av kjøpt, legge til og fullføre oppgaver, booke og markere vedlikehold som utført. Den sletter aldri noe.
 

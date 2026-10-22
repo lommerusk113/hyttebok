@@ -97,6 +97,23 @@ async function copyCodes() {
   } catch { /* no clipboard: they're on screen to write down */ }
 }
 
+// Gone for good: cabins where you're alone go with it. Refused while you're the last owner of a shared cabin.
+function deleteAccount() {
+  confirm.require({
+    header: t('profile.deleteTitle'),
+    message: t('profile.deleteMessage'),
+    acceptProps: { label: t('profile.deleteAccount'), severity: 'danger' },
+    rejectProps: { label: t('common.cancel'), severity: 'secondary', text: true },
+    accept: async () => {
+      const res = await fetch('/api/profile', { method: 'DELETE' })
+      if (res.status === 409) return toast.add({ severity: 'warn', summary: t('profile.deleteLastOwner'), life: 8000 })
+      if (!res.ok) return toast.add({ severity: 'error', summary: t('common.tryAgain'), life: 4000 })
+      setCabin(null)
+      location.href = '/'
+    },
+  })
+}
+
 function logOutEverywhere() {
   confirm.require({
     header: t('profile.everywhereTitle'),
@@ -223,6 +240,10 @@ const ROLE = { OWNER: 'access.roles.OWNER', MEMBER: 'access.roles.MEMBER' }
         <div class="mt-4 flex flex-wrap items-center gap-3 border-t border-zinc-100 pt-4">
           <p class="min-w-0 flex-1 basis-60 text-sm text-zinc-500">{{ t('profile.everywhereHint') }}</p>
           <Button :label="t('profile.everywhere')" icon="pi pi-sign-out" size="small" severity="danger" outlined @click="logOutEverywhere" />
+        </div>
+        <div class="mt-4 flex flex-wrap items-center gap-3 border-t border-zinc-100 pt-4">
+          <p class="min-w-0 flex-1 basis-60 text-sm text-zinc-500">{{ t('profile.deleteHint') }} <RouterLink to="/personvern" class="underline underline-offset-2">{{ t('privacy.title') }}</RouterLink></p>
+          <Button :label="t('profile.deleteAccount')" icon="pi pi-trash" size="small" severity="danger" outlined @click="deleteAccount" />
         </div>
       </DashCard>
     </template>

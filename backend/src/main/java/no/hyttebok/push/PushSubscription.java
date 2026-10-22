@@ -28,7 +28,7 @@ public record PushSubscription(@Id @GeneratedValue @Nullable Long id,
                                @NotBlank String auth,
                                @Nullable String name,
                                @Pattern(regexp = "nb|en") String lang,
-                               @NotNull @TypeDef(type = DataType.STRING_ARRAY) List<@Pattern(regexp = "BOOKING|POST|SUGGESTION|TODO|SHOPPING|MAINTENANCE|FORUM") String> topics,
+                               @NotNull @TypeDef(type = DataType.STRING_ARRAY) List<@Pattern(regexp = "BOOKING|POST|SUGGESTION|TODO|SHOPPING|MAINTENANCE|FORUM|STAY|MEMBERS") String> topics,
                                @DateCreated @Nullable Instant createdAt,
                                @Nullable Long userId,
                                @Nullable Long cabinId) {

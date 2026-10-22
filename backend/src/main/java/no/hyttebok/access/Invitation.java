@@ -15,9 +15,20 @@ public record Invitation(@Id @GeneratedValue @Nullable Long id,
                          Instant createdAt,
                          Instant expiresAt,
                          boolean revoked,
-                         int uses) {
+                         int uses,
+                         String role,
+                         @Nullable Integer maxUses) {
 
+    /** Not revoked or expired, and not used up (a single-use link works once). */
     boolean usable(Instant now) {
-        return !revoked && expiresAt.isAfter(now);
+        return !revoked && expiresAt.isAfter(now) && (maxUses == null || uses < maxUses);
+    }
+
+    Invitation withRevoked() {
+        return new Invitation(id, cabinId, token, createdBy, createdAt, expiresAt, true, uses, role, maxUses);
+    }
+
+    Invitation withUse() {
+        return new Invitation(id, cabinId, token, createdBy, createdAt, expiresAt, revoked, uses + 1, role, maxUses);
     }
 }
