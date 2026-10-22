@@ -1,5 +1,6 @@
 package no.hyttebok.cabin;
 
+import io.micronaut.context.annotation.Value;
 import io.micronaut.data.jdbc.runtime.JdbcOperations;
 import io.micronaut.transaction.annotation.Transactional;
 import jakarta.inject.Singleton;
@@ -21,6 +22,8 @@ import no.hyttebok.maintenance.Maintenance;
 import no.hyttebok.maintenance.MaintenanceCompletion;
 import no.hyttebok.maintenance.MaintenanceCompletionRepository;
 import no.hyttebok.maintenance.MaintenanceRepository;
+import no.hyttebok.photo.Photo;
+import no.hyttebok.photo.PhotoRepository;
 import no.hyttebok.shopping.ShoppingItem;
 import no.hyttebok.shopping.ShoppingItemRepository;
 import no.hyttebok.suggestion.Suggestion;
@@ -30,18 +33,24 @@ import no.hyttebok.todo.TodoRepository;
 import no.hyttebok.wiki.WikiPage;
 import no.hyttebok.wiki.WikiPageRepository;
 
+import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.sql.Timestamp;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.ZoneId;
 import java.util.List;
+import java.util.UUID;
 
 /**
  * A test cabin for system admins: every field of the cabin filled in, and bookings, cabin book entries, maintenance
  * history, tasks, shopping, suggestions, forum and wiki from the last two years, plus a few bookings ahead. Dates are
  * relative to today, so the cabin always looks lived in. The admin who makes it becomes its owner. The content is in
  * the language the app is in (Norwegian or English); every text below is written as {@code t(norwegian, english)}.
+ * Photos (cover, cabin book, forum) come from {@code resources/demo-photos}; see the CREDITS there.
  */
 @Singleton
 public class DemoCabin {
@@ -62,7 +71,9 @@ public class DemoCabin {
     private final ForumReplyRepository replies;
     private final ForumReactionRepository reactions;
     private final WikiPageRepository wiki;
+    private final PhotoRepository photos;
     private final JdbcOperations jdbc;
+    private final Path uploadDir;
 
     // For the cabin being made (create is synchronized).
     private LocalDate today;
@@ -72,7 +83,7 @@ public class DemoCabin {
                      MaintenanceRepository maintenance, MaintenanceCompletionRepository completions, TodoRepository todos,
                      ShoppingItemRepository shopping, ChecklistItemRepository checklist, SuggestionRepository suggestions,
                      ForumPostRepository posts, ForumReplyRepository replies, ForumReactionRepository reactions, WikiPageRepository wiki,
-                     JdbcOperations jdbc) {
+                     PhotoRepository photos, JdbcOperations jdbc, @Value("${hyttebok.upload-dir}") String uploadDir) {
         this.cabins = cabins;
         this.memberships = memberships;
         this.bookings = bookings;
@@ -87,7 +98,9 @@ public class DemoCabin {
         this.replies = replies;
         this.reactions = reactions;
         this.wiki = wiki;
+        this.photos = photos;
         this.jdbc = jdbc;
+        this.uploadDir = Path.of(uploadDir);
     }
 
     /** {@code lang}: the app's language, "en" for English; anything else gives Norwegian. */
@@ -114,7 +127,7 @@ public class DemoCabin {
 
         CabinContext.runAs(cabin.id(), () -> fill(ownerName.split("\\s+")[0]));
 
-        return cabin;
+        return cabins.findById(cabin.id()).orElseThrow(); // with the cover photo
     }
 
     private String t(String norwegian, String english) {
@@ -131,6 +144,17 @@ public class DemoCabin {
         suggestions(me);
         forum(me);
         wiki(me);
+        cover();
+    }
+
+    private void cover() {
+
+        var photo = photo("cover", t("Forsidebilde", "Cover photo"), "Kari", null, null, today.minusYears(1));
+        jdbc.prepareStatement("UPDATE cabin_info SET hero_photo_id = ? WHERE id = ?", statement -> {
+            statement.setLong(1, photo);
+            statement.setLong(2, CabinContext.require());
+            return statement.executeUpdate();
+        });
     }
 
     /** Past and coming stays; returns the ids of the past ones (newest last) for the cabin book. */
@@ -165,7 +189,7 @@ public class DemoCabin {
 
     private void cabinBook(String me, List<Long> bookingIds) {
 
-        record Entry(int booking, String author, String title, String content, List<String> with) {
+        record Entry(int booking, String author, String title, String content, List<String> with, List<String> pictures) {
         }
         var entries = List.of(
             new Entry(0, "Kari", t("Snøkaos og skiføre", "Snow chaos and great skiing"),
@@ -173,39 +197,42 @@ public class DemoCabin {
                         + "og perfekt føre. Barna lærte å ta heisen alene i bakken.",
                     "Arrived in a full blizzard and had to dig our way in. The rest of the week was "
                         + "glorious sunshine and perfect snow. The kids learned to ride the lift on their own."),
-                List.of("Kari", "Per", "Emma", "Jonas")),
+                List.of("Kari", "Per", "Emma", "Jonas"), List.of("snow-cabin", "snow-forest")),
             new Entry(2, "Ingrid", t("Fellesferie ved vatnet", "Summer by the lake"),
                 t("Badet hver dag selv om vatnet var 16 grader. Fikk tre ørret på garnet, og Ola fikk endelig fikset benken på brygga.",
                     "Swam every day even though the lake was 16 degrees. Caught three trout in the net, and Ola finally fixed the bench on the jetty."),
-                List.of("Ola", "Ingrid", "Mia", "Theo", t("Bestemor", "Grandma"))),
+                List.of("Ola", "Ingrid", "Mia", "Theo", t("Bestemor", "Grandma")), List.of("jetty", "kayaks")),
             new Entry(3, "Lars", t("Elgjakt", "Moose hunt"),
                 t("Ingen elg i år, men mye fin tur. Vedboden er fylt opp igjen.", "No moose this year, but lots of good walks. The woodshed is full again."),
-                List.of("Lars", "Henrik", "Tore")),
+                List.of("Lars", "Henrik", "Tore"), List.of("mountain-lake")),
             new Entry(4, me, t("Jul på hytta", "Christmas at the cabin"),
                 t("Ribbe, pinnekjøtt og altfor mye konfekt. Strømmen gikk på julaften, så vi spiste i lys fra peisen. Ingen klaget.",
                     "Roast pork, lamb ribs and far too many sweets. The power went out on Christmas Eve, so we ate by the light of the fireplace. "
                         + "Nobody complained."),
-                List.of(me, "Kari", "Ola", "Ingrid", "Lars", "Sofie")),
+                List.of(me, "Kari", "Ola", "Ingrid", "Lars", "Sofie"), List.of("fireplace")),
             new Entry(6, "Sofie", t("Påskefjellet", "Easter in the mountains"),
                 t("Lange turer til Storefjell, appelsin og Kvikk Lunsj på toppen. Brannslukkeren er sjekket.",
                     "Long trips up Storefjell, oranges and chocolate at the top. The fire extinguisher is checked."),
-                List.of("Sofie", "Marius")),
+                List.of("Sofie", "Marius"), List.of("easter-skiing")),
             new Entry(7, "Ola", t("Sommer igjen", "Summer again"),
                 t("Malte nordveggen og byttet to takstein. Myggen var verre enn i fjor.",
                     "Painted the north wall and replaced two roof tiles. The mosquitoes were worse than last year."),
-                List.of("Ola", "Ingrid", "Mia", "Theo")),
+                List.of("Ola", "Ingrid", "Mia", "Theo"), List.of("summer-cabin")),
             new Entry(8, "Lars", t("Jakt og sopp", "Hunting and mushrooms"),
                 t("Felte en okse første dag! Fant også masse kantarell bak låven.", "Got a bull on the first day! Also found loads of chanterelles behind the barn."),
-                List.of("Lars", "Henrik")),
+                List.of("Lars", "Henrik"), List.of("chanterelle")),
             new Entry(9, me, t("Dugnad", "Work weekend"),
                 t("Ryddet kratt, renset takrennene og byttet batterier i røykvarslerne. Pizza i badstua etterpå.",
                     "Cleared brush, cleaned the gutters and changed the smoke alarm batteries. Pizza in the sauna afterwards."),
-                List.of(me, "Kari", "Lars")));
+                List.of(me, "Kari", "Lars"), List.of()));
 
         for (var e : entries) {
             var booking = bookings.findById(bookingIds.get(e.booking())).orElseThrow();
             var saved = log.save(new LogEntry(null, e.author(), e.title(), e.content(), e.with(), booking.startDate(), booking.endDate(), booking.id(), null, null));
             backdate("log_entry", saved.id(), booking.endDate());
+            for (var picture : e.pictures()) {
+                photo(picture, null, e.author(), saved.id(), null, booking.endDate());
+            }
         }
     }
 
@@ -331,6 +358,7 @@ public class DemoCabin {
 
         post = post(t("Bilder fra jakta", "Photos from the hunt"),
             t("Endelig en okse! Takk for et fint lag i år.", "Finally a bull! Thanks for a great team this year."), "Lars", 100);
+        photo("moose", null, "Lars", null, post, today.minusDays(100));
         reply(post, t("Gratulerer! Gleder meg til elgstek til jul.", "Congratulations! Looking forward to moose roast at Christmas."), "Ingrid", 99, "😂");
         react(post, null, "🎉", "Kari");
         react(post, null, "🎉", me);
@@ -382,6 +410,21 @@ public class DemoCabin {
 
     private void page(String title, String content, String by) {
         wiki.save(new WikiPage(null, title, content, by, null, null));
+    }
+
+    /** One of the bundled photos, copied into the upload folder like an upload; the photo's id. */
+    private long photo(String name, String caption, String by, Long logEntryId, Long forumPostId, LocalDate day) {
+
+        var fileName = UUID.randomUUID().toString();
+        try (var in = DemoCabin.class.getResourceAsStream("/demo-photos/" + name + ".jpg")) {
+            Files.copy(in, uploadDir.resolve(fileName));
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+        var saved = photos.save(new Photo(null, fileName, "image/jpeg", caption, by, logEntryId, forumPostId, null, null, null));
+        backdate("photo", saved.id(), day);
+
+        return saved.id();
     }
 
     /** Created on that day: @DateCreated stamps "now" on save, so the history gets its dates afterwards. */
