@@ -94,7 +94,7 @@
     "nextMonth": "Neste måned",
     "upcoming": "Kommende besøk",
     "nights": "{n} natt | {n} netter",
-    "noUpcoming": "Ingen kommende besøk. Hytta er ledig!",
+    "noUpcoming": "Ingen har booket fremover.",
     "deleteTitle": "Slette booking?",
     "updated": "Booking oppdatert",
     "created": "Booking lagret",
@@ -114,7 +114,8 @@
     "more": "Flere",
     "pickEnd": "Fra {date} – trykk på siste dag",
     "alreadyBooked": "allerede booket",
-    "dates": "Datoer"
+    "dates": "Datoer",
+    "free": "Hytta er ledig"
   },
   "todo": {
     "new": "Ny oppgave",
@@ -847,7 +848,7 @@
     "checkIn": "Sjekk inn",
     "checkOut": "Sjekk ut",
     "since": "sjekket inn {time}",
-    "bookedToday": "{name} har booket hytta i dag",
+    "bookedToday": "{name} har booket i dag",
     "hereUnbooked": "På hytta uten booking? Sjekk inn",
     "welcome": "Velkommen til {cabin}, {name}!",
     "welcomeText": "Godt å ha deg her. Her er det du trenger for å komme i gang. Sjekk inn, så ser de andre at du er på hytta.",
@@ -866,7 +867,10 @@
     "beforeYouGo": "Før du drar",
     "thanks": "Takk for besøket!",
     "thanksText": "Du er sjekket ut av {cabin}. Skriv gjerne noen ord i hytteboka om oppholdet.",
-    "writeLog": "Skriv i hytteboka"
+    "writeLog": "Skriv i hytteboka",
+    "hereNow": "Er du på hytta nå?",
+    "sinceUntil": "Sjekket inn {time} · til {date}",
+    "until": "Til {date}"
   },
   "landing": {
     "login": "Logg inn",

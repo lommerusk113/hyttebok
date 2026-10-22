@@ -94,7 +94,7 @@
     "nextMonth": "Next month",
     "upcoming": "Upcoming visits",
     "nights": "{n} night | {n} nights",
-    "noUpcoming": "No upcoming visits. The cabin is free!",
+    "noUpcoming": "Nobody has booked ahead.",
     "deleteTitle": "Delete booking?",
     "updated": "Booking updated",
     "created": "Booking saved",
@@ -114,7 +114,8 @@
     "more": "More",
     "pickEnd": "From {date} – tap the last day",
     "alreadyBooked": "already booked",
-    "dates": "Dates"
+    "dates": "Dates",
+    "free": "The cabin is free"
   },
   "todo": {
     "new": "New task",
@@ -847,7 +848,7 @@
     "checkIn": "Check in",
     "checkOut": "Check out",
     "since": "checked in {time}",
-    "bookedToday": "{name} has booked the cabin today",
+    "bookedToday": "{name} has booked today",
     "hereUnbooked": "At the cabin without a booking? Check in",
     "welcome": "Welcome to {cabin}, {name}!",
     "welcomeText": "Good to have you here. This is what you need to get going. Check in so the others see you're at the cabin.",
@@ -866,7 +867,10 @@
     "beforeYouGo": "Before you go",
     "thanks": "Thanks for the visit!",
     "thanksText": "You've checked out of {cabin}. Do write a few words in the cabin book about the stay.",
-    "writeLog": "Write in the cabin book"
+    "writeLog": "Write in the cabin book",
+    "hereNow": "Are you at the cabin now?",
+    "sinceUntil": "Checked in {time} · until {date}",
+    "until": "Until {date}"
   },
   "landing": {
     "login": "Log in",

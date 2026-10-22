@@ -1,5 +1,6 @@
 <script setup>
 import { computed, onMounted, ref, watch } from 'vue'
+import { useRouter } from 'vue-router'
 import { useToast } from 'primevue/usetoast'
 import Avatar from 'primevue/avatar'
 import AvatarGroup from 'primevue/avatargroup'
@@ -21,6 +22,7 @@ import { colorFor, formatDay, initials, parseIsoDate, timeAgo, toIsoDate } from 
 import { bookToday, isExpected, isHere } from '../stay'
 import { askName, userName } from '../user'
 import { auth } from '../auth'
+import { inCabin } from '../hytte'
 import { localeTag } from '../i18n'
 import { t } from '../i18n'
 
@@ -28,6 +30,7 @@ const SHOPPING_LIMIT = 6
 const TASK_LIMIT = 6
 
 const toast = useToast()
+const router = useRouter()
 const todos = ref([])
 const maintenance = ref([])
 const shopping = ref([])
@@ -57,6 +60,8 @@ const period = b => (!b.endDate || b.startDate === b.endDate ? day(b.startDate) 
 const here = computed(() => bookings.value.filter(isHere))
 const expected = computed(() => bookings.value.filter(isExpected))
 const time = iso => new Date(iso).toLocaleTimeString(localeTag(), { hour: '2-digit', minute: '2-digit' })
+// Dates never break across lines ("søn. 25. / okt."): non-breaking spaces inside them.
+const together = text => text.replace(/ /g, '\u00a0')
 const checkedInWhen = b => (b.checkedInAt.slice(0, 10) === today ? time(b.checkedInAt) : `${day(b.checkedInAt.slice(0, 10))} ${time(b.checkedInAt)}`)
 
 const stay = ref(null) // the booking being checked in to or out of
@@ -139,17 +144,22 @@ function copy(text) {
 <template>
   <div class="space-y-6">
     <!-- Who's at the cabin right now (checked in), and who's booked today but hasn't checked in -->
-    <div v-for="b in here" :key="b.id" class="flex flex-wrap items-center gap-x-3 gap-y-2 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-2.5 text-emerald-900">
-      <span class="relative flex size-2.5"><span class="absolute inline-flex size-full animate-ping rounded-full bg-emerald-400 opacity-75" /><span class="relative inline-flex size-2.5 rounded-full bg-emerald-500" /></span>
-      <span class="min-w-0 flex-1 text-sm">
-        <b>{{ t('overview.atCabin', { name: b.guestName }) }}</b> · {{ t('stay.since', { time: checkedInWhen(b) }) }} · {{ t('overview.until', { date: day(b.endDate) }) }}
+    <!-- Two lines (who, then when), so a phone never breaks the sentence in the middle; the button stays beside them -->
+    <div v-for="b in here" :key="b.id" class="flex items-center gap-3 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-emerald-900">
+      <span class="relative flex size-2.5 shrink-0"><span class="absolute inline-flex size-full animate-ping rounded-full bg-emerald-400 opacity-75" /><span class="relative inline-flex size-2.5 rounded-full bg-emerald-500" /></span>
+      <span class="min-w-0 flex-1">
+        <span class="block text-balance text-sm font-semibold leading-snug">{{ t('overview.atCabin', { name: b.guestName }) }}</span>
+        <span class="mt-0.5 block text-xs leading-snug text-emerald-800/80">{{ t('stay.sinceUntil', { time: together(checkedInWhen(b)), date: together(day(b.endDate)) }) }}</span>
       </span>
-      <Button :label="t('stay.checkOut')" icon="pi pi-sign-out" size="small" severity="success" outlined class="!bg-surface" @click="startCheckOut(b)" />
+      <Button :label="t('stay.checkOut')" icon="pi pi-sign-out" size="small" severity="success" outlined class="shrink-0 !bg-surface" @click="startCheckOut(b)" />
     </div>
-    <div v-for="b in expected" :key="b.id" class="flex flex-wrap items-center gap-x-3 gap-y-2 rounded-lg border border-sky-200 bg-sky-50 px-4 py-2.5 text-sky-900">
-      <i class="pi pi-calendar text-sm" />
-      <span class="min-w-0 flex-1 text-sm"><b>{{ t('stay.bookedToday', { name: b.guestName }) }}</b> · {{ t('overview.until', { date: day(b.endDate) }) }}</span>
-      <Button :label="t('stay.checkIn')" icon="pi pi-sign-in" size="small" @click="startCheckIn(b)" />
+    <div v-for="b in expected" :key="b.id" class="flex items-center gap-3 rounded-lg border border-sky-200 bg-sky-50 px-4 py-3 text-sky-900">
+      <i class="pi pi-calendar shrink-0 text-sm" />
+      <span class="min-w-0 flex-1">
+        <span class="block text-balance text-sm font-semibold leading-snug">{{ t('stay.bookedToday', { name: b.guestName }) }}</span>
+        <span class="mt-0.5 block text-xs leading-snug text-sky-800/80">{{ t('stay.until', { date: together(day(b.endDate)) }) }}</span>
+      </span>
+      <Button :label="t('stay.checkIn')" icon="pi pi-sign-in" size="small" class="shrink-0" @click="startCheckIn(b)" />
     </div>
     <SetupGuide v-if="auth?.canManage && loaded" :bookings="bookings" />
     <CheckInDialog v-model:visible="checkingIn" :booking="stay" @saved="updated" />
@@ -226,15 +236,24 @@ function copy(text) {
               </RouterLink>
             </li>
           </ul>
-          <div v-else class="flex flex-wrap items-center justify-between gap-2 py-1">
-            <p class="text-sm text-zinc-500">{{ t('booking.noUpcoming') }}</p>
-            <RouterLink to="/booking?new=1" class="inline-flex min-h-11 items-center text-sm font-medium underline-offset-4 hover:underline">{{ t('booking.new') }}</RouterLink>
+          <!-- Nothing booked ahead: say the cabin is free, and offer the two things to do about it -->
+          <div v-else class="flex flex-wrap items-center gap-x-4 gap-y-3 rounded-lg bg-emerald-50/60 p-4">
+            <span class="grid size-10 shrink-0 place-items-center rounded-full bg-emerald-100 text-emerald-700"><i class="pi pi-check" /></span>
+            <span class="min-w-0 flex-1 basis-40">
+              <span class="block font-medium">{{ t('booking.free') }}</span>
+              <span class="block text-sm text-zinc-500">{{ t('booking.noUpcoming') }}</span>
+            </span>
+            <span class="flex flex-wrap gap-2">
+              <Button :label="t('booking.new')" icon="pi pi-plus" size="small" @click="router.push(inCabin('/booking?new=1'))" />
+              <Button v-if="!here.length && !expected.length" :label="t('stay.checkIn')" icon="pi pi-sign-in" size="small" severity="secondary" outlined
+                      @click="checkInUnbooked" />
+            </span>
           </div>
-          <!-- At the cabin without a booking (nobody checked in or expected today) -->
-          <button v-if="!here.length && !expected.length" type="button" class="mt-1 inline-flex min-h-11 items-center gap-2 text-sm text-zinc-500 underline-offset-4 hover:text-zinc-900 hover:underline"
-                  @click="checkInUnbooked">
-            <i class="pi pi-sign-in text-xs" />{{ t('stay.hereUnbooked') }}
-          </button>
+          <!-- Bookings ahead, but nobody here or expected today: someone may still be at the cabin without one -->
+          <div v-if="upcoming.length && !here.length && !expected.length" class="mt-3 flex flex-wrap items-center justify-between gap-2 border-t border-zinc-100 pt-3">
+            <span class="text-sm text-zinc-500">{{ t('stay.hereNow') }}</span>
+            <Button :label="t('stay.checkIn')" icon="pi pi-sign-in" size="small" severity="secondary" outlined @click="checkInUnbooked" />
+          </div>
 
           <template v-if="recent.length">
             <p class="mb-1 mt-3 border-t border-zinc-100 pt-3 text-xs font-medium uppercase tracking-wide text-zinc-500">{{ t('booking.recent') }}</p>
