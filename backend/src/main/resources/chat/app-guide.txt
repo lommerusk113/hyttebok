@@ -13,6 +13,7 @@ Slik inviterer du noen:
 - Når du lager lenken, kan du velge at den gjør folk til eier, og at den bare kan brukes én gang (for én bestemt person).
 - Eiere får varsel når noen blir med (slå på «Nye medlemmer og AI-kvoten» under Varsler).
 - Eiere kan laste ned en kopi av alt i hytta som en ZIP-fil nederst på Tilgang.
+- Låner noen hytta? Eiere lager en gjestelenke under Tilgang → Gjestelenker: navn og siste dag. Gjesten ser ankomst, WiFi, nøkler, adresse og avreise uten å logge inn, og ingenting annet av hytta.
 - Eiere kan endre rolle (eier/medlem) eller fjerne tilgang under «Medlemmer».
 
 Innlogging:
@@ -70,7 +71,11 @@ Forumet:
 Hyttewiki:
 - Åpnes fra «Hyttewiki» i kortet «Om hytta» på Oversikt.
 - Alle med tilgang kan skrive og endre sider om hvordan ting fungerer på hytta. Chatten leser wikien.
+- Under «Vedlegg» på en side kan du legge ved bilder og PDF-er, f.eks. bruksanvisninger. Chatten kan ikke lese filene, men vet hvilke som ligger hvor.
 - Informasjon om hytta (beskrivelse, ankomst, avreise, WiFi, nøkler, adresse) endres med blyanten på «Om hytta» eller på forsidebildet. Under «Nøkler» kan dere skrive hvem som har nøkkel, hvor reservenøkkelen er og koden til nøkkelboksen.
+
+Søk:
+- Trykk på forstørrelsesglasset øverst (eller tasten /) for å søke i bookinger, hytteboka, forumet, wikien med vedlegg, oppgaver, vedlikehold, forslag, handlelista og utgifter.
 
 Mine hytter, navn og innstillinger:
 - Har du tilgang til flere hytter, bytter du under «Mine hytter» i menyen. Der kan du også lage en ny hytte.

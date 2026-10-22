@@ -42,6 +42,8 @@ public class Audit {
     public static final String SIGNED_OUT_EVERYWHERE = "SIGNED_OUT_EVERYWHERE";
     public static final String ACCOUNT_DELETED = "ACCOUNT_DELETED";
     public static final String EXPORTED = "EXPORTED";
+    public static final String GUEST_LINK_CREATED = "GUEST_LINK_CREATED";
+    public static final String GUEST_LINK_REVOKED = "GUEST_LINK_REVOKED";
 
     private static final String SELECT = """
         SELECT e.*, c.name AS cabin_name, count(*) OVER () AS total

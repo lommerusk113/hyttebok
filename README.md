@@ -4,6 +4,9 @@
 docker compose up -d --build   # http://localhost:8113
 ```
 
+Tests: `./gradlew test` in `backend/` (needs Docker: Testcontainers starts a Postgres). With Colima, set
+`DOCKER_HOST=unix://$HOME/.colima/default/docker.sock TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE=/var/run/docker.sock`.
+
 Local dev with hot reload: start Postgres (`docker compose up -d db` after adding a `5432:5432` port mapping), run `./gradlew run` in `backend/` (needs JDK 25), then `npm run dev` in `frontend/`.
 
 ## Login (optional)

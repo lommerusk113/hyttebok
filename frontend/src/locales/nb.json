@@ -547,7 +547,17 @@
     "chatNobody": "Ingen har brukt chatten denne måneden.",
     "exportTitle": "Last ned en kopi",
     "exportHint": "Alt i hytta – bookinger, hytteboka, lister, utgifter, wiki og bilder – som en ZIP-fil du kan ta vare på.",
-    "exportButton": "Last ned (ZIP)"
+    "exportButton": "Last ned (ZIP)",
+    "guests": "Gjestelenker",
+    "newGuest": "Ny gjestelenke",
+    "guestsHint": "For noen som låner hytta: ankomst, WiFi, nøkler, adresse og avreise – uten konto, og uten resten av hytta.",
+    "guestUntil": "Virker til og med {date}",
+    "guestExpired": "Utløpt",
+    "guestShareTitle": "Velkommen til {name}",
+    "guestFor": "Hvem er den for?",
+    "guestForPlaceholder": "F.eks. Familien Hansen",
+    "guestLastDay": "Siste dag lenken virker",
+    "guestShows": "Gjesten ser bare forsidebildet og kortene for ankomst, WiFi, nøkler, adresse og avreise (de dere ikke har skjult)."
   },
   "checklist": {
     "title": "Sjekkliste",
@@ -646,7 +656,12 @@
     "blank": "Siden er tom.",
     "missing": "Siden finnes ikke lenger.",
     "pick": "Velg en side, eller lag en ny.",
-    "deleteTitle": "Slette siden?"
+    "deleteTitle": "Slette siden?",
+    "files": "Vedlegg",
+    "attach": "Legg ved",
+    "filesHint": "Legg ved bilder eller PDF-er, f.eks. bruksanvisninger.",
+    "removeFile": "Slette vedlegget?",
+    "attachFailed": "Fikk ikke lagt ved en fil (bare bilder og PDF) | Fikk ikke lagt ved {n} filer (bare bilder og PDF)"
   },
   "admin": {
     "title": "Admin",
@@ -767,7 +782,9 @@
     "RECOVERY_USED": "{target} brukte en gjenopprettingskode",
     "SIGNED_OUT_EVERYWHERE": "{actor} logget ut på alle enheter",
     "ACCOUNT_DELETED": "{actor} slettet kontoen sin",
-    "EXPORTED": "{actor} lastet ned en kopi av hytta"
+    "EXPORTED": "{actor} lastet ned en kopi av hytta",
+    "GUEST_LINK_CREATED": "{actor} lagde en gjestelenke for {detail}",
+    "GUEST_LINK_REVOKED": "{actor} trakk tilbake gjestelenken for {detail}"
   },
   "expenses": {
     "title": "Utgifter",
@@ -996,6 +1013,34 @@
         "title": "Installer appen",
         "hint": "På hjemskjermen, og den virker uten dekning."
       }
+    }
+  },
+  "guest": {
+    "welcome": "Velkommen, {name}!",
+    "validUntil": "Lenken virker til og med {date}.",
+    "map": "Vis i kart",
+    "beforeYouGo": "Før du drar",
+    "gone": "Denne lenken virker ikke lenger",
+    "goneHint": "Den har gått ut eller blitt trukket tilbake. Spør den som delte den om en ny.",
+    "footer": "Laget med"
+  },
+  "search": {
+    "title": "Søk",
+    "placeholder": "Søk i hytta …",
+    "hint": "Søk i bookinger, hytteboka, forumet, wikien, oppgaver, handlelista og utgifter.",
+    "nothing": "Fant ingenting for «{q}».",
+    "kinds": {
+      "booking": "Bookinger",
+      "log": "Hytteboka",
+      "forum": "Forum",
+      "reply": "Kommentarer",
+      "wiki": "Wiki",
+      "file": "Vedlegg",
+      "todo": "Oppgaver",
+      "maintenance": "Vedlikehold",
+      "idea": "Forslag",
+      "shopping": "Handleliste",
+      "expense": "Utgifter"
     }
   }
 }

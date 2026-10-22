@@ -547,7 +547,17 @@
     "chatNobody": "Nobody has used the chat this month.",
     "exportTitle": "Download a copy",
     "exportHint": "Everything in the cabin – bookings, the cabin book, lists, expenses, wiki and photos – as a ZIP file to keep.",
-    "exportButton": "Download (ZIP)"
+    "exportButton": "Download (ZIP)",
+    "guests": "Guest links",
+    "newGuest": "New guest link",
+    "guestsHint": "For someone borrowing the cabin: arrival, WiFi, keys, address and departure – no account, and none of the rest of the cabin.",
+    "guestUntil": "Works until and including {date}",
+    "guestExpired": "Expired",
+    "guestShareTitle": "Welcome to {name}",
+    "guestFor": "Who is it for?",
+    "guestForPlaceholder": "E.g. the Hansen family",
+    "guestLastDay": "Last day the link works",
+    "guestShows": "The guest only sees the cover photo and the cards for arrival, WiFi, keys, address and departure (those you haven't hidden)."
   },
   "checklist": {
     "title": "Checklist",
@@ -646,7 +656,12 @@
     "blank": "This page is empty.",
     "missing": "This page no longer exists.",
     "pick": "Pick a page, or make a new one.",
-    "deleteTitle": "Delete this page?"
+    "deleteTitle": "Delete this page?",
+    "files": "Attachments",
+    "attach": "Attach",
+    "filesHint": "Attach photos or PDFs, e.g. manuals.",
+    "removeFile": "Delete the attachment?",
+    "attachFailed": "Couldn't attach a file (photos and PDF only) | Couldn't attach {n} files (photos and PDF only)"
   },
   "admin": {
     "title": "Admin",
@@ -767,7 +782,9 @@
     "RECOVERY_USED": "{target} used a recovery code",
     "SIGNED_OUT_EVERYWHERE": "{actor} logged out on every device",
     "ACCOUNT_DELETED": "{actor} deleted their account",
-    "EXPORTED": "{actor} downloaded a copy of the cabin"
+    "EXPORTED": "{actor} downloaded a copy of the cabin",
+    "GUEST_LINK_CREATED": "{actor} made a guest link for {detail}",
+    "GUEST_LINK_REVOKED": "{actor} revoked the guest link for {detail}"
   },
   "expenses": {
     "title": "Expenses",
@@ -996,6 +1013,34 @@
         "title": "Install the app",
         "hint": "On your home screen, and it works without coverage."
       }
+    }
+  },
+  "guest": {
+    "welcome": "Welcome, {name}!",
+    "validUntil": "The link works until and including {date}.",
+    "map": "Show on map",
+    "beforeYouGo": "Before you go",
+    "gone": "This link no longer works",
+    "goneHint": "It has expired or been revoked. Ask whoever shared it for a new one.",
+    "footer": "Made with"
+  },
+  "search": {
+    "title": "Search",
+    "placeholder": "Search the cabin …",
+    "hint": "Search bookings, the cabin book, the forum, the wiki, tasks, the shopping list and expenses.",
+    "nothing": "Nothing found for “{q}”.",
+    "kinds": {
+      "booking": "Bookings",
+      "log": "Cabin book",
+      "forum": "Forum",
+      "reply": "Comments",
+      "wiki": "Wiki",
+      "file": "Attachments",
+      "todo": "Tasks",
+      "maintenance": "Upkeep",
+      "idea": "Ideas",
+      "shopping": "Shopping list",
+      "expense": "Expenses"
     }
   }
 }

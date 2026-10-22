@@ -26,6 +26,7 @@ import NoAccessPage from './components/NoAccessPage.vue'
 import { auth, authReady, loadAuth, needsLogin, noAccess } from './auth'
 import { cabinId, leaveExample, viewingExample } from './hytte'
 import FeedbackDialog from './components/FeedbackDialog.vue'
+import SearchDialog from './components/SearchDialog.vue'
 import { forgetWeather } from './weather'
 
 const primevue = usePrimeVue()
@@ -47,6 +48,15 @@ const menuOpen = ref(false)
 const menuPopover = ref()
 const notificationsOpen = ref(false)
 const feedbackOpen = ref(false)
+const searchOpen = ref(false)
+// "/" or Ctrl/⌘+K opens the search inside a cabin (not while typing somewhere).
+addEventListener('keydown', e => {
+  if (!route.params.cabinId || ['INPUT', 'TEXTAREA'].includes(document.activeElement?.tagName) || document.activeElement?.isContentEditable) return
+  if (e.key === '/' || ((e.ctrlKey || e.metaKey) && e.key === 'k')) {
+    e.preventDefault()
+    searchOpen.value = true
+  }
+})
 
 // The example cabin's banner: out of it, to your own cabins (or to sign up, for a visitor).
 function makeOwn() {
@@ -125,7 +135,7 @@ function saveName(name = draftName.value) {
   <!-- Nothing until we know whether a login is needed, so the app doesn't flash before the login page -->
   <template v-if="!auth" />
   <!-- Invitation and new-password links work before login and before access: the pages handle both -->
-  <main v-else-if="route.path.startsWith('/invitasjon/') || route.path.startsWith('/nytt-passord/') || route.path === '/personvern'" class="px-4"><RouterView /></main>
+  <main v-else-if="route.path.startsWith('/invitasjon/') || route.path.startsWith('/nytt-passord/') || route.path.startsWith('/gjest/') || route.path === '/personvern'" class="px-4"><RouterView /></main>
   <!-- The front page explains the app; the installed app (and deep links) go straight to logging in. The example
        cabin is open to visitors, read-only. -->
   <LandingPage v-else-if="needsLogin && route.path === '/' && !installed" />
@@ -148,6 +158,10 @@ function saveName(name = draftName.value) {
             <i class="pi text-[10px]" :class="online ? 'pi-sync' : 'pi-wifi'" />
             {{ !online ? t('offline.offline') : '' }}{{ !online && pending ? ' · ' : '' }}{{ pending ? t('offline.pending', pending) : '' }}
           </span>
+          <button v-if="route.params.cabinId" class="grid size-11 place-items-center rounded-full transition hover:bg-zinc-100" :aria-label="t('search.title')"
+                  v-tooltip.bottom="t('search.title')" @click="searchOpen = true">
+            <i class="pi pi-search" />
+          </button>
           <!-- A visitor in the example cabin: no menu (nothing of theirs to show), a way to start instead -->
           <Button v-if="!auth?.user && auth?.loginEnabled" :label="t('landing.login')" size="small" text severity="secondary" @click="logIn" />
           <!-- Wide screens: your name opens a dropdown with the same menu as the phone drawer -->
@@ -202,6 +216,7 @@ function saveName(name = draftName.value) {
     </main>
 
     <FeedbackDialog v-model:visible="feedbackOpen" />
+    <SearchDialog v-model:visible="searchOpen" />
 
     <Drawer v-model:visible="notificationsOpen" position="right" :header="t('push.title')" class="!w-full sm:!w-[26rem]">
       <NotificationSettings />

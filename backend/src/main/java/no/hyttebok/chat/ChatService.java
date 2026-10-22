@@ -29,6 +29,8 @@ import no.hyttebok.suggestion.SuggestionController;
 import no.hyttebok.todo.Todo;
 import no.hyttebok.todo.TodoController;
 import no.hyttebok.weather.WeatherService;
+import no.hyttebok.wiki.WikiAttachment;
+import no.hyttebok.wiki.WikiAttachmentRepository;
 import no.hyttebok.wiki.WikiPageRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -86,6 +88,7 @@ public class ChatService {
     private final MaintenanceCompletionController completions;
     private final WeatherService weather;
     private final WikiPageRepository wiki;
+    private final WikiAttachmentRepository wikiFiles;
     private final ForumController forum;
     private final LogEntryController logbook;
     private final SuggestionController suggestions;
@@ -117,6 +120,7 @@ public class ChatService {
                        MaintenanceCompletionController completions,
                        WeatherService weather,
                        WikiPageRepository wiki,
+                       WikiAttachmentRepository wikiFiles,
                        ForumController forum,
                        LogEntryController logbook,
                        SuggestionController suggestions,
@@ -133,6 +137,7 @@ public class ChatService {
         this.completions = completions;
         this.weather = weather;
         this.wiki = wiki;
+        this.wikiFiles = wikiFiles;
         this.forum = forum;
         this.logbook = logbook;
         this.suggestions = suggestions;
@@ -240,11 +245,16 @@ public class ChatService {
 
         // ponytail: every page goes in, up to a cap; search the wiki with a tool instead if it outgrows this.
         var pages = wiki.listOrderByTitle();
+        // The chat can't read the files, but can point to them ("the manual is attached to the Varmepumpe page").
+        var files = wikiFiles.listOrderByCreatedAt().stream()
+            .collect(Collectors.groupingBy(WikiAttachment::wikiPageId, Collectors.mapping(WikiAttachment::originalName,
+                Collectors.joining(", "))));
         if (!pages.isEmpty()) {
             out.append("\n\nCABIN WIKI (written by the family):");
             var room = MAX_WIKI_CHARS;
             for (var page : pages) {
-                var text = "\n## " + page.title() + "\n" + (page.content() == null ? "" : page.content().trim());
+                var text = "\n## " + page.title() + "\n" + (page.content() == null ? "" : page.content().trim())
+                    + (files.containsKey(page.id()) ? "\n(Files attached to this page in the app: " + files.get(page.id()) + ")" : "");
                 if (text.length() > room) {
                     out.append("\n(more wiki pages left out: too long)");
                     break;

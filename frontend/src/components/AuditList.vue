@@ -8,13 +8,14 @@ defineProps({ events: { type: Array, required: true }, withCabin: Boolean })
 const ICON = {
   ROLE_CHANGED: 'pi-user-edit', MEMBER_REMOVED: 'pi-user-minus', MEMBER_LEFT: 'pi-sign-out', MEMBER_JOINED: 'pi-user-plus', ADMIN_JOINED: 'pi-shield',
   INVITE_CREATED: 'pi-link', INVITE_REVOKED: 'pi-times', CABIN_CREATED: 'pi-home', CABIN_DELETED: 'pi-trash', CABIN_RESTORED: 'pi-replay',
-  CHAT_CHANGED: 'pi-comments', RESET_LINK: 'pi-key', PASSWORD_SET: 'pi-key', PASSWORD_RESET: 'pi-key', RECOVERY_USED: 'pi-key', SIGNED_OUT_EVERYWHERE: 'pi-sign-out',
+  CHAT_CHANGED: 'pi-comments', GUEST_LINK_CREATED: 'pi-key', GUEST_LINK_REVOKED: 'pi-times', EXPORTED: 'pi-download', ACCOUNT_DELETED: 'pi-user-minus', RESET_LINK: 'pi-key', PASSWORD_SET: 'pi-key', PASSWORD_RESET: 'pi-key', RECOVERY_USED: 'pi-key', SIGNED_OUT_EVERYWHERE: 'pi-sign-out',
 }
 
 function text(e) {
   const params = {
     actor: e.actor || t('audit.someone'),
     target: e.target || t('audit.someone'),
+    detail: e.detail,
     role: e.action === 'ROLE_CHANGED' && t(`access.roles.${e.detail}`).toLowerCase(),
   }
   const key = e.action === 'CHAT_CHANGED' ? `audit.CHAT_${e.detail}` : e.action === 'CABIN_CREATED' && e.detail === 'demo' ? 'audit.DEMO_CREATED' : `audit.${e.action}`

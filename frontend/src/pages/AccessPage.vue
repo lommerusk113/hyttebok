@@ -5,7 +5,9 @@ import { useConfirm } from 'primevue/useconfirm'
 import { useToast } from 'primevue/usetoast'
 import Avatar from 'primevue/avatar'
 import Checkbox from 'primevue/checkbox'
+import DatePicker from 'primevue/datepicker'
 import Dialog from 'primevue/dialog'
+import InputText from 'primevue/inputtext'
 import Button from 'primevue/button'
 import Select from 'primevue/select'
 import ToggleSwitch from 'primevue/toggleswitch'
@@ -16,6 +18,7 @@ import { auth, loadAuth } from '../auth'
 import { cabin } from '../cabin'
 import { cabinId, setCabin } from '../hytte'
 import { colorFor, formatDate, initials } from '../utils'
+import { parseIsoDate, toIsoDate } from '../dates'
 import { t } from '../i18n'
 
 // "Tilgang": invitation links, and members with their roles. There is no list of everyone who has logged in:
@@ -29,6 +32,8 @@ const loaded = ref(false)
 const log = ref([])
 const chatUsage = ref(null) // { enabled, percentUsed, people: [{ name, percent }] }: for owners, when the chat is on
 const inviteForm = ref(null) // { role, singleUse } while making a new link
+const guests = ref([]) // guest links: read-only arrival info for people borrowing the cabin
+const guestForm = ref(null) // { label, validUntil } while making one
 const chat = ref(null) // { enabled, configured, percentUsed }; only fetched for system admins
 
 const ROLES = computed(() => [{ value: 'OWNER', label: t('access.roles.OWNER') }, { value: 'MEMBER', label: t('access.roles.MEMBER') }])
@@ -41,7 +46,8 @@ const ownerLock = m => m.role !== 'OWNER' ? null
     : ownerCount.value <= 1 ? 'access.ownerLast' : null
 
 async function load() {
-  ;[invites.value, members.value, log.value, chatUsage.value] = await Promise.all(['/access/invites', '/access/members', '/access/log', '/access/chat-usage'].map(api.get))
+  ;[invites.value, members.value, log.value, chatUsage.value, guests.value] = await Promise.all(
+    ['/access/invites', '/access/members', '/access/log', '/access/chat-usage', '/guest-links'].map(api.get))
   loaded.value = true
 }
 onMounted(load)
@@ -63,6 +69,26 @@ async function createInvite() {
   inviteForm.value = null
   await load()
   share(invite)
+}
+
+const guestUrl = token => `${location.origin}/gjest/${token}`
+
+function newGuestLink() {
+  const week = new Date()
+  week.setDate(week.getDate() + 7)
+  guestForm.value = { label: '', validUntil: week }
+}
+
+async function createGuestLink() {
+  const link = await api.post('/guest-links', { label: guestForm.value.label.trim(), validUntil: toIsoDate(guestForm.value.validUntil) })
+  guestForm.value = null
+  await load()
+  shareUrl(guestUrl(link.token), t('access.guestShareTitle', { name: cabin.value?.name }))
+}
+
+async function revokeGuest(link) {
+  await api.del(`/guest-links/${link.id}`)
+  await load()
 }
 
 // A download carries no headers, so the cabin goes in the address (as for photos).
@@ -157,6 +183,24 @@ function deleteCabin() {
         </ul>
       </DashCard>
 
+      <!-- Guests: read-only arrival info, no account, for a set time -->
+      <DashCard :title="t('access.guests')" icon="pi pi-key" tint="bg-amber-50 text-amber-700">
+        <template #action>
+          <Button :label="t('access.newGuest')" icon="pi pi-plus" size="small" outlined @click="newGuestLink" />
+        </template>
+        <p class="mb-3 text-sm text-zinc-500">{{ t('access.guestsHint') }}</p>
+        <ul v-if="guests.length" class="-mx-5 divide-y divide-zinc-100 border-t border-zinc-100">
+          <li v-for="g in guests" :key="g.id" class="flex items-center gap-3 px-5 py-2.5" :class="g.expired && 'opacity-60'">
+            <span class="min-w-0 flex-1">
+              <span class="block truncate font-medium">{{ g.label }}</span>
+              <span class="block text-xs text-zinc-500">{{ g.expired ? t('access.guestExpired') : t('access.guestUntil', { date: formatDate(parseIsoDate(g.validUntil)) }) }}</span>
+            </span>
+            <Button v-if="!g.expired" icon="pi pi-share-alt" text rounded severity="secondary" :aria-label="t('access.share')" @click="shareUrl(guestUrl(g.token), t('access.guestShareTitle', { name: cabin?.name }))" />
+            <Button icon="pi pi-times" text rounded severity="secondary" :aria-label="t('access.revoke')" v-tooltip.left="t('access.revoke')" @click="revokeGuest(g)" />
+          </li>
+        </ul>
+      </DashCard>
+
       <!-- System admins only (ADMIN_EMAILS): owners and members never see this -->
       <DashCard v-if="chat" :title="t('access.adminTools')" icon="pi pi-shield" tint="bg-zinc-100 text-zinc-700">
         <label class="flex items-center gap-4">
@@ -241,6 +285,22 @@ function deleteCabin() {
       </DashCard>
 
     </template>
+
+    <Dialog :visible="!!guestForm" modal dismissable-mask :header="t('access.newGuest')" class="w-[26rem] max-w-[calc(100vw-2rem)]" @update:visible="guestForm = null">
+      <form v-if="guestForm" id="guest-form" class="flex flex-col gap-4" @submit.prevent="guestForm.label.trim() && createGuestLink()">
+        <label class="flex flex-col gap-1.5 text-sm font-medium">{{ t('access.guestFor') }}
+          <InputText v-model="guestForm.label" maxlength="80" autofocus :placeholder="t('access.guestForPlaceholder')" />
+        </label>
+        <label class="flex flex-col gap-1.5 text-sm font-medium">{{ t('access.guestLastDay') }}
+          <DatePicker v-model="guestForm.validUntil" :min-date="new Date()" :manual-input="false" show-icon icon-display="input" date-format="d. M yy" />
+        </label>
+        <p class="text-xs text-zinc-500">{{ t('access.guestShows') }}</p>
+      </form>
+      <template #footer>
+        <Button :label="t('common.cancel')" text severity="secondary" @click="guestForm = null" />
+        <Button type="submit" form="guest-form" :label="t('access.makeLink')" icon="pi pi-link" :disabled="!guestForm?.label.trim()" />
+      </template>
+    </Dialog>
 
     <Dialog :visible="!!inviteForm" modal dismissable-mask :header="t('access.newInvite')" class="w-[26rem] max-w-[calc(100vw-2rem)]" @update:visible="inviteForm = null">
       <div v-if="inviteForm" class="flex flex-col gap-4">

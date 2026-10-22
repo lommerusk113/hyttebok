@@ -75,7 +75,7 @@ public class AccessService {
         return adminMode(authentication) || Membership.OWNER.equals(role(authentication));
     }
 
-    void requireManager(Authentication authentication) {
+    public void requireManager(Authentication authentication) {
         if (!canManage(authentication)) {
             throw new HttpStatusException(HttpStatus.FORBIDDEN, "Only owners can manage access");
         }

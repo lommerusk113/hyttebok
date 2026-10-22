@@ -46,6 +46,7 @@ const router = createRouter({
     { path: '/app', component: () => import('./pages/AppPage.vue') },
     { path: '/eksempel', component: () => import('./pages/ExamplePage.vue') },
     { path: '/personvern', component: () => import('./pages/PrivacyPage.vue') },
+    { path: '/gjest/:token', component: () => import('./pages/GuestPage.vue') },
     { path: '/invitasjon/:token', component: () => import('./pages/InvitePage.vue') },
     { path: '/nytt-passord/:token', component: () => import('./pages/ResetPasswordPage.vue') },
     // "Mine hytter": the cabins you belong to, and a new cabin.

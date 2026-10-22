@@ -9,7 +9,9 @@ import InputText from 'primevue/inputtext'
 import Textarea from 'primevue/textarea'
 import EmptyState from '../components/EmptyState.vue'
 import RichText from '../components/RichText.vue'
+import { useToast } from 'primevue/usetoast'
 import { api } from '../api'
+import { cabinId } from '../hytte'
 import { auth } from '../auth'
 import { askName, userName } from '../user'
 import { formatDate, timeAgo } from '../utils'
@@ -21,7 +23,11 @@ const route = useRoute()
 const router = useRouter()
 const confirm = useConfirm()
 
+const toast = useToast()
 const pages = ref(null)
+const files = ref([]) // attachments of every page: photos and PDFs
+const fileInput = ref()
+const uploading = ref(false)
 const query = ref('')
 const form = ref(null) // { id?, title, content } while writing
 const busy = ref(false)
@@ -31,7 +37,52 @@ const base = computed(() => `/h/${route.params.cabinId}/wiki`)
 const pageId = computed(() => Number(route.params.sub) || null)
 const page = computed(() => pages.value?.find(p => p.id === pageId.value) ?? null)
 
-onMounted(async () => { pages.value = await api.get('/wiki') })
+onMounted(async () => { [pages.value, files.value] = await Promise.all([api.get('/wiki'), api.get('/wiki/attachments')]) })
+
+// Files carry no X-Hytte header (the browser loads them itself), so the cabin goes in the address.
+const fileUrl = a => `/api/wiki/attachments/${a.id}/file?hytte=${cabinId.value}`
+const pageFiles = computed(() => files.value.filter(a => a.wikiPageId === pageId.value))
+const photos = computed(() => pageFiles.value.filter(a => a.contentType.startsWith('image/')))
+const documents = computed(() => pageFiles.value.filter(a => !a.contentType.startsWith('image/')))
+const size = bytes => (bytes < 1024 * 1024 ? `${Math.max(1, Math.round(bytes / 1024))} kB` : `${(bytes / 1024 / 1024).toFixed(1)} MB`)
+
+async function attach(e) {
+  const picked = [...e.target.files]
+  e.target.value = ''
+  if (!picked.length) return
+  if (!userName.value) return (askName.value = true)
+  uploading.value = true
+  let failed = 0
+  try {
+    for (const file of picked) {
+      const form = new FormData()
+      form.append('file', file)
+      form.append('uploadedBy', userName.value)
+      try {
+        files.value = [...files.value, await api.post(`/wiki/${pageId.value}/attachments`, form)]
+      } catch (err) {
+        if (err.message === 'example') throw err
+        failed++
+      }
+    }
+  } finally {
+    uploading.value = false
+  }
+  if (failed) toast.add({ severity: 'warn', summary: t('wiki.attachFailed', { n: failed }, failed), life: 5000 })
+}
+
+function detach(a) {
+  confirm.require({
+    header: t('wiki.removeFile'),
+    message: a.originalName,
+    acceptProps: { label: t('common.delete'), severity: 'danger' },
+    rejectProps: { label: t('common.cancel'), severity: 'secondary', text: true },
+    accept: async () => {
+      await api.del(`/wiki/attachments/${a.id}`)
+      files.value = files.value.filter(x => x.id !== a.id)
+    },
+  })
+}
 
 const shown = computed(() => {
   const q = query.value.trim().toLowerCase()
@@ -132,6 +183,35 @@ function remove() {
         </p>
         <RichText v-if="page.content" :text="page.content" class="mt-4" />
         <p v-else class="mt-4 text-sm text-zinc-500">{{ t('wiki.blank') }}</p>
+
+        <!-- Photos and PDFs (manuals and the like) -->
+        <section class="mt-6 border-t border-zinc-100 pt-4" :aria-label="t('wiki.files')">
+          <div class="flex items-center justify-between gap-2">
+            <h2 class="text-sm font-semibold">{{ t('wiki.files') }}<span v-if="pageFiles.length" class="ml-1.5 font-normal text-zinc-500">{{ pageFiles.length }}</span></h2>
+            <input ref="fileInput" type="file" accept="image/*,application/pdf" multiple class="hidden" @change="attach">
+            <Button :label="t('wiki.attach')" icon="pi pi-paperclip" size="small" outlined severity="secondary" :loading="uploading" @click="fileInput.click()" />
+          </div>
+          <p v-if="!pageFiles.length" class="mt-2 text-sm text-zinc-500">{{ t('wiki.filesHint') }}</p>
+          <div v-if="photos.length" class="mt-3 grid grid-cols-3 gap-2 sm:grid-cols-4">
+            <div v-for="a in photos" :key="a.id" class="group relative">
+              <a :href="fileUrl(a)" target="_blank" rel="noopener" class="block overflow-hidden rounded-lg bg-zinc-100">
+                <img :src="fileUrl(a)" :alt="a.originalName" loading="lazy" class="aspect-square w-full object-cover transition group-hover:scale-105">
+              </a>
+              <button type="button" class="absolute right-1 top-1 grid size-8 place-items-center rounded-full bg-black/50 text-white opacity-100 transition hover:bg-black/70 sm:opacity-0 sm:group-hover:opacity-100 sm:focus:opacity-100"
+                      :aria-label="`${t('common.delete')}: ${a.originalName}`" @click="detach(a)">
+                <i class="pi pi-times text-xs" />
+              </button>
+            </div>
+          </div>
+          <ul v-if="documents.length" class="mt-3 divide-y divide-zinc-100 rounded-lg border border-zinc-200">
+            <li v-for="a in documents" :key="a.id" class="flex items-center gap-3 px-3 py-2">
+              <i class="pi pi-file-pdf text-lg text-rose-600" />
+              <a :href="fileUrl(a)" class="min-w-0 flex-1 truncate text-sm font-medium underline-offset-4 hover:underline">{{ a.originalName }}</a>
+              <span class="shrink-0 text-xs tabular-nums text-zinc-500">{{ size(a.size) }}</span>
+              <Button icon="pi pi-times" text rounded size="small" severity="secondary" :aria-label="`${t('common.delete')}: ${a.originalName}`" @click="detach(a)" />
+            </li>
+          </ul>
+        </section>
       </article>
 
       <EmptyState v-else-if="pageId && pages" icon="pi pi-file" :text="t('wiki.missing')" class="card" />
