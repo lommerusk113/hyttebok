@@ -9,17 +9,20 @@ import Dialog from 'primevue/dialog'
 import InputNumber from 'primevue/inputnumber'
 import InputText from 'primevue/inputtext'
 import Select from 'primevue/select'
+import SelectButton from 'primevue/selectbutton'
+import ToggleSwitch from 'primevue/toggleswitch'
 import DashCard from '../components/DashCard.vue'
 import EmptyState from '../components/EmptyState.vue'
 import { api } from '../api'
-import { balances, settleUp } from '../expenses'
+import { balances, evenShares, paidMost, settleUp } from '../expenses'
 import { parseIsoDate, toIsoDate } from '../dates'
 import { askName, userName } from '../user'
 import { colorFor, formatDate, initials } from '../utils'
 import { localeTag, t } from '../i18n'
 
-// "Utgifter": who paid what for the cabin (power, firewood, shopping), split evenly between some people, and
-// who owes whom. Paying someone back is saved as a settlement, so the balances even out.
+// "Utgifter": who paid what for the cabin (power, firewood, shopping) and who pays the most. An expense can be split
+// between some people, evenly or by amount, and then the page works out who owes whom; paying someone back is saved
+// as a settlement, so the balances even out. Not split (the default) = just noted as paid by that person.
 const toast = useToast()
 const expenses = ref([])
 const people = ref([])
@@ -42,25 +45,76 @@ const payments = computed(() => settleUp(sum.value))
 const sorted = computed(() => [...expenses.value].sort((a, b) => b.spentOn.localeCompare(a.spentOn) || b.id - a.id))
 const total = computed(() => expenses.value.filter(e => e.kind === 'EXPENSE').reduce((s, e) => s + e.amount, 0))
 
+// Who pays the most: this year or all time.
+const thisYear = new Date().getFullYear()
+const statsPeriod = ref('year')
+const payers = computed(() => paidMost(expenses.value, statsPeriod.value === 'year' ? thisYear : null))
+const periods = computed(() => [{ value: 'year', label: t('expenses.thisYear', { year: thisYear }) }, { value: 'all', label: t('expenses.allTime') }])
+
 function openForm(expense) {
   if (!userName.value) {
     askName.value = true
     return
   }
   form.value = expense
-    ? { ...expense, kroner: expense.amount / 100, date: parseIsoDate(expense.spentOn) }
-    : { kind: 'EXPENSE', description: '', kroner: null, paidBy: userName.value, splitBetween: [...names.value.length ? names.value : [userName.value]], date: new Date() }
+    ? {
+        ...expense,
+        kroner: expense.amount / 100,
+        date: parseIsoDate(expense.spentOn),
+        shared: expense.splitBetween.length > 0,
+        custom: !!expense.shares,
+        shareKr: Object.fromEntries(expense.splitBetween.map((n, i) => [n, expense.shares ? expense.shares[i] / 100 : null])),
+      }
+    : { kind: 'EXPENSE', description: '', kroner: null, paidBy: userName.value, splitBetween: [], shared: false, custom: false, shareKr: {}, date: new Date() }
   formOpen.value = true
 }
 
-const formValid = computed(() => form.value.kroner > 0 && form.value.paidBy && form.value.splitBetween?.length)
+// Splitting: everyone ticked to begin with, evenly, until someone's amount is changed.
+function setShared(on) {
+  form.value.shared = on
+  if (on && !form.value.splitBetween.length) form.value.splitBetween = [...(names.value.length ? names.value : [userName.value])]
+}
+
+const amountOre = computed(() => Math.round((form.value.kroner || 0) * 100))
+const even = computed(() => evenShares(amountOre.value, form.value.splitBetween?.length || 1))
+const shareOf = name => {
+  const i = form.value.splitBetween.indexOf(name)
+  return form.value.custom ? form.value.shareKr[name] ?? 0 : even.value[i] / 100
+}
+
+function setShare(name, kroner) {
+  if (!form.value.custom) {
+    form.value.shareKr = Object.fromEntries(form.value.splitBetween.map((n, i) => [n, even.value[i] / 100]))
+    form.value.custom = true
+  }
+  form.value.shareKr[name] = kroner ?? 0
+}
+
+const customShares = () => form.value.splitBetween.map(n => Math.round((form.value.shareKr[n] || 0) * 100))
+// How much of the amount isn't given to anyone yet (negative: too much is).
+const remaining = computed(() => (form.value.custom ? amountOre.value - customShares().reduce((a, b) => a + b, 0) : 0))
+
+const formValid = computed(() => {
+  const f = form.value
+  if (!(f.kroner > 0 && f.paidBy)) return false
+  if (f.kind === 'SETTLEMENT') return f.splitBetween?.length === 1
+  return !f.shared || (f.splitBetween.length > 0 && remaining.value === 0)
+})
 
 async function save() {
   if (!formValid.value) return
   busy.value = true
   try {
-    const { kroner, date, ...fields } = form.value
-    const body = { ...fields, amount: Math.round(kroner * 100), spentOn: toIsoDate(date), createdBy: fields.createdBy || userName.value }
+    const { kroner, date, shared, custom, shareKr, ...fields } = form.value
+    const split = fields.kind === 'SETTLEMENT' || shared
+    const body = {
+      ...fields,
+      amount: Math.round(kroner * 100),
+      splitBetween: split ? fields.splitBetween : [],
+      shares: fields.kind === 'EXPENSE' && shared && custom ? customShares() : null,
+      spentOn: toIsoDate(date),
+      createdBy: fields.createdBy || userName.value,
+    }
     const saved = await (body.id ? api.put('/expenses', body) : api.post('/expenses', body))
     expenses.value = body.id ? expenses.value.map(e => (e.id === saved.id ? saved : e)) : [saved, ...expenses.value]
     formOpen.value = false
@@ -88,9 +142,11 @@ const toggleAll = on => { form.value.splitBetween = on ? [...names.value] : [] }
 </script>
 
 <template>
-  <div class="grid gap-6 lg:grid-cols-3 lg:items-start">
+  <div class="grid grid-cols-1 gap-6 lg:grid-cols-3 lg:items-start">
     <!-- Who owes whom -->
-    <DashCard :title="t('expenses.balance')" icon="pi pi-wallet" tint="bg-emerald-50 text-emerald-700" class="lg:order-2">
+    <!-- Phone: balance, list, who pays most. Desktop: the list on the left, the other two stacked on the right. -->
+    <div class="contents lg:col-start-3 lg:row-start-1 lg:flex lg:flex-col lg:gap-6">
+    <DashCard :title="t('expenses.balance')" icon="pi pi-wallet" tint="bg-emerald-50 text-emerald-700" class="order-1">
       <p v-if="!standing.length" class="py-1 text-sm text-zinc-500">{{ expenses.length ? t('expenses.even') : t('expenses.nothingYet') }}</p>
       <ul v-else class="-mx-5 divide-y divide-zinc-100 border-t border-zinc-100">
         <li v-for="[name, v] in standing" :key="name" class="flex items-center gap-3 px-5 py-2">
@@ -111,8 +167,27 @@ const toggleAll = on => { form.value.splitBetween = on ? [...names.value] : [] }
       </template>
     </DashCard>
 
+    <!-- Who pays the most -->
+    <DashCard :title="t('expenses.paidMost')" icon="pi pi-chart-bar" tint="bg-sky-50 text-sky-700" class="order-3">
+      <SelectButton v-model="statsPeriod" :options="periods" option-label="label" option-value="value" :allow-empty="false" size="small" class="mb-3" />
+      <p v-if="!payers.length" class="py-1 text-sm text-zinc-500">{{ t('expenses.nothingInPeriod') }}</p>
+      <ul v-else class="space-y-3">
+        <li v-for="p in payers" :key="p.name">
+          <div class="mb-1 flex items-baseline justify-between gap-2 text-sm">
+            <span class="truncate font-medium">{{ p.name }}</span>
+            <span class="shrink-0 tabular-nums"><b>{{ money(p.total) }}</b> <span class="text-xs text-zinc-500">· {{ t('expenses.count', { n: p.count }, p.count) }}</span></span>
+          </div>
+          <div class="h-2 overflow-hidden rounded-full bg-zinc-100">
+            <div class="h-full rounded-full" :class="colorFor(p.name).bar" :style="{ width: `${(p.total / payers[0].total) * 100}%` }" />
+          </div>
+        </li>
+      </ul>
+    </DashCard>
+
+    </div>
+
     <!-- Everything paid -->
-    <DashCard :title="t('expenses.title')" icon="pi pi-receipt" tint="bg-amber-50 text-amber-700" class="lg:order-1 lg:col-span-2"
+    <DashCard :title="t('expenses.title')" icon="pi pi-receipt" tint="bg-amber-50 text-amber-700" class="order-2 lg:col-span-2 lg:col-start-1 lg:row-start-1"
               :count="expenses.length" :count-title="t('expenses.total', { amount: money(total) })">
       <template #action>
         <Button :label="t('expenses.new')" icon="pi pi-plus" size="small" @click="openForm()" />
@@ -127,7 +202,8 @@ const toggleAll = on => { form.value.splitBetween = on ? [...names.value] : [] }
             <span class="min-w-0 flex-1">
               <span class="block truncate font-medium">{{ e.kind === 'SETTLEMENT' ? t('expenses.paidBack', { from: e.paidBy, to: e.splitBetween[0] }) : e.description || t('expenses.untitled') }}</span>
               <span class="block truncate text-xs text-zinc-500">
-                {{ formatDate(e.spentOn) }}<template v-if="e.kind === 'EXPENSE'"> · {{ t('expenses.paidByShort', { name: e.paidBy }) }} · {{ t('expenses.splitCount', { n: e.splitBetween.length }, e.splitBetween.length) }}</template>
+                {{ formatDate(e.spentOn) }}<template v-if="e.kind === 'EXPENSE'"> · {{ t('expenses.paidByShort', { name: e.paidBy }) }}
+                  · {{ !e.splitBetween.length ? t('expenses.notSplit') : e.shares ? t('expenses.splitUneven', { n: e.splitBetween.length }) : t('expenses.splitCount', { n: e.splitBetween.length }, e.splitBetween.length) }}</template>
               </span>
             </span>
             <span class="shrink-0 font-semibold tabular-nums">{{ money(e.amount) }}</span>
@@ -160,18 +236,38 @@ const toggleAll = on => { form.value.splitBetween = on ? [...names.value] : [] }
         <label v-if="form.kind === 'SETTLEMENT'" class="flex flex-col gap-1.5 text-sm font-medium">{{ t('expenses.to') }}
           <Select :model-value="form.splitBetween[0]" :options="names" editable @update:model-value="form.splitBetween = [$event]" />
         </label>
-        <fieldset v-else class="flex flex-col gap-2">
-          <legend class="mb-1.5 flex w-full items-center justify-between text-sm font-medium">
-            {{ t('expenses.splitBetween') }}
-            <Button type="button" :label="form.splitBetween.length === names.length ? t('expenses.none') : t('expenses.all')" size="small" text severity="secondary"
-                    @click="toggleAll(form.splitBetween.length !== names.length)" />
-          </legend>
-          <label v-for="n in names" :key="n" class="flex min-h-10 cursor-pointer items-center gap-3 rounded-md px-2 hover:bg-zinc-50">
-            <Checkbox v-model="form.splitBetween" :value="n" />
-            <span class="flex-1 text-sm">{{ n }}</span>
-            <span v-if="form.splitBetween.includes(n) && form.kroner" class="text-xs tabular-nums text-zinc-500">{{ money(Math.round(form.kroner * 100 / form.splitBetween.length)) }}</span>
+        <template v-else>
+          <label class="flex cursor-pointer items-center gap-3 rounded-lg border border-zinc-200 p-3">
+            <span class="min-w-0 flex-1">
+              <span class="block text-sm font-medium">{{ t('expenses.share') }}</span>
+              <span class="block text-xs text-zinc-500">{{ form.shared ? t('expenses.shareOn') : t('expenses.shareOff', { name: form.paidBy || '…' }) }}</span>
+            </span>
+            <ToggleSwitch :model-value="form.shared" @update:model-value="setShared" />
           </label>
-        </fieldset>
+          <fieldset v-if="form.shared" class="flex flex-col gap-1">
+            <legend class="mb-1.5 flex w-full items-center justify-between gap-2 text-sm font-medium">
+              {{ t('expenses.splitBetween') }}
+              <span class="flex">
+                <Button v-if="form.custom" type="button" :label="t('expenses.evenly')" icon="pi pi-equals" size="small" text severity="secondary" @click="form.custom = false" />
+                <Button type="button" :label="form.splitBetween.length === names.length ? t('expenses.none') : t('expenses.all')" size="small" text severity="secondary"
+                        @click="toggleAll(form.splitBetween.length !== names.length)" />
+              </span>
+            </legend>
+            <div v-for="n in names" :key="n" class="flex min-h-11 items-center gap-3 rounded-md px-2 hover:bg-zinc-50">
+              <label class="flex min-w-0 flex-1 cursor-pointer items-center gap-3">
+                <Checkbox v-model="form.splitBetween" :value="n" />
+                <span class="truncate text-sm">{{ n }}</span>
+              </label>
+              <InputNumber v-if="form.splitBetween.includes(n)" :model-value="shareOf(n)" :min="0" :max-fraction-digits="2" suffix=" kr" :locale="localeTag()"
+                           :aria-label="t('expenses.shareFor', { name: n })" input-class="!w-28 text-right tabular-nums" :input-props="{ inputmode: 'decimal' }"
+                           @update:model-value="setShare(n, $event)" />
+            </div>
+            <p v-if="form.custom && remaining" class="mt-1 rounded-md px-2 py-1.5 text-xs font-medium" :class="remaining > 0 ? 'bg-amber-50 text-amber-800' : 'bg-rose-50 text-rose-700'">
+              {{ remaining > 0 ? t('expenses.left', { amount: money(remaining) }) : t('expenses.tooMuch', { amount: money(-remaining) }) }}
+            </p>
+            <p v-else-if="!form.custom" class="mt-1 px-2 text-xs text-zinc-500">{{ t('expenses.evenHint') }}</p>
+          </fieldset>
+        </template>
       </form>
       <template #footer>
         <Button v-if="form.id" :label="t('common.delete')" icon="pi pi-trash" text severity="danger" class="mr-auto" @click="remove" />

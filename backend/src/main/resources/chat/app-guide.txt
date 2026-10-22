@@ -48,8 +48,9 @@ Vedlikehold:
 - «Utført i år» viser alt som er gjort i løpet av året, og Årsoversikten viser hva som er gjort og planlagt måned for måned.
 
 Utgifter:
-- Under fanen Utgifter skriver du inn felles utgifter (strøm, ved, mat): hva, beløp, hvem som betalte og hvem det deles på.
-- Appen regner ut hvem som skylder hvem og foreslår hvem som skal betale hvem. Trykk «Betalt» når noen har betalt tilbake.
+- Under fanen Utgifter skriver du inn utgifter til hytta (strøm, ved, mat): hva, beløp og hvem som betalte. «Hvem betaler mest» viser hvem som har lagt ut mest, i år eller totalt.
+- Slå på «Del utgiften» for å dele den: velg hvem som deler. Den deles likt, men du kan endre beløpet for hver person.
+- For delte utgifter regner appen ut hvem som skylder hvem og foreslår hvem som skal betale hvem. Trykk «Betalt» når noen har betalt tilbake.
 
 Hytteboka:
 - Skriv om oppholdet ditt under Hyttebok: hvem som var der, hva som skjedde, og legg gjerne til bilder.

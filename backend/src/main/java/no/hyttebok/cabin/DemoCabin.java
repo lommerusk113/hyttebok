@@ -10,6 +10,8 @@ import no.hyttebok.booking.Booking;
 import no.hyttebok.booking.BookingRepository;
 import no.hyttebok.checklist.ChecklistItem;
 import no.hyttebok.checklist.ChecklistItemRepository;
+import no.hyttebok.expense.Expense;
+import no.hyttebok.expense.ExpenseRepository;
 import no.hyttebok.forum.ForumPost;
 import no.hyttebok.forum.ForumPostRepository;
 import no.hyttebok.forum.ForumReaction;
@@ -72,6 +74,7 @@ public class DemoCabin {
     private final ForumReactionRepository reactions;
     private final WikiPageRepository wiki;
     private final PhotoRepository photos;
+    private final ExpenseRepository expenses;
     private final JdbcOperations jdbc;
     private final Path uploadDir;
 
@@ -83,7 +86,7 @@ public class DemoCabin {
                      MaintenanceRepository maintenance, MaintenanceCompletionRepository completions, TodoRepository todos,
                      ShoppingItemRepository shopping, ChecklistItemRepository checklist, SuggestionRepository suggestions,
                      ForumPostRepository posts, ForumReplyRepository replies, ForumReactionRepository reactions, WikiPageRepository wiki,
-                     PhotoRepository photos, JdbcOperations jdbc, @Value("${hyttebok.upload-dir}") String uploadDir) {
+                     PhotoRepository photos, ExpenseRepository expenses, JdbcOperations jdbc, @Value("${hyttebok.upload-dir}") String uploadDir) {
         this.cabins = cabins;
         this.memberships = memberships;
         this.bookings = bookings;
@@ -99,6 +102,7 @@ public class DemoCabin {
         this.reactions = reactions;
         this.wiki = wiki;
         this.photos = photos;
+        this.expenses = expenses;
         this.jdbc = jdbc;
         this.uploadDir = Path.of(uploadDir);
     }
@@ -144,7 +148,26 @@ public class DemoCabin {
         suggestions(me);
         forum(me);
         wiki(me);
+        expenses(me);
         cover();
+    }
+
+    /** Some just noted, some split evenly or unevenly, and one paid back. Amounts in øre. */
+    private void expenses(String me) {
+
+        var all = List.of(me, "Kari", "Ola");
+        expense(t("Ved, 3 sekker", "Firewood, 3 bags"), 45000, "Lars", List.of(), null, 120);
+        expense(t("Strøm august–oktober", "Power August–October"), 312450, "Ola", all, null, 60);
+        expense(t("Maling til nordveggen", "Paint for the north wall"), 189900, "Ola", List.of("Ola", "Kari"), List.of(129900L, 60000L), 90);
+        expense(t("Mat til dugnaden", "Food for the work weekend"), 84700, me, all, null, 30);
+        expense(t("Ny kaffetrakter", "New coffee maker"), 69900, "Kari", List.of(), null, 14);
+        var payback = expenses.save(new Expense(null, "SETTLEMENT", null, 50000, "Kari", List.of("Ola"), null, today.minusDays(10), "Kari", null, null));
+        backdate("expense", payback.id(), today.minusDays(10));
+    }
+
+    private void expense(String what, long amount, String paidBy, List<String> splitBetween, List<Long> shares, int daysAgo) {
+        var saved = expenses.save(new Expense(null, "EXPENSE", what, amount, paidBy, splitBetween, shares, today.minusDays(daysAgo), paidBy, null, null));
+        backdate("expense", saved.id(), today.minusDays(daysAgo));
     }
 
     private void cover() {
