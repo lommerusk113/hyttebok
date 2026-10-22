@@ -24,6 +24,7 @@ const BookingPage = defineAsyncComponent(() => import('./BookingPage.vue'))
 const HyttebokTab = defineAsyncComponent(() => import('./HyttebokTab.vue'))
 const MaintenanceTab = defineAsyncComponent(() => import('./MaintenanceTab.vue'))
 const ShoppingPage = defineAsyncComponent(() => import('./ShoppingPage.vue'))
+const ExpensesPage = defineAsyncComponent(() => import('./ExpensesPage.vue'))
 const ForumPage = defineAsyncComponent(() => import('./ForumPage.vue'))
 const WikiPage = defineAsyncComponent(() => import('./WikiPage.vue'))
 const AccessPage = defineAsyncComponent(() => import('./AccessPage.vue'))
@@ -33,6 +34,7 @@ const ALL_TABS = [
   { key: '', label: 'tabs.overview', icon: 'pi pi-home', component: OverviewTab },
   { key: 'booking', label: 'tabs.booking', icon: 'pi pi-calendar', component: BookingPage },
   { key: 'handleliste', label: 'tabs.shopping', icon: 'pi pi-shopping-cart', component: ShoppingPage },
+  { key: 'utgifter', label: 'tabs.expenses', icon: 'pi pi-wallet', component: ExpensesPage },
   { key: 'vedlikehold', label: 'tabs.maintenance', icon: 'pi pi-wrench', component: MaintenanceTab },
   { key: 'hyttebok', label: 'tabs.logbook', icon: 'pi pi-book', component: HyttebokTab },
   { key: 'forum', label: 'tabs.forum', icon: 'pi pi-comments', component: ForumPage },

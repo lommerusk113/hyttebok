@@ -19,18 +19,24 @@ public record AppUser(@Id @GeneratedValue @Nullable Long id,
                       @Nullable String picture,
                       Instant createdAt,
                       Instant lastLoginAt,
-                      @Nullable String passwordHash) {
+                      @Nullable String passwordHash,
+                      int sessionVersion) {
 
     /** Google has confirmed the email belongs to this person; a password sign-up proves nothing about it. */
     public boolean emailVerified() {
         return googleSub != null;
     }
 
-    public AppUser withPasswordHash(@Nullable String hash) {
-        return new AppUser(id, googleSub, email, name, picture, createdAt, lastLoginAt, hash);
+    /** A new password (or none) logs out every device: their login cookies carry the old {@code sessionVersion}. */
+    public AppUser withNewPassword(@Nullable String hash) {
+        return new AppUser(id, googleSub, email, name, picture, createdAt, lastLoginAt, hash, sessionVersion + 1);
     }
 
     public AppUser withLogin(Instant at) {
-        return new AppUser(id, googleSub, email, name, picture, createdAt, at, passwordHash);
+        return new AppUser(id, googleSub, email, name, picture, createdAt, at, passwordHash, sessionVersion);
+    }
+
+    public AppUser loggedOutEverywhere() {
+        return new AppUser(id, googleSub, email, name, picture, createdAt, lastLoginAt, passwordHash, sessionVersion + 1);
     }
 }

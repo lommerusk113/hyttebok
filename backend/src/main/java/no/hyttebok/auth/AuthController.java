@@ -14,6 +14,7 @@ import io.micronaut.security.authentication.Authentication;
 import io.micronaut.security.rules.SecurityRule;
 import io.micronaut.serde.annotation.Serdeable;
 import no.hyttebok.access.AccessService;
+import no.hyttebok.audit.Audit;
 import no.hyttebok.cabin.CabinContext;
 import no.hyttebok.cabin.CabinInfoRepository;
 import jakarta.validation.Valid;
@@ -36,15 +37,19 @@ public class AuthController {
     private final AppUserRepository users;
     private final PasswordResetRepository resets;
     private final CabinInfoRepository cabins;
+    private final Profiles profiles;
+    private final Audit audit;
     private final boolean chatOn;
 
     public AuthController(LoginOffRule login, AccessService access, AppUserRepository users, PasswordResetRepository resets,
-                          CabinInfoRepository cabins, @Value("${hyttebok.chat.api-key:}") String chatKey) {
+                          CabinInfoRepository cabins, Profiles profiles, Audit audit, @Value("${hyttebok.chat.api-key:}") String chatKey) {
         this.login = login;
         this.access = access;
         this.users = users;
         this.resets = resets;
         this.cabins = cabins;
+        this.profiles = profiles;
+        this.audit = audit;
         this.chatOn = !chatKey.isBlank();
     }
 
@@ -55,6 +60,10 @@ public class AuthController {
 
     @Serdeable
     public record NewPassword(@NotBlank @Size(min = Passwords.MIN_LENGTH, max = Passwords.MAX_LENGTH) String password) {
+    }
+
+    @Serdeable
+    public record Recover(@NotBlank @Size(max = 200) String email, @NotBlank @Size(max = 40) String code) {
     }
 
     @Serdeable
@@ -111,7 +120,7 @@ public class AuthController {
             throw new HttpStatusException(HttpStatus.CONFLICT, "An account with this email already exists");
         }
         var now = Instant.now();
-        users.save(new AppUser(null, null, email, body.name().trim(), null, now, now, Passwords.hash(body.password())));
+        users.save(new AppUser(null, null, email, body.name().trim(), null, now, now, Passwords.hash(body.password()), 0));
     }
 
     @Get("/password-reset/{token}")
@@ -126,7 +135,19 @@ public class AuthController {
         var reset = resets.findById(token).filter(r -> r.usable(Instant.now()))
             .orElseThrow(() -> new HttpStatusException(HttpStatus.GONE, "This link has expired or was already used"));
         var user = users.findById(reset.userId()).orElseThrow(() -> new HttpStatusException(HttpStatus.GONE, "No such user"));
-        users.update(user.withPasswordHash(Passwords.hash(body.password())));
+        users.update(user.withNewPassword(Passwords.hash(body.password())));
         resets.update(new PasswordReset(reset.token(), reset.userId(), reset.createdBy(), reset.expiresAt(), true));
+        audit.log(null, null, Audit.PASSWORD_RESET, user.id(), null);
+    }
+
+    /** Forgot the password: a recovery code (saved earlier on "Min profil") gives a one-time new-password link. */
+    @Post("/recover")
+    public Profiles.ResetLink recover(@Body @Valid Recover body) {
+
+        var link = profiles.redeem(body.email(), body.code())
+            .orElseThrow(() -> new HttpStatusException(HttpStatus.UNPROCESSABLE_ENTITY, "Wrong email or code"));
+        resets.findById(link.token()).ifPresent(r -> audit.log(null, null, Audit.RECOVERY_USED, r.userId(), null));
+
+        return link;
     }
 }

@@ -60,7 +60,7 @@ public class CabinInfoController {
         var cabin = new CabinInfo(cabinId, info.name(), info.tagline(), info.description(), info.address(),
             info.wifiName(), info.wifiPassword(), info.arrivalInfo(), info.departureInfo(), info.heroPhotoId(), info.hiddenSections(),
             moved ? null : info.latitude(), moved ? null : info.longitude(), moved && !heightTyped ? null : info.elevation(),
-            info.locationTyped() && info.latitude() != null);
+            info.locationTyped() && info.latitude() != null, info.keyInfo());
 
         return repository.update(cabin);
     }

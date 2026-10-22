@@ -90,6 +90,7 @@ public class ChatService {
     private final LogEntryController logbook;
     private final SuggestionController suggestions;
     private final JsonMapper json;
+    private final ChatBudget budget;
     private final HttpClient http = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(10)).build();
 
     @Serdeable
@@ -119,7 +120,8 @@ public class ChatService {
                        ForumController forum,
                        LogEntryController logbook,
                        SuggestionController suggestions,
-                       JsonMapper json) {
+                       JsonMapper json,
+                       ChatBudget budget) {
         this.apiKey = apiKey;
         this.model = model;
         this.apiUrl = apiUrl;
@@ -135,6 +137,7 @@ public class ChatService {
         this.logbook = logbook;
         this.suggestions = suggestions;
         this.json = json;
+        this.budget = budget;
     }
 
     public Reply reply(Request request) {
@@ -144,6 +147,9 @@ public class ChatService {
         }
         if (!cabins.findChatEnabled(CabinContext.require()).orElse(false)) {
             throw new HttpStatusException(HttpStatus.FORBIDDEN, "Chat is not turned on for this cabin");
+        }
+        if (budget.exhausted(CabinContext.require())) {
+            throw new HttpStatusException(HttpStatus.PAYMENT_REQUIRED, "This month's chat budget is used up");
         }
 
         var english = "en".equals(request.lang());
@@ -227,6 +233,10 @@ public class ChatService {
         if (!hidden.contains("wifi") && cabin.wifiName() != null) {
             out.append("\nWiFi network: ").append(cabin.wifiName()).append(" (password: see the WiFi card in the app)");
         }
+        // Codes stay out of the AI request, like the WiFi password.
+        if (!hidden.contains("keyInfo") && cabin.keyInfo() != null && !cabin.keyInfo().isBlank()) {
+            out.append("\nKeys (who has one, the spare, the key box code): see the Keys card on the overview in the app");
+        }
 
         // ponytail: every page goes in, up to a cap; search the wiki with a tool instead if it outgrows this.
         var pages = wiki.listOrderByTitle();
@@ -257,7 +267,8 @@ public class ChatService {
 
         out.append("\n\nONE-OFF TASKS (open; shown with the recurring ones under Vedlikehold):");
         todos.list().stream().filter(x -> !x.done()).forEach(x -> out.append("\n- ").append(x.title())
-            .append(x.description() == null ? "" : " – " + x.description()).append(x.createdBy() == null ? "" : ", added by " + x.createdBy()).append(id(x.id())));
+            .append(x.description() == null ? "" : " – " + x.description()).append(x.createdBy() == null ? "" : ", added by " + x.createdBy())
+            .append(x.claimedBy() == null ? "" : ", " + x.claimedBy() + " will do it").append(id(x.id())));
 
         out.append("\n\nRECURRING MAINTENANCE (monthly/yearly tasks are due within their month):");
         for (var m : maintenance.list()) {
@@ -375,14 +386,14 @@ public class ChatService {
             }
             case ChatTools.ADD_TODO -> {
                 var title = ChatTools.text(args, "title");
-                var saved = todos.create(new Todo(null, title, ChatTools.optionalText(args, "description"), false, null, null, user, null, null, null, null));
+                var saved = todos.create(new Todo(null, title, ChatTools.optionalText(args, "description"), false, null, null, user, null, null, null, null, null));
                 actions.add(english ? "Added the to-do “" + title + "”" : "La til gjøremålet «" + title + "»");
                 return Map.of("ok", true, "id", saved.id());
             }
             case ChatTools.COMPLETE_TODO -> {
                 var id = ChatTools.id(args);
                 var todo = todos.list().stream().filter(x -> x.id().equals(id)).findFirst().orElseThrow(() -> new IllegalArgumentException("No to-do " + id));
-                todos.update(new Todo(todo.id(), todo.title(), todo.description(), true, user, Instant.now(), todo.createdBy(), todo.createdAt(), todo.doneWith(), todo.doneNote(), todo.cabinId()));
+                todos.update(new Todo(todo.id(), todo.title(), todo.description(), true, user, Instant.now(), todo.createdBy(), todo.createdAt(), todo.doneWith(), todo.doneNote(), todo.claimedBy(), todo.cabinId()));
                 actions.add(english ? "Marked “" + todo.title() + "” as done" : "Markerte «" + todo.title() + "» som utført");
                 return Map.of("ok", true);
             }
@@ -462,6 +473,10 @@ public class ChatService {
 
         try {
             Map<?, ?> result = json.readValue(response.body(), Argument.mapOf(String.class, Object.class));
+            if (result.get("usage") instanceof Map<?, ?> usage) {
+                budget.record(CabinContext.require(), usage);
+            }
+
             var choices = result.get("choices") instanceof List<?> list ? list : List.of();
             if (choices.isEmpty() || !(choices.get(0) instanceof Map<?, ?> first)) {
                 return null;

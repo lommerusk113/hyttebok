@@ -7,6 +7,7 @@ import Avatar from 'primevue/avatar'
 import Button from 'primevue/button'
 import Select from 'primevue/select'
 import ToggleSwitch from 'primevue/toggleswitch'
+import AuditList from '../components/AuditList.vue'
 import DashCard from '../components/DashCard.vue'
 import { api } from '../api'
 import { auth, loadAuth } from '../auth'
@@ -23,7 +24,8 @@ const router = useRouter()
 const invites = ref([])
 const members = ref([])
 const loaded = ref(false)
-const chat = ref(null) // { enabled, configured }; only fetched for system admins
+const log = ref([])
+const chat = ref(null) // { enabled, configured, percentUsed }; only fetched for system admins
 
 const ROLES = computed(() => [{ value: 'OWNER', label: t('access.roles.OWNER') }, { value: 'MEMBER', label: t('access.roles.MEMBER') }])
 const inviteUrl = token => `${location.origin}/invitasjon/${token}`
@@ -35,7 +37,7 @@ const ownerLock = m => m.role !== 'OWNER' ? null
     : ownerCount.value <= 1 ? 'access.ownerLast' : null
 
 async function load() {
-  ;[invites.value, members.value] = await Promise.all(['/access/invites', '/access/members'].map(api.get))
+  ;[invites.value, members.value, log.value] = await Promise.all(['/access/invites', '/access/members', '/access/log'].map(api.get))
   loaded.value = true
 }
 onMounted(load)
@@ -43,8 +45,8 @@ onMounted(async () => { if (auth.value.admin) chat.value = await api.get('/acces
 
 // System admins only: the AI chat for everyone in this cabin (it costs money per question).
 async function setChat(enabled) {
-  chat.value = await api.put('/access/chat', { enabled, configured: chat.value.configured })
-  await loadAuth() // the chat button follows right away
+  chat.value = await api.put('/access/chat', { enabled })
+  await Promise.all([loadAuth(), load()]) // the chat button follows right away
 }
 
 // Your own access may have changed (e.g. you gave yourself access): refresh what the app lets you see.
@@ -84,6 +86,12 @@ async function shareUrl(url, title) {
 
 async function revoke(invite) {
   await api.del(`/access/invites/${invite.id}`)
+  await load()
+}
+
+// Making a reset link is logged too.
+async function resetAndReload(person) {
+  await resetLink(person)
   await load()
 }
 
@@ -156,6 +164,15 @@ function deleteCabin() {
           </span>
           <ToggleSwitch :model-value="chat.enabled" @update:model-value="setChat" />
         </label>
+        <!-- Only the share of the monthly budget, never the amount -->
+        <div v-if="chat.configured" class="mt-4">
+          <div class="mb-1.5 flex justify-between text-xs text-zinc-500">
+            <span>{{ t('access.chatBudget') }}</span><span class="tabular-nums">{{ chat.percentUsed }} %</span>
+          </div>
+          <div class="h-2 overflow-hidden rounded-full bg-zinc-100" role="progressbar" :aria-valuenow="chat.percentUsed" aria-valuemin="0" aria-valuemax="100" :aria-label="t('access.chatBudget')">
+            <div class="h-full rounded-full" :class="chat.percentUsed >= 100 ? 'bg-rose-500' : chat.percentUsed >= 80 ? 'bg-amber-500' : 'bg-emerald-500'" :style="{ width: `${chat.percentUsed}%` }" />
+          </div>
+        </div>
         <p v-if="!chat.configured" class="mt-3 rounded-lg bg-amber-50 p-3 text-sm text-amber-800">{{ t('access.chatNoKey') }}</p>
       </DashCard>
 
@@ -168,7 +185,7 @@ function deleteCabin() {
               <span class="block truncate font-medium">{{ m.name }}</span>
               <span class="block truncate text-xs text-zinc-500"><span v-if="m.admin" class="mr-1.5 rounded-full bg-zinc-100 px-1.5 py-0.5 text-zinc-600">{{ t('access.admin') }}</span>{{ m.email }}</span>
             </span>
-            <Button icon="pi pi-key" text rounded severity="secondary" :aria-label="t('access.resetLink')" v-tooltip.left="t('access.resetLink')" @click="resetLink(m)" />
+            <Button icon="pi pi-key" text rounded severity="secondary" :aria-label="t('access.resetLink')" v-tooltip.left="t('access.resetLink')" @click="resetAndReload(m)" />
             <span class="flex items-center gap-3" v-tooltip.left="ownerLock(m) && t(ownerLock(m))">
               <Select :model-value="m.role" :options="ROLES" option-label="label" option-value="value" size="small" :aria-label="t('access.role')"
                       :disabled="!!ownerLock(m)" @update:model-value="setRole(m, $event)" />
@@ -176,6 +193,10 @@ function deleteCabin() {
             </span>
           </li>
         </ul>
+      </DashCard>
+
+      <DashCard v-if="log.length" :title="t('audit.title')" icon="pi pi-history" tint="bg-zinc-100 text-zinc-700" scroll class="max-h-96">
+        <AuditList :events="log" />
       </DashCard>
 
       <DashCard :title="t('access.deleteCabin')" icon="pi pi-trash" tint="bg-red-50 text-red-700">

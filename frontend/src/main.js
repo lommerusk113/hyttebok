@@ -51,14 +51,14 @@ const router = createRouter({
     { path: '/profil', component: () => import('./pages/ProfilePage.vue') },
     // System admins: every cabin and user (/admin, /admin/brukere), and one user's profile.
     { path: '/admin/brukere/:userId(\\d+)', component: () => import('./pages/ProfilePage.vue') },
-    { path: '/admin/:tab(brukere)?', component: () => import('./pages/AdminPage.vue') },
+    { path: '/admin/:tab(brukere|logg)?', component: () => import('./pages/AdminPage.vue') },
     // One cabin: /h/<id>/<tab>/<section>. The id (not the name: names needn't be unique) picks the cabin.
-    { path: '/h/:cabinId(\\d+)/:tab(booking|hyttebok|vedlikehold|handleliste|forum|wiki|tilgang)?/:sub?', component: () => import('./pages/HomePage.vue') },
+    { path: '/h/:cabinId(\\d+)/:tab(booking|hyttebok|vedlikehold|handleliste|utgifter|forum|wiki|tilgang)?/:sub?', component: () => import('./pages/HomePage.vue') },
     // Links without a cabin (inside the app, and in notifications sent before there were several cabins)
     // open in the cabin you're in. Older names first: "Lister" moved to Vedlikehold, the shopping list to its own tab.
     { path: '/lister/:sub?', redirect: to => ({ path: inCabin(`/vedlikehold/${to.params.sub || ''}`), query: to.query }) },
     { path: '/vedlikehold/handle', redirect: () => inCabin('/handleliste') },
-    { path: '/:tab(booking|hyttebok|vedlikehold|handleliste|forum|wiki|tilgang)/:sub?', redirect: to => ({ path: inCabin(to.path), query: to.query }) },
+    { path: '/:tab(booking|hyttebok|vedlikehold|handleliste|utgifter|forum|wiki|tilgang)/:sub?', redirect: to => ({ path: inCabin(to.path), query: to.query }) },
     { path: '/:pathMatch(.*)*', redirect: '/' },
   ],
 

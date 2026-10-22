@@ -11,6 +11,7 @@ export const INFO_TILES = [
   { key: 'arrivalInfo', icon: 'pi pi-sign-in', tint: 'bg-zinc-100 text-zinc-700' },
   { key: 'departureInfo', icon: 'pi pi-sign-out', tint: 'bg-zinc-100 text-zinc-700' },
   { key: 'wifi', icon: 'pi pi-wifi', tint: 'bg-zinc-100 text-zinc-700' },
+  { key: 'keyInfo', icon: 'pi pi-key', tint: 'bg-zinc-100 text-zinc-700' },
   { key: 'address', icon: 'pi pi-map-marker', tint: 'bg-zinc-100 text-zinc-700' },
 ]
 

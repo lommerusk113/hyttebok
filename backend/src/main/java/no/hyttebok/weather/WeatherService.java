@@ -319,7 +319,7 @@ public class WeatherService {
 
         return cabins.update(new CabinInfo(cabin.id(), cabin.name(), cabin.tagline(), cabin.description(), cabin.address(), cabin.wifiName(),
             cabin.wifiPassword(), cabin.arrivalInfo(), cabin.departureInfo(), cabin.heroPhotoId(), cabin.hiddenSections(), lat, lon, elevation,
-            cabin.locationTyped()));
+            cabin.locationTyped(), cabin.keyInfo()));
     }
 
     /** Metres above sea level, or null outside Kartverket's coverage. */

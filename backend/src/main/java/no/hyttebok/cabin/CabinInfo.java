@@ -28,5 +28,6 @@ public record CabinInfo(@Id @GeneratedValue @Nullable Long id,
                         @Nullable Double latitude,
                         @Nullable Double longitude,
                         @Nullable Double elevation,
-                        boolean locationTyped) {
+                        boolean locationTyped,
+                        @Nullable String keyInfo) {
 }

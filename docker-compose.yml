@@ -32,6 +32,38 @@ services:
       db:
         condition: service_healthy
 
+  # Once a day: a database dump (kept KEEP_DAYS days) and a copy of new photos, into BACKUP_DIR on the host.
+  # Photo files never change (a new upload is a new file), so they're copied once and kept. Restore: see README.
+  backup:
+    image: postgres:18-alpine
+    environment:
+      PGHOST: db
+      PGUSER: hyttebok
+      PGPASSWORD: hyttebok
+      PGDATABASE: hyttebok
+      KEEP_DAYS: ${BACKUP_KEEP_DAYS:-14}
+    volumes:
+      - uploads:/data/uploads:ro
+      - ${BACKUP_DIR:-./backups}:/backups
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        mkdir -p /backups/uploads
+        while true; do
+          stamp=$$(date +%F)
+          if pg_dump -Fc -f /backups/hyttebok-$$stamp.dump.tmp && mv /backups/hyttebok-$$stamp.dump.tmp /backups/hyttebok-$$stamp.dump \
+             && for f in /data/uploads/*; do [ -e "/backups/uploads/$${f##*/}" ] || cp "$$f" /backups/uploads/; done; then
+            echo "backup $$stamp ok"
+            find /backups -maxdepth 1 -name 'hyttebok-*.dump' -mtime +$$KEEP_DAYS -delete
+          else
+            echo "backup $$stamp FAILED"
+          fi
+          sleep 86400
+        done
+    depends_on:
+      db:
+        condition: service_healthy
+
   frontend:
     build: ./frontend
     ports:

@@ -41,13 +41,15 @@
     "posts": "Posts",
     "photos": "Photos",
     "maintenance": "Maintenance",
-    "forum": "Forum"
+    "forum": "Forum",
+    "expenses": "Expenses"
   },
   "info": {
     "arrivalInfo": "Arrival",
     "departureInfo": "Departure",
     "wifi": "WiFi",
-    "address": "Address"
+    "address": "Address",
+    "keyInfo": "Keys"
   },
   "home": {
     "addPhoto": "Add photo",
@@ -126,7 +128,11 @@
     "details": "Details",
     "doneBy": "Done by {name}, {date}",
     "deleteTitle": "Delete task?",
-    "doneToast": "“{name}” done"
+    "doneToast": "“{name}” done",
+    "claim": "I'll do it",
+    "unclaim": "Let it go",
+    "claimedBy": "{name} will do it",
+    "unclaimed": "Nobody has taken this one yet."
   },
   "shopping": {
     "placeholder": "What's missing? E.g. paper towels",
@@ -417,7 +423,8 @@
     "noAnswer": "I couldn't find an answer to that.",
     "busy": "The AI service isn't answering right now. Try again in a moment.",
     "off": "The chat isn't turned on for this cabin.",
-    "newChat": "New chat"
+    "newChat": "New chat",
+    "limit": "The chat has used up this month's allowance for the cabin. It works again from the 1st."
   },
   "login": {
     "intro": "Log in to see bookings, lists and the cabin book.",
@@ -440,7 +447,7 @@
     "wrongPassword": "Wrong email or password. After 5 failures you have to wait 15 minutes.",
     "offline": "Can't reach the server. Try again.",
     "forgot": "Forgot your password?",
-    "forgotHint": "Ask an owner of the cabin for a new-password link (under Access), or a system admin.",
+    "forgotHint": "If you saved recovery codes on “My profile”, type your email above and one of the codes here. Otherwise, ask an owner of the cabin for a new-password link (under Access), or a system admin.",
     "newPassword": "Choose a new password",
     "savePassword": "Save password",
     "passwordSaved": "Your password is saved",
@@ -455,7 +462,12 @@
       "emailTaken": "There is already an account with this email. Choose \"Log in\" instead, or log in with Google.",
       "passwordMissing": "Enter your password.",
       "passwordShort": "The password needs at least {n} characters."
-    }
+    },
+    "recoveryCode": "Recovery code",
+    "recoveryHint": "E.g. abcde-fghjk. Each code works once.",
+    "useCode": "Use the code",
+    "codeMissing": "Type your email above and a recovery code.",
+    "codeWrong": "The code doesn't match this email, or was used before."
   },
   "access": {
     "title": "Access",
@@ -508,7 +520,8 @@
     "adminTools": "System admin",
     "chatToggle": "AI chat for this cabin",
     "chatHint": "Everyone with access to the cabin gets the chat button. Only system admins see this switch.",
-    "chatNoKey": "The server has no OPENAI_API_KEY, so the chat won't work yet even when switched on."
+    "chatNoKey": "The server has no OPENAI_API_KEY, so the chat won't work yet even when switched on.",
+    "chatBudget": "Used of this month's AI allowance"
   },
   "checklist": {
     "title": "Checklist",
@@ -645,7 +658,9 @@
     "created": "Created",
     "open": "Open",
     "passwordBadge": "Password",
-    "lastLogin": "Last login"
+    "lastLogin": "Last login",
+    "log": "Log",
+    "chatUsed": "Used of this month's AI allowance"
   },
   "profile": {
     "title": "My profile",
@@ -657,6 +672,76 @@
     "changeHint": "Type the one you have now, and choose a new one.",
     "addHint": "You log in with Google. Add a password if you also want to log in with email and password.",
     "setHint": "Or set a new password and tell it to the person, e.g. on the phone.",
-    "resetLinkHint": "Make a link to send them, so they choose the password themselves. It works once, for a day."
+    "resetLinkHint": "Make a link to send them, so they choose the password themselves. It works once, for a day.",
+    "leave": "Leave the cabin",
+    "leaveIn": "Leave {name}",
+    "leaveTitle": "Leave the cabin?",
+    "leaveMessage": "You lose access to {name}. To come back you need a new invitation link.",
+    "left": "You left {name}",
+    "lastOwner": "You're the only owner. Make someone else owner under Access first, or delete the cabin.",
+    "security": "Security",
+    "codesHint": "Recovery codes let you set a new password if you forget it, without asking anyone. Keep them somewhere safe.",
+    "codesLeft": "No codes | 1 unused code | {n} unused codes",
+    "makeCodes": "Make codes",
+    "newCodes": "Make new codes",
+    "codesOnce": "Write down or copy the codes now – they're only shown this once. The old codes no longer work.",
+    "codesCopied": "Codes copied",
+    "codesSaved": "I've saved them",
+    "everywhere": "Log out everywhere",
+    "everywhereHint": "Logs you out on every phone and computer, this one too. Useful if you've lost a phone.",
+    "everywhereTitle": "Log out everywhere?",
+    "everywhereMessage": "You'll be logged out on every device, this one too, and need to log in again."
+  },
+  "audit": {
+    "title": "Change log",
+    "someone": "Someone",
+    "ROLE_CHANGED": "{actor} made {target} {role}",
+    "MEMBER_REMOVED": "{actor} removed {target}",
+    "MEMBER_LEFT": "{actor} left the cabin",
+    "MEMBER_JOINED": "{actor} joined with an invitation link",
+    "ADMIN_JOINED": "{actor} (system admin) gave themselves access",
+    "INVITE_CREATED": "{actor} made an invitation link",
+    "INVITE_REVOKED": "{actor} revoked an invitation link",
+    "CABIN_CREATED": "{actor} created the cabin",
+    "DEMO_CREATED": "{actor} made a test cabin",
+    "CABIN_DELETED": "{actor} deleted the cabin",
+    "CABIN_RESTORED": "{actor} restored the cabin",
+    "CHAT_on": "{actor} turned the AI chat on",
+    "CHAT_off": "{actor} turned the AI chat off",
+    "RESET_LINK": "{actor} made a new-password link for {target}",
+    "PASSWORD_SET": "{actor} set a new password for {target}",
+    "PASSWORD_RESET": "{target} set a new password with a link",
+    "RECOVERY_USED": "{target} used a recovery code",
+    "SIGNED_OUT_EVERYWHERE": "{actor} logged out on every device"
+  },
+  "expenses": {
+    "title": "Expenses",
+    "new": "New expense",
+    "edit": "Edit expense",
+    "settlement": "Paid back",
+    "balance": "Who owes what",
+    "even": "Everyone is square.",
+    "nothingYet": "No expenses yet.",
+    "settleUp": "To square up",
+    "pays": "{from} pays {to}",
+    "markPaid": "Paid",
+    "settled": "{from} has paid {to} {amount}",
+    "total": "Total {amount}",
+    "paidBack": "{from} paid {to} back",
+    "untitled": "Expense",
+    "paidByShort": "{name} paid",
+    "splitCount": "split between nobody | just one | split between {n}",
+    "empty": "Power, firewood, shared food? Add it here and the app works out who owes whom.",
+    "what": "What",
+    "whatPlaceholder": "E.g. power January, firewood, paint",
+    "amount": "Amount",
+    "date": "Date",
+    "paidBy": "Paid by",
+    "from": "From",
+    "to": "To",
+    "pickPerson": "Pick a person",
+    "splitBetween": "Split between",
+    "all": "All",
+    "none": "None"
   }
 }

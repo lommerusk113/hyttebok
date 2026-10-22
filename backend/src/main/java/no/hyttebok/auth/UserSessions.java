@@ -18,7 +18,8 @@ final class UserSessions {
             "email", user.email(),
             "name", user.name() == null ? user.email() : user.name(),
             "picture", user.picture() == null ? "" : user.picture(),
-            "emailVerified", user.emailVerified());
+            "emailVerified", user.emailVerified(),
+            SessionVersionValidator.CLAIM, user.sessionVersion());
 
         return AuthenticationResponse.success("user-" + user.id(), List.of(), attributes);
     }

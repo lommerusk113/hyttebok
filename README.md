@@ -24,10 +24,29 @@ without either, the app has no login and is open to everyone who can reach it.
 3. `docker compose up -d backend`
 
 Anyone can log in and create cabins of their own (*Mine hytter*); everyone only sees the cabins they belong to.
-Each cabin lives under `/h/<id>/…`. Others get in through an invitation link (straight in) or the cabin's join code
-(shown on *Tilgang*; typed under *Mine hytter*, then approved by an owner). Cabins are never listed for anyone else.
-System admins (`ADMIN_EMAILS`) are ordinary users until they switch on *Adminmodus* in the menu: then they see every
-cabin and can give themselves access, for support. Invitation links are valid for 14 days.
-Sessions last 90 days; the signing key is generated on first start and kept in the database.
-Forgotten password: an owner or admin makes a one-day *new password* link on *Tilgang* (there is no email service).
+Each cabin lives under `/h/<id>/…`. Others get in through an invitation link, valid for 14 days. Cabins are never
+listed for anyone else. System admins (`ADMIN_EMAILS`) find every cabin and user in the admin console (*Admin* in the
+menu) and can switch on *Adminmodus* to act as owner in any cabin, for support.
+Sessions last 90 days; the signing key is generated on first start and kept in the database. A new password, or
+*Logg ut overalt* on *Min profil*, logs out every device.
+Forgotten password (there is no email service): a recovery code saved earlier on *Min profil*, or a one-day
+*new password* link made by an owner (on *Tilgang*) or an admin.
 Admins must log in with Google at least once: a password account doesn't prove the email is theirs.
+
+## AI chat
+
+Set `OPENAI_API_KEY`, then a system admin switches the chat on per cabin (*Tilgang*). Each cabin may use $1 a month
+(`hyttebok.chat.monthly-cap-usd`); the app only shows how many percent of it is used.
+
+## Backups
+
+The `backup` service dumps the database once a day into `./backups` (or `BACKUP_DIR`), keeps 14 days of dumps
+(`BACKUP_KEEP_DAYS`), and copies new photos into `./backups/uploads`. Keep that folder on another disk or sync it
+somewhere else. To restore:
+
+```bash
+docker compose stop backend
+docker compose exec -T db pg_restore -U hyttebok -d hyttebok --clean --if-exists < backups/hyttebok-YYYY-MM-DD.dump
+docker compose cp backups/uploads/. backend:/data/uploads/
+docker compose start backend
+```

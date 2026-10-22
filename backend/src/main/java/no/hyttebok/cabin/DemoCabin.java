@@ -107,7 +107,9 @@ public class DemoCabin {
                 "The key is in the key box by the front door (code 4512). Switch on the main breaker in the hall and open the water under the kitchen counter."),
             t("Steng vannet, tøm kjøleskapet og ta med søppelet. Sett varmen på 10 grader og lås nøkkelen inn i boksen igjen.",
                 "Turn off the water, empty the fridge and take the rubbish with you. Set the heating to 10 degrees and lock the key back in the box."),
-            null, List.of(), 60.8623, 8.5532, 812.0, true));
+            null, List.of(), 60.8623, 8.5532, 812.0, true,
+            t("- Kari og Ola har hver sin nøkkel\n- Reservenøkkelen henger i boden, på spikeren bak døra\n- Nøkkelboks ved inngangsdøra: kode 4512",
+                "- Kari and Ola each have a key\n- The spare key hangs in the shed, on the nail behind the door\n- Key box by the front door: code 4512")));
         memberships.save(new Membership(null, ownerId, cabin.id(), Membership.OWNER, Instant.now()));
 
         CabinContext.runAs(cabin.id(), () -> fill(ownerName.split("\\s+")[0]));
@@ -262,7 +264,7 @@ public class DemoCabin {
 
         var done = doneBy != null;
         var saved = todos.save(new Todo(null, title, description, done, doneBy, done ? at(today.minusDays(doneDaysAgo)) : null, by, null,
-            done ? List.of(doneBy) : null, note, null));
+            done ? List.of(doneBy) : null, note, null, null));
         backdate("todo", saved.id(), today.minusDays(createdDaysAgo));
     }
 

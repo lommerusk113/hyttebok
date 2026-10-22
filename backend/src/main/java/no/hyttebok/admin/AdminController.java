@@ -17,8 +17,10 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 import no.hyttebok.access.AccessService;
+import no.hyttebok.audit.Audit;
 import no.hyttebok.auth.Passwords;
 import no.hyttebok.auth.Profiles;
+import no.hyttebok.chat.ChatBudget;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -61,7 +63,8 @@ public class AdminController {
      */
     private static final String CABINS = """
         WITH s AS (
-            SELECT c.id, c.name, c.tagline, c.hero_photo_id, c.created_at, c.deleted_at,
+            SELECT c.id, c.name, c.tagline, c.hero_photo_id, c.created_at, c.deleted_at, c.chat_enabled,
+                   (SELECT u.cost_usd FROM chat_usage u WHERE u.cabin_id = c.id AND u.month = date_trunc('month', now() AT TIME ZONE 'Europe/Oslo')::date) AS chat_cost,
                    count(m.id) AS members,
                    count(m.id) FILTER (WHERE m.role = 'OWNER') AS owner_count,
                    string_agg(coalesce(u.name, u.email), ', ' ORDER BY lower(coalesce(u.name, u.email))) FILTER (WHERE m.role = 'OWNER') AS owners,
@@ -110,11 +113,15 @@ public class AdminController {
     private final JdbcOperations jdbc;
     private final AccessService access;
     private final Profiles profiles;
+    private final ChatBudget budget;
+    private final Audit audit;
 
-    public AdminController(JdbcOperations jdbc, AccessService access, Profiles profiles) {
+    public AdminController(JdbcOperations jdbc, AccessService access, Profiles profiles, ChatBudget budget, Audit audit) {
         this.jdbc = jdbc;
         this.access = access;
         this.profiles = profiles;
+        this.budget = budget;
+        this.audit = audit;
     }
 
     /** {@code counts}: how many match the search for each filter (ALL, ACTIVE, ... for cabins; ALL, GOOGLE, ... for users). */
@@ -124,7 +131,7 @@ public class AdminController {
 
     @Serdeable
     public record CabinRow(Long id, String name, @Nullable String tagline, @Nullable Long heroPhotoId, @Nullable String owners, int members,
-                           @Nullable Instant lastActive, Instant createdAt, String status) {
+                           @Nullable Instant lastActive, Instant createdAt, String status, boolean chatEnabled, int chatPercent) {
     }
 
     @Serdeable
@@ -159,7 +166,8 @@ public class AdminController {
             try (var rs = statement.executeQuery()) {
                 while (rs.next()) {
                     rows.add(new CabinRow(rs.getLong("id"), rs.getString("name"), rs.getString("tagline"), rs.getObject("hero_photo_id", Long.class),
-                        rs.getString("owners"), rs.getInt("members"), instant(rs, "last_active"), instant(rs, "created_at"), rs.getString("status")));
+                        rs.getString("owners"), rs.getInt("members"), instant(rs, "last_active"), instant(rs, "created_at"), rs.getString("status"),
+                        rs.getBoolean("chat_enabled"), budget.percent(rs.getDouble("chat_cost"))));
                     total = rs.getInt("total");
                     counts = Map.of("ALL", rs.getInt("n_all"), "ACTIVE", rs.getInt("n_active"), "INACTIVE", rs.getInt("n_inactive"),
                         "EMPTY", rs.getInt("n_empty"), "DELETED", rs.getInt("n_deleted"));
@@ -207,6 +215,8 @@ public class AdminController {
     @Post("/users/{id}/password-reset")
     public Profiles.ResetLink resetLink(Authentication auth, Long id) {
         access.requireAdmin(auth);
+        audit.log(null, auth, Audit.RESET_LINK, id, null);
+
         return profiles.resetLink(id, AccessService.userId(auth));
     }
 
@@ -215,6 +225,17 @@ public class AdminController {
     public void setPassword(Authentication auth, Long id, @Body @Valid NewPassword body) {
         access.requireAdmin(auth);
         profiles.setPassword(id, body.password());
+        audit.log(null, auth, Audit.PASSWORD_SET, id, null);
+    }
+
+    /** The change log of every cabin and account, newest first. */
+    @Get("/log")
+    public Page<Audit.Event> log(Authentication auth, @QueryValue(defaultValue = "0") int page) {
+
+        access.requireAdmin(auth);
+        var events = audit.all(PAGE_SIZE, offset(page));
+
+        return new Page<>(events.items(), events.total(), PAGE_SIZE, Map.of());
     }
 
     /** Lower case, matched with position() rather than LIKE, so "%" and "_" are just characters. */

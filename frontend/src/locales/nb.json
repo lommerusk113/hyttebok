@@ -41,13 +41,15 @@
     "posts": "Innlegg",
     "photos": "Bilder",
     "maintenance": "Vedlikehold",
-    "forum": "Forum"
+    "forum": "Forum",
+    "expenses": "Utgifter"
   },
   "info": {
     "arrivalInfo": "Ankomst",
     "departureInfo": "Avreise",
     "wifi": "WiFi",
-    "address": "Adresse"
+    "address": "Adresse",
+    "keyInfo": "Nøkler"
   },
   "home": {
     "addPhoto": "Legg til bilde",
@@ -126,7 +128,11 @@
     "details": "Detaljer",
     "doneBy": "Gjort av {name}, {date}",
     "deleteTitle": "Slette oppgave?",
-    "doneToast": "«{name}» er gjort"
+    "doneToast": "«{name}» er gjort",
+    "claim": "Jeg tar den",
+    "unclaim": "Slipp den",
+    "claimedBy": "{name} tar den",
+    "unclaimed": "Ingen har sagt de tar denne ennå."
   },
   "shopping": {
     "placeholder": "Hva mangler? F.eks. tørkepapir",
@@ -417,7 +423,8 @@
     "noAnswer": "Jeg fant ikke noe svar på det.",
     "busy": "KI-tjenesten svarer ikke akkurat nå. Prøv igjen om litt.",
     "off": "Chatten er ikke slått på for denne hytta.",
-    "newChat": "Ny samtale"
+    "newChat": "Ny samtale",
+    "limit": "Chatten har brukt opp denne månedens kvote for hytta. Den virker igjen fra den 1."
   },
   "login": {
     "intro": "Logg inn for å se bookinger, lister og hytteboka.",
@@ -440,7 +447,7 @@
     "wrongPassword": "Feil e-post eller passord. Etter 5 feil må du vente 15 minutter.",
     "offline": "Får ikke kontakt med serveren. Prøv igjen.",
     "forgot": "Glemt passordet?",
-    "forgotHint": "Be en eier av hytta om en lenke for nytt passord (under Tilgang), eller en systemadministrator.",
+    "forgotHint": "Har du lagret gjenopprettingskoder på «Min profil», skriv e-posten over og en av kodene her. Ellers: be en eier av hytta om en lenke for nytt passord (under Tilgang), eller en systemadministrator.",
     "newPassword": "Velg nytt passord",
     "savePassword": "Lagre passord",
     "passwordSaved": "Passordet er lagret",
@@ -455,7 +462,12 @@
       "emailTaken": "Det finnes allerede en bruker med denne e-posten. Velg «Logg inn» i stedet, eller logg inn med Google.",
       "passwordMissing": "Skriv passordet ditt.",
       "passwordShort": "Passordet må ha minst {n} tegn."
-    }
+    },
+    "recoveryCode": "Gjenopprettingskode",
+    "recoveryHint": "F.eks. abcde-fghjk. Hver kode virker én gang.",
+    "useCode": "Bruk koden",
+    "codeMissing": "Skriv e-posten din over og en gjenopprettingskode.",
+    "codeWrong": "Koden passer ikke til denne e-posten, eller er brukt før."
   },
   "access": {
     "title": "Tilgang",
@@ -508,7 +520,8 @@
     "adminTools": "Systemadmin",
     "chatToggle": "KI-chat for denne hytta",
     "chatHint": "Alle med tilgang til hytta får chat-knappen. Bare systemadministratorer ser denne bryteren.",
-    "chatNoKey": "Serveren mangler OPENAI_API_KEY, så chatten virker ikke ennå selv om den er slått på."
+    "chatNoKey": "Serveren mangler OPENAI_API_KEY, så chatten virker ikke ennå selv om den er slått på.",
+    "chatBudget": "Brukt av månedens AI-kvote"
   },
   "checklist": {
     "title": "Sjekkliste",
@@ -645,7 +658,9 @@
     "created": "Opprettet",
     "open": "Åpne",
     "passwordBadge": "Passord",
-    "lastLogin": "Sist innlogget"
+    "lastLogin": "Sist innlogget",
+    "log": "Logg",
+    "chatUsed": "Brukt av månedens AI-kvote"
   },
   "profile": {
     "title": "Min profil",
@@ -657,6 +672,76 @@
     "changeHint": "Skriv det du har nå, og velg et nytt.",
     "addHint": "Du logger inn med Google. Legg til et passord hvis du også vil logge inn med e-post og passord.",
     "setHint": "Eller sett et nytt passord og fortell det til personen, f.eks. på telefon.",
-    "resetLinkHint": "Lag en lenke som du sender til personen, så velger de passordet selv. Lenken virker én gang, i ett døgn."
+    "resetLinkHint": "Lag en lenke som du sender til personen, så velger de passordet selv. Lenken virker én gang, i ett døgn.",
+    "leave": "Forlat hytta",
+    "leaveIn": "Forlat {name}",
+    "leaveTitle": "Forlate hytta?",
+    "leaveMessage": "Du mister tilgangen til {name}. For å komme tilbake trenger du en ny invitasjonslenke.",
+    "left": "Du har forlatt {name}",
+    "lastOwner": "Du er eneste eier. Gjør en annen til eier under Tilgang først, eller slett hytta.",
+    "security": "Sikkerhet",
+    "codesHint": "Gjenopprettingskoder lar deg sette nytt passord selv om du glemmer det, uten å spørre noen. Lagre dem et trygt sted.",
+    "codesLeft": "Ingen koder | 1 ubrukt kode | {n} ubrukte koder",
+    "makeCodes": "Lag koder",
+    "newCodes": "Lag nye koder",
+    "codesOnce": "Skriv ned eller kopier kodene nå – de vises bare denne ene gangen. De gamle kodene virker ikke lenger.",
+    "codesCopied": "Kodene er kopiert",
+    "codesSaved": "Jeg har lagret dem",
+    "everywhere": "Logg ut overalt",
+    "everywhereHint": "Logger deg ut på alle telefoner og PC-er, også denne. Nyttig hvis du har mistet en telefon.",
+    "everywhereTitle": "Logge ut overalt?",
+    "everywhereMessage": "Du blir logget ut på alle enheter, også denne, og må logge inn på nytt."
+  },
+  "audit": {
+    "title": "Endringslogg",
+    "someone": "Noen",
+    "ROLE_CHANGED": "{actor} gjorde {target} til {role}",
+    "MEMBER_REMOVED": "{actor} fjernet {target}",
+    "MEMBER_LEFT": "{actor} forlot hytta",
+    "MEMBER_JOINED": "{actor} ble med via en invitasjonslenke",
+    "ADMIN_JOINED": "{actor} (systemadmin) ga seg selv tilgang",
+    "INVITE_CREATED": "{actor} lagde en invitasjonslenke",
+    "INVITE_REVOKED": "{actor} trakk tilbake en invitasjonslenke",
+    "CABIN_CREATED": "{actor} opprettet hytta",
+    "DEMO_CREATED": "{actor} lagde en testhytte",
+    "CABIN_DELETED": "{actor} slettet hytta",
+    "CABIN_RESTORED": "{actor} gjenopprettet hytta",
+    "CHAT_on": "{actor} slo på AI-chatten",
+    "CHAT_off": "{actor} slo av AI-chatten",
+    "RESET_LINK": "{actor} lagde en lenke for nytt passord til {target}",
+    "PASSWORD_SET": "{actor} satte nytt passord for {target}",
+    "PASSWORD_RESET": "{target} satte nytt passord med en lenke",
+    "RECOVERY_USED": "{target} brukte en gjenopprettingskode",
+    "SIGNED_OUT_EVERYWHERE": "{actor} logget ut på alle enheter"
+  },
+  "expenses": {
+    "title": "Utgifter",
+    "new": "Ny utgift",
+    "edit": "Endre utgift",
+    "settlement": "Betalt tilbake",
+    "balance": "Hvem skylder hva",
+    "even": "Alle er skuls.",
+    "nothingYet": "Ingen utgifter ennå.",
+    "settleUp": "Slik blir alle skuls",
+    "pays": "{from} betaler {to}",
+    "markPaid": "Betalt",
+    "settled": "{from} har betalt {to} {amount}",
+    "total": "Totalt {amount}",
+    "paidBack": "{from} betalte tilbake til {to}",
+    "untitled": "Utgift",
+    "paidByShort": "{name} betalte",
+    "splitCount": "delt på ingen | bare én | delt på {n}",
+    "empty": "Strøm, ved, mat til felles? Skriv det inn her, så regner appen ut hvem som skylder hvem.",
+    "what": "Hva",
+    "whatPlaceholder": "F.eks. strøm januar, ved, maling",
+    "amount": "Beløp",
+    "date": "Dato",
+    "paidBy": "Betalt av",
+    "from": "Fra",
+    "to": "Til",
+    "pickPerson": "Velg person",
+    "splitBetween": "Delt på",
+    "all": "Alle",
+    "none": "Ingen"
   }
 }

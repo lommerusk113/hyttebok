@@ -18,6 +18,7 @@ import jakarta.validation.constraints.Size;
 import no.hyttebok.access.AccessService;
 import no.hyttebok.access.Membership;
 import no.hyttebok.access.MembershipRepository;
+import no.hyttebok.audit.Audit;
 
 import java.time.Instant;
 import java.util.List;
@@ -36,11 +37,14 @@ public class CabinsController {
     private final MembershipRepository memberships;
     private final AccessService access;
     private final DemoCabin demo;
-    public CabinsController(CabinInfoRepository cabins, MembershipRepository memberships, AccessService access, DemoCabin demo) {
+    private final Audit audit;
+
+    public CabinsController(CabinInfoRepository cabins, MembershipRepository memberships, AccessService access, DemoCabin demo, Audit audit) {
         this.cabins = cabins;
         this.memberships = memberships;
         this.access = access;
         this.demo = demo;
+        this.audit = audit;
     }
 
     @Serdeable
@@ -78,8 +82,9 @@ public class CabinsController {
     @Post
     public Cabin create(Authentication auth, @Body @Valid NewCabin body) {
 
-        var cabin = cabins.save(new CabinInfo(null, body.name().trim(), null, null, null, null, null, null, null, null, List.of(), null, null, null, false));
+        var cabin = cabins.save(new CabinInfo(null, body.name().trim(), null, null, null, null, null, null, null, null, List.of(), null, null, null, false, null));
         memberships.save(new Membership(null, AccessService.userId(auth), cabin.id(), Membership.OWNER, Instant.now()));
+        audit.log(cabin.id(), auth, Audit.CABIN_CREATED, null, null);
 
         return summary(cabin, Membership.OWNER, false);
     }
@@ -92,13 +97,16 @@ public class CabinsController {
             throw new HttpStatusException(HttpStatus.FORBIDDEN, "Only owners can delete the cabin");
         }
         cabins.updateDeleted(id, Instant.now(), AccessService.userId(auth));
+        audit.log(id, auth, Audit.CABIN_DELETED, null, null);
     }
 
     /** System admins: brings a deleted cabin back, as it was. */
     @Post("/{id}/restore")
     public void restore(Authentication auth, Long id) {
+
         access.requireAdmin(auth);
         cabins.updateDeleted(id, null, null);
+        audit.log(id, auth, Audit.CABIN_RESTORED, null, null);
     }
 
     /** System admins: a new cabin filled with example data from the last couple of years, in the app's language, for trying things out. */
@@ -107,6 +115,7 @@ public class CabinsController {
 
         access.requireAdmin(auth);
         var cabin = demo.create(AccessService.userId(auth), String.valueOf(auth.getAttributes().get("name")), body.lang());
+        audit.log(cabin.id(), auth, Audit.CABIN_CREATED, null, "demo");
 
         return summary(cabin, Membership.OWNER, false);
     }

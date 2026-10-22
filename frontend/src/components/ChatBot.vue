@@ -48,7 +48,7 @@ async function send(text = draft.value) {
       headers: { 'Content-Type': 'application/json', ...cabinHeaders() },
       body: JSON.stringify({ messages: messages.value.map(({ role, text }) => ({ role, text })), name: userName.value || null, lang: locale.value }),
     })
-    if (!res.ok) throw new Error(res.status === 403 ? 'chat.off' : res.status === 503 ? 'chat.notSetUp' : res.status === 429 ? 'chat.quota' : res.status === 502 ? 'chat.busy' : 'chat.failed')
+    if (!res.ok) throw new Error(res.status === 403 ? 'chat.off' : res.status === 503 ? 'chat.notSetUp' : res.status === 402 ? 'chat.limit' : res.status === 429 ? 'chat.quota' : res.status === 502 ? 'chat.busy' : 'chat.failed')
     const reply = await res.json()
     if (asked !== cabinId.value) return // switched cabin while waiting: that conversation is gone
     messages.value.push({ role: 'model', text: reply.text || t('chat.noAnswer'), actions: reply.actions })

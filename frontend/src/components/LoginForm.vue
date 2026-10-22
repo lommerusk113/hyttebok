@@ -18,6 +18,32 @@ const fieldErrors = ref({}) // name / email / password -> text key
 const error = ref(null) // about the whole form (wrong password, no connection)
 const busy = ref(false)
 const showForgot = ref(false)
+const code = ref('')
+const codeError = ref(null)
+
+// Forgot the password: a recovery code saved on "Min profil" opens the one-time new-password page.
+async function recover() {
+
+  codeError.value = null
+  if (!form.value.email.trim() || !code.value.trim()) {
+    codeError.value = 'login.codeMissing'
+    return
+  }
+  try {
+    const res = await fetch('/api/auth/recover', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: form.value.email.trim(), code: code.value.trim() }),
+    })
+    if (!res.ok) {
+      codeError.value = 'login.codeWrong'
+      return
+    }
+    location.href = `/nytt-passord/${(await res.json()).token}`
+  } catch {
+    codeError.value = 'login.offline'
+  }
+}
 
 // Typing in a field clears its message; switching between log in and sign up clears all.
 watch(() => ({ ...form.value }), (now, before) => {
@@ -136,7 +162,15 @@ async function submit() {
       <Button type="submit" :label="mode === 'signup' ? t('login.createAccount') : t('login.login')" :loading="busy" class="mt-1" />
       <template v-if="mode === 'login'">
         <button type="button" class="min-h-11 text-sm text-zinc-500 underline-offset-4 hover:underline" @click="showForgot = !showForgot">{{ t('login.forgot') }}</button>
-        <p v-if="showForgot" class="text-center text-sm text-zinc-600">{{ t('login.forgotHint') }}</p>
+        <div v-if="showForgot" class="flex flex-col gap-3 rounded-lg bg-zinc-50 p-4">
+          <p class="text-sm text-zinc-600">{{ t('login.forgotHint') }}</p>
+          <label class="flex flex-col gap-1.5 text-sm font-medium">{{ t('login.recoveryCode') }}
+            <InputText v-model="code" autocomplete="one-time-code" autocapitalize="off" spellcheck="false" class="font-mono" :invalid="!!codeError" @keydown.enter.prevent="recover" />
+            <span class="text-xs font-normal text-zinc-500">{{ t('login.recoveryHint') }}</span>
+          </label>
+          <p v-if="codeError" class="rounded-lg bg-amber-50 p-3 text-sm text-amber-800" role="alert">{{ t(codeError) }}</p>
+          <Button type="button" :label="t('login.useCode')" severity="secondary" outlined @click="recover" />
+        </div>
       </template>
     </form>
   </div>

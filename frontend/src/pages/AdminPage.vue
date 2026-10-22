@@ -8,6 +8,7 @@ import InputIcon from 'primevue/inputicon'
 import InputText from 'primevue/inputtext'
 import Paginator from 'primevue/paginator'
 import Select from 'primevue/select'
+import AuditList from '../components/AuditList.vue'
 import { api } from '../api'
 import { auth } from '../auth'
 import { setAdminMode } from '../hytte'
@@ -18,7 +19,8 @@ import { locale, t } from '../i18n'
 // server and live in the address (?q=&filter=&sort=&page=), so the back button and shared links keep them.
 const route = useRoute()
 const router = useRouter()
-const tab = computed(() => route.params.tab === 'brukere' ? 'users' : 'cabins')
+const tab = computed(() => ({ brukere: 'users', logg: 'log' })[route.params.tab] || 'cabins')
+const TABS = [{ key: 'cabins', path: '/admin', icon: 'pi-home' }, { key: 'users', path: '/admin/brukere', icon: 'pi-users' }, { key: 'log', path: '/admin/logg', icon: 'pi-history' }]
 const result = ref(null) // { items, total, pageSize, counts }
 const loading = ref(false)
 const search = ref(route.query.q || '')
@@ -40,7 +42,7 @@ const FILTERS = {
     { value: 'NONE', dot: 'bg-amber-500' },
   ],
 }
-const SORTS = { cabins: ['active', 'name', 'members', 'created'], users: ['active', 'name', 'created'] }
+const SORTS = { cabins: ['active', 'name', 'members', 'created'], users: ['active', 'name', 'created'], log: [] }
 const filter = computed(() => route.query.filter || 'ALL')
 const sort = computed(() => route.query.sort || 'active')
 const page = computed(() => Number(route.query.page) || 0)
@@ -54,7 +56,7 @@ async function load() {
   try {
     const params = new URLSearchParams({ q: route.query.q || '', sort: sort.value, page: page.value })
     params.set(tab.value === 'cabins' ? 'status' : 'filter', filter.value)
-    result.value = await api.get(`/admin/${tab.value === 'cabins' ? 'cabins' : 'users'}?${params}`)
+    result.value = await api.get(tab.value === 'log' ? `/admin/log?page=${page.value}` : `/admin/${tab.value}?${params}`)
   } finally {
     loading.value = false
   }
@@ -127,14 +129,14 @@ async function createDemo() {
 
       <!-- Cabins | Users -->
       <nav class="flex gap-1 border-b border-zinc-200" :aria-label="t('admin.title')">
-        <RouterLink v-for="x in [{ key: 'cabins', path: '/admin', icon: 'pi-home' }, { key: 'users', path: '/admin/brukere', icon: 'pi-users' }]" :key="x.key" :to="x.path"
+        <RouterLink v-for="x in TABS" :key="x.key" :to="x.path"
                     class="-mb-px flex min-h-11 items-center gap-2 border-b-2 px-4 text-sm font-medium transition"
                     :class="tab === x.key ? 'border-zinc-950 text-zinc-950' : 'border-transparent text-zinc-500 hover:text-zinc-900'">
           <i class="pi text-xs" :class="x.icon" />{{ t(`admin.${x.key}`) }}
         </RouterLink>
       </nav>
 
-      <div class="flex flex-wrap items-center gap-2">
+      <div v-if="tab !== 'log'" class="flex flex-wrap items-center gap-2">
         <IconField class="min-w-0 flex-1 basis-60">
           <InputIcon class="pi pi-search" />
           <InputText ref="searchInput" v-model="search" type="search" :placeholder="t(`admin.search.${tab}`)" :aria-label="t(`admin.search.${tab}`)" class="w-full" />
@@ -144,7 +146,7 @@ async function createDemo() {
       </div>
 
       <!-- Filter chips that also count: the numbers follow the search -->
-      <div class="flex flex-wrap gap-2" role="group" :aria-label="t('admin.filter')">
+      <div v-if="tab !== 'log'" class="flex flex-wrap gap-2" role="group" :aria-label="t('admin.filter')">
         <button v-for="f in FILTERS[tab]" :key="f.value" class="flex min-h-9 items-center gap-2 rounded-full border px-3 text-sm transition"
                 :class="filter === f.value ? 'border-zinc-950 bg-zinc-950 text-surface' : 'border-zinc-200 hover:border-zinc-400'"
                 :aria-pressed="filter === f.value" @click="go({ filter: f.value === 'ALL' ? undefined : f.value })">
@@ -156,6 +158,8 @@ async function createDemo() {
       <div class="card overflow-hidden" :class="loading && 'opacity-60 transition-opacity'" :aria-busy="loading">
         <p v-if="result && !result.items.length" class="p-8 text-center text-sm text-zinc-500">{{ t('admin.nothing') }}</p>
 
+        <div v-else-if="tab === 'log'" class="px-5"><AuditList :events="result?.items || []" with-cabin /></div>
+
         <!-- Cabins -->
         <ul v-else-if="tab === 'cabins'" class="divide-y divide-zinc-100">
           <li v-for="c in result?.items" :key="c.id" class="flex flex-wrap items-center gap-x-4 gap-y-2 px-4 py-3 sm:flex-nowrap">
@@ -166,6 +170,9 @@ async function createDemo() {
                 <span class="truncate font-semibold">{{ c.name }}</span>
                 <span v-if="c.status !== 'ACTIVE'" class="shrink-0 rounded-full px-2 py-0.5 text-xs"
                       :class="{ DELETED: 'bg-rose-50 text-rose-700', EMPTY: 'bg-sky-50 text-sky-700', INACTIVE: 'bg-amber-50 text-amber-800' }[c.status]">{{ t(`admin.filters.${c.status}`) }}</span>
+                <!-- AI chat: only the share of the monthly budget -->
+                <span v-if="c.chatEnabled" class="shrink-0 rounded-full px-2 py-0.5 text-xs tabular-nums" :title="t('admin.chatUsed')"
+                      :class="c.chatPercent >= 100 ? 'bg-rose-50 text-rose-700' : c.chatPercent >= 80 ? 'bg-amber-50 text-amber-800' : 'bg-violet-50 text-violet-700'">AI {{ c.chatPercent }} %</span>
               </span>
               <span class="block truncate text-xs text-zinc-500">{{ c.owners || t('admin.noOwner') }}</span>
             </span>

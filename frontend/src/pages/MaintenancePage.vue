@@ -186,6 +186,17 @@ async function toggleOnce(todo) {
   todos.value = todos.value.map(x => (x.id === updated.id ? updated : x))
 }
 
+// "Jeg tar den": says who'll do a one-off task, so two people don't both bring the paint. null = let it go again.
+async function claim(todo, name) {
+  if (name && !userName.value) {
+    askName.value = true
+    return
+  }
+  const updated = await api.put('/todos', { ...todo, claimedBy: name })
+  todos.value = todos.value.map(x => (x.id === updated.id ? updated : x))
+  form.value.todo = updated
+}
+
 async function finishOnce(todo, participants, note) {
   const updated = await api.put('/todos', { ...todo, done: true, doneBy: userName.value, doneAt: new Date().toISOString(), doneWith: participants, doneNote: note })
   todos.value = todos.value.map(x => (x.id === updated.id ? updated : x))
@@ -328,6 +339,7 @@ function remove(item) {
               <span class="block font-medium group-hover:underline">{{ r.x.title }}</span>
               <span v-if="r.x.description" class="block line-clamp-1 text-sm text-zinc-500">{{ r.x.description }}</span>
               <span class="block text-xs text-zinc-500">{{ t('maintenance.once') }}<template v-if="r.x.createdBy"> · {{ t('todo.addedBy', { name: r.x.createdBy }) }}</template></span>
+              <span v-if="r.x.claimedBy" class="mt-0.5 inline-flex items-center gap-1 rounded-full bg-sky-50 px-2 py-0.5 text-xs font-medium text-sky-700"><i class="pi pi-user text-[10px]" />{{ t('todo.claimedBy', { name: r.x.claimedBy }) }}</span>
             </span>
             <i class="pi pi-chevron-right shrink-0 text-xs text-zinc-400" />
           </button>
@@ -471,6 +483,13 @@ function remove(item) {
         {{ t('maintenance.description') }}
         <Textarea v-model="form.description" rows="3" auto-resize :placeholder="t('maintenance.descriptionPlaceholder')" />
       </label>
+      <div v-if="form.todo && !form.todo.done" class="flex flex-wrap items-center gap-3 rounded-lg bg-zinc-50 p-3">
+        <span class="min-w-0 flex-1 text-sm" :class="form.todo.claimedBy ? 'font-medium text-sky-700' : 'text-zinc-500'">
+          {{ form.todo.claimedBy ? t('todo.claimedBy', { name: form.todo.claimedBy }) : t('todo.unclaimed') }}
+        </span>
+        <Button v-if="form.todo.claimedBy === userName" type="button" :label="t('todo.unclaim')" size="small" text severity="secondary" @click="claim(form.todo, null)" />
+        <Button v-else type="button" :label="t('todo.claim')" icon="pi pi-user" size="small" outlined @click="claim(form.todo, userName)" />
+      </div>
       <p v-if="form.todo?.done" class="text-sm text-emerald-600"><i class="pi pi-check-circle mr-1" />{{ t('todo.doneBy', { name: form.todo.doneBy, date: formatDate(form.todo.doneAt) }) }}</p>
     </form>
     <template #footer>

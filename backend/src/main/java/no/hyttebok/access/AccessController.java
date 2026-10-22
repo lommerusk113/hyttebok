@@ -16,10 +16,12 @@ import io.micronaut.security.rules.SecurityRule;
 import io.micronaut.serde.annotation.Serdeable;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Pattern;
+import no.hyttebok.audit.Audit;
 import no.hyttebok.auth.AppUserRepository;
 import no.hyttebok.auth.Profiles;
 import no.hyttebok.cabin.CabinContext;
 import no.hyttebok.cabin.CabinInfoRepository;
+import no.hyttebok.chat.ChatBudget;
 
 import java.security.SecureRandom;
 import java.time.Duration;
@@ -41,6 +43,7 @@ public class AccessController {
 
     private static final Duration INVITE_VALID = Duration.ofDays(14);
     private static final int TOKEN_BYTES = 18;
+    private static final int LOG_SIZE = 50;
 
     private final AccessService access;
     private final AppUserRepository users;
@@ -48,11 +51,13 @@ public class AccessController {
     private final InvitationRepository invitations;
     private final CabinInfoRepository cabins;
     private final Profiles profiles;
+    private final Audit audit;
+    private final ChatBudget budget;
     private final boolean chatConfigured;
     private final SecureRandom random = new SecureRandom();
 
     public AccessController(AccessService access, AppUserRepository users, MembershipRepository memberships, InvitationRepository invitations,
-                            CabinInfoRepository cabins, Profiles profiles,
+                            CabinInfoRepository cabins, Profiles profiles, Audit audit, ChatBudget budget,
                             @Value("${hyttebok.chat.api-key:}") String chatKey) {
         this.access = access;
         this.users = users;
@@ -60,6 +65,8 @@ public class AccessController {
         this.invitations = invitations;
         this.cabins = cabins;
         this.profiles = profiles;
+        this.audit = audit;
+        this.budget = budget;
         this.chatConfigured = !chatKey.isBlank();
     }
 
@@ -83,9 +90,16 @@ public class AccessController {
     public record RoleBody(@Pattern(regexp = "OWNER|MEMBER") String role) {
     }
 
-    /** {@code configured}: the server has an AI key (without one, the switch does nothing yet). */
+    /**
+     * {@code configured}: the server has an AI key (without one, the switch does nothing yet). {@code percentUsed}: of
+     * this month's budget (the amount itself isn't shown).
+     */
     @Serdeable
-    public record ChatSetting(boolean enabled, boolean configured) {
+    public record ChatSetting(boolean enabled, boolean configured, int percentUsed) {
+    }
+
+    @Serdeable
+    public record ChatSwitch(boolean enabled) {
     }
 
     // ---- members ----
@@ -109,6 +123,7 @@ public class AccessController {
             keepAnOwner(auth, member);
         }
         memberships.update(member.withRole(body.role()));
+        audit.log(member.cabinId(), auth, Audit.ROLE_CHANGED, userId, body.role());
     }
 
     @Delete("/members/{userId}")
@@ -116,8 +131,21 @@ public class AccessController {
 
         access.requireManager(auth);
         var cabin = CabinContext.require();
-        memberships.findByUserIdAndCabinId(userId, cabin).ifPresent(member -> keepAnOwner(auth, member));
+        var member = memberships.findByUserIdAndCabinId(userId, cabin);
+        if (member.isEmpty()) {
+            return;
+        }
+
+        keepAnOwner(auth, member.get());
         memberships.deleteByUserIdAndCabinId(userId, cabin);
+        audit.log(cabin, auth, Audit.MEMBER_REMOVED, userId, null);
+    }
+
+    /** Owners: what changed about access to this cabin, newest first. */
+    @Get("/log")
+    public List<Audit.Event> log(Authentication auth) {
+        access.requireManager(auth);
+        return audit.forCabin(CabinContext.require(), LOG_SIZE);
     }
 
     /** Owners can't take away their own ownership, and a cabin always keeps at least one owner. */
@@ -143,23 +171,29 @@ public class AccessController {
         memberships.findByUserIdAndCabinId(AccessService.userId(auth), cabin).ifPresentOrElse(
             m -> memberships.update(m.withRole(Membership.OWNER)),
             () -> join(AccessService.userId(auth), cabin, Membership.OWNER));
+        audit.log(cabin, auth, Audit.ADMIN_JOINED, null, null);
     }
 
     // ---- AI chat (system admins only: it costs money per question) ----
 
     @Get("/chat")
     public ChatSetting chat(Authentication auth) {
+
         access.requireAdmin(auth);
-        return new ChatSetting(cabins.findChatEnabled(CabinContext.require()).orElse(false), chatConfigured);
+        var cabin = CabinContext.require();
+
+        return new ChatSetting(cabins.findChatEnabled(cabin).orElse(false), chatConfigured, budget.percentUsed(cabin));
     }
 
     @Put("/chat")
-    public ChatSetting setChat(Authentication auth, @Body ChatSetting body) {
+    public ChatSetting setChat(Authentication auth, @Body ChatSwitch body) {
 
         access.requireAdmin(auth);
-        cabins.updateChatEnabled(CabinContext.require(), body.enabled());
+        var cabin = CabinContext.require();
+        cabins.updateChatEnabled(cabin, body.enabled());
+        audit.log(cabin, auth, Audit.CHAT_CHANGED, null, body.enabled() ? "on" : "off");
 
-        return new ChatSetting(body.enabled(), chatConfigured);
+        return new ChatSetting(body.enabled(), chatConfigured, budget.percentUsed(cabin));
     }
 
     // ---- new password (no email service: the link is shared by hand) ----
@@ -172,6 +206,8 @@ public class AccessController {
         if (!memberships.existsByUserIdAndCabinId(userId, CabinContext.require())) {
             throw new HttpStatusException(HttpStatus.NOT_FOUND, "Not a member");
         }
+
+        audit.log(CabinContext.require(), auth, Audit.RESET_LINK, userId, null);
 
         return profiles.resetLink(userId, AccessService.userId(auth));
     }
@@ -196,6 +232,7 @@ public class AccessController {
         access.requireManager(auth);
         var now = Instant.now();
         var saved = invitations.save(new Invitation(null, CabinContext.require(), token(), AccessService.userId(auth), now, now.plus(INVITE_VALID), false, 0));
+        audit.log(saved.cabinId(), auth, Audit.INVITE_CREATED, null, null);
 
         return new Invite(saved.id(), saved.token(), String.valueOf(auth.getAttributes().get("name")), saved.expiresAt(), 0);
     }
@@ -205,8 +242,10 @@ public class AccessController {
 
         access.requireManager(auth);
         var cabin = CabinContext.require();
-        invitations.findById(id).filter(i -> i.cabinId().equals(cabin)).ifPresent(i -> invitations.update(
-            new Invitation(i.id(), i.cabinId(), i.token(), i.createdBy(), i.createdAt(), i.expiresAt(), true, i.uses())));
+        invitations.findById(id).filter(i -> i.cabinId().equals(cabin)).ifPresent(i -> {
+            invitations.update(new Invitation(i.id(), i.cabinId(), i.token(), i.createdBy(), i.createdAt(), i.expiresAt(), true, i.uses()));
+            audit.log(cabin, auth, Audit.INVITE_REVOKED, null, null);
+        });
     }
 
     /** Shown before login on the invitation page: which cabin, and who invited you. */
@@ -232,6 +271,7 @@ public class AccessController {
             join(userId, invite.cabinId(), Membership.MEMBER);
             invitations.update(new Invitation(invite.id(), invite.cabinId(), invite.token(), invite.createdBy(), invite.createdAt(), invite.expiresAt(), false,
                 invite.uses() + 1));
+            audit.log(invite.cabinId(), auth, Audit.MEMBER_JOINED, null, null);
         }
 
         return new Accepted(invite.cabinId());

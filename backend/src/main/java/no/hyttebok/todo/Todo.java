@@ -27,5 +27,6 @@ public record Todo(@Id @GeneratedValue @Nullable Long id,
                    @DateCreated @Nullable Instant createdAt,
                    @Nullable @TypeDef(type = DataType.STRING_ARRAY) List<String> doneWith,
                    @Nullable @Size(max = 2000) String doneNote,
+                   @Nullable String claimedBy,
                    @TenantId @Nullable Long cabinId) {
 }

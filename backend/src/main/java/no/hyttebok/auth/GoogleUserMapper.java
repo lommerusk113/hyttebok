@@ -32,13 +32,13 @@ public class GoogleUserMapper implements OpenIdAuthenticationMapper {
 
         var now = Instant.now();
         var user = users.findByGoogleSub(claims.getSubject())
-            .map(u -> users.update(new AppUser(u.id(), u.googleSub(), claims.getEmail(), claims.getName(), claims.getPicture(), u.createdAt(), now, u.passwordHash())))
+            .map(u -> users.update(new AppUser(u.id(), u.googleSub(), claims.getEmail(), claims.getName(), claims.getPicture(), u.createdAt(), now, u.passwordHash(), u.sessionVersion())))
             // Same email as a password account: one person, one account. Google has now proven the email is theirs,
-            // so the password (set by whoever signed up with it) is dropped; they can ask for a new one.
+            // so the password (set by whoever signed up with it) is dropped, and so is every session it opened.
             .or(() -> users.findByEmail(claims.getEmail())
                 .map(u -> users.update(new AppUser(u.id(), claims.getSubject(), claims.getEmail(), u.name() == null ? claims.getName() : u.name(),
-                    claims.getPicture(), u.createdAt(), now, null))))
-            .orElseGet(() -> users.save(new AppUser(null, claims.getSubject(), claims.getEmail(), claims.getName(), claims.getPicture(), now, now, null)));
+                    claims.getPicture(), u.createdAt(), now, null, u.sessionVersion() + 1))))
+            .orElseGet(() -> users.save(new AppUser(null, claims.getSubject(), claims.getEmail(), claims.getName(), claims.getPicture(), now, now, null, 0)));
 
         return Publishers.just(UserSessions.success(user));
     }

@@ -14,8 +14,11 @@ Slik inviterer du noen:
 
 Innlogging:
 - Logg inn med Google, eller med e-post og passord.
-- Har du glemt passordet, kan en eier av hytta lage en lenke for nytt passord til deg under Tilgang → Medlemmer, eller en systemadministrator kan hjelpe deg.
+- Har du glemt passordet: har du lagret gjenopprettingskoder, trykk «Glemt passordet?» på innloggingen og bruk en kode. Ellers kan en eier av hytta lage en lenke for nytt passord til deg under Tilgang → Medlemmer, eller en systemadministrator kan hjelpe deg.
 - Under «Min profil» i menyen ser du kontoen og hyttene dine, og kan bytte passord (eller legge til et passord hvis du logger inn med Google).
+- Nytt passord logger deg ut på alle andre enheter. Under «Min profil» → Sikkerhet kan du også lage gjenopprettingskoder og «Logg ut overalt» (f.eks. hvis du har mistet telefonen).
+- Vil du ikke lenger være med i en hytte, trykk «Forlat hytta» ved hytta under «Min profil». Eneste eier må gjøre en annen til eier først.
+- Eiere ser en endringslogg nederst på Tilgang: hvem som har invitert, fjernet, endret roller eller laget passordlenker.
 
 Slik installerer du appen på mobilen:
 - iPhone: Åpne siden i Safari, trykk Del-knappen nederst, velg «Legg til på Hjem-skjerm» og trykk «Legg til».
@@ -35,9 +38,13 @@ Handlelisten:
 
 Vedlikehold:
 - Faste oppgaver (f.eks. feie pipa hvert år) viser når de skal gjøres neste gang, og blir røde når de er på overtid.
-- Prosjekter er ting som bare skal gjøres én gang, f.eks. fikse porten.
+- Prosjekter er ting som bare skal gjøres én gang, f.eks. fikse porten. Åpne et prosjekt og trykk «Jeg tar den», så ser andre at du gjør det.
 - Trykk «Utført» når noe er gjort. Velg hvem som var med og skriv gjerne en kort beskrivelse.
 - «Utført i år» viser alt som er gjort i løpet av året, og Årsoversikten viser hva som er gjort og planlagt måned for måned.
+
+Utgifter:
+- Under fanen Utgifter skriver du inn felles utgifter (strøm, ved, mat): hva, beløp, hvem som betalte og hvem det deles på.
+- Appen regner ut hvem som skylder hvem og foreslår hvem som skal betale hvem. Trykk «Betalt» når noen har betalt tilbake.
 
 Hytteboka:
 - Skriv om oppholdet ditt under Hyttebok: hvem som var der, hva som skjedde, og legg gjerne til bilder.
@@ -50,7 +57,7 @@ Forumet:
 Hyttewiki:
 - Åpnes fra «Hyttewiki» i kortet «Om hytta» på Oversikt.
 - Alle med tilgang kan skrive og endre sider om hvordan ting fungerer på hytta. Chatten leser wikien.
-- Informasjon om hytta (beskrivelse, ankomst, avreise, WiFi, adresse) endres med blyanten på «Om hytta» eller på forsidebildet.
+- Informasjon om hytta (beskrivelse, ankomst, avreise, WiFi, nøkler, adresse) endres med blyanten på «Om hytta» eller på forsidebildet. Under «Nøkler» kan dere skrive hvem som har nøkkel, hvor reservenøkkelen er og koden til nøkkelboksen.
 
 Mine hytter, navn og innstillinger:
 - Har du tilgang til flere hytter, bytter du under «Mine hytter» i menyen. Der kan du også lage en ny hytte.
@@ -59,6 +66,7 @@ Mine hytter, navn og innstillinger:
 
 Chatten:
 - Trykk på den runde knappen nederst til høyre for å spørre om hytta, og «Ny samtale» for å begynne på nytt.
+- Hver hytte har en månedlig kvote for chatten. Er den brukt opp, virker chatten igjen fra den 1. neste måned.
 - Den svarer ut fra wikien, bookinger, handlelisten, oppgaver, vedlikehold og været for hytta du er i.
 - Den kan legge til på handlelisten, krysse av kjøpt, legge til og fullføre oppgaver, booke og markere vedlikehold som utført. Den sletter aldri noe.
 

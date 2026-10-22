@@ -19,4 +19,6 @@ public interface AppUserRepository extends CrudRepository<AppUser, Long> {
     /** Case-insensitive exact match (not LIKE: "_" in an address must not act as a wildcard). */
     @Query("SELECT * FROM app_user WHERE lower(email) = lower(:email)")
     Optional<AppUser> findByEmail(String email);
+
+    Optional<Integer> findSessionVersionById(Long id);
 }
