@@ -5,6 +5,8 @@ import Avatar from 'primevue/avatar'
 import AvatarGroup from 'primevue/avatargroup'
 import Button from 'primevue/button'
 import Checkbox from 'primevue/checkbox'
+import CheckInDialog from '../components/CheckInDialog.vue'
+import CheckOutDialog from '../components/CheckOutDialog.vue'
 import DashCard from '../components/DashCard.vue'
 import RichText from '../components/RichText.vue'
 import WeatherIcon from '../components/WeatherIcon.vue'
@@ -15,6 +17,9 @@ import { cabin, editCabin, INFO_TILES } from '../cabin'
 import { status as maintenanceStatus } from '../maintenance'
 import { dueLabel, overdueBadge, STATUS_STYLE } from '../maintenanceLabels'
 import { colorFor, formatDay, initials, parseIsoDate, timeAgo, toIsoDate } from '../utils'
+import { bookToday, isExpected, isHere } from '../stay'
+import { askName, userName } from '../user'
+import { localeTag } from '../i18n'
 import { t } from '../i18n'
 
 const SHOPPING_LIMIT = 6
@@ -44,7 +49,37 @@ const today = toIsoDate(new Date())
 const day = iso => formatDay(parseIsoDate(iso))
 const period = b => (!b.endDate || b.startDate === b.endDate ? day(b.startDate) : `${day(b.startDate)} – ${day(b.endDate)}`)
 
-const staying = computed(() => bookings.value.filter(b => b.startDate <= today && b.endDate >= today))
+// "Er på hytta nå" is who checked in; a booking for today that nobody checked in to yet offers the check-in.
+const here = computed(() => bookings.value.filter(isHere))
+const expected = computed(() => bookings.value.filter(isExpected))
+const time = iso => new Date(iso).toLocaleTimeString(localeTag(), { hour: '2-digit', minute: '2-digit' })
+const checkedInWhen = b => (b.checkedInAt.slice(0, 10) === today ? time(b.checkedInAt) : `${day(b.checkedInAt.slice(0, 10))} ${time(b.checkedInAt)}`)
+
+const stay = ref(null) // the booking being checked in to or out of
+const checkingIn = ref(false)
+const checkingOut = ref(false)
+
+function startCheckIn(b) {
+  if (!userName.value) return (askName.value = true)
+  stay.value = b
+  checkingIn.value = true
+}
+
+// At the cabin without a booking: a booking for today first.
+async function checkInUnbooked() {
+  if (!userName.value) return (askName.value = true)
+  const b = await bookToday()
+  bookings.value = [...bookings.value, b]
+  startCheckIn(b)
+}
+
+function startCheckOut(b) {
+  if (!userName.value) return (askName.value = true)
+  stay.value = b
+  checkingOut.value = true
+}
+
+const updated = b => { bookings.value = bookings.value.map(x => (x.id === b.id ? b : x)) }
 const upcoming = computed(() => bookings.value.filter(b => b.startDate > today).slice(0, 4))
 // Weather for each upcoming stay as a whole (average high over its days), not just the arrival day.
 watch(upcoming, list => list.forEach(b => loadWeatherDays(b.startDate, b.endDate)), { immediate: true })
@@ -99,12 +134,21 @@ function copy(text) {
 
 <template>
   <div class="space-y-6">
-    <!-- Who's at the cabin right now -->
-    <RouterLink v-for="b in staying" :key="b.id" to="/booking"
-                class="flex items-center gap-3 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-emerald-900 transition hover:border-emerald-300">
+    <!-- Who's at the cabin right now (checked in), and who's booked today but hasn't checked in -->
+    <div v-for="b in here" :key="b.id" class="flex flex-wrap items-center gap-x-3 gap-y-2 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-2.5 text-emerald-900">
       <span class="relative flex size-2.5"><span class="absolute inline-flex size-full animate-ping rounded-full bg-emerald-400 opacity-75" /><span class="relative inline-flex size-2.5 rounded-full bg-emerald-500" /></span>
-      <span class="text-sm"><b>{{ t('overview.atCabin', { name: b.guestName }) }}</b> · {{ t('overview.until', { date: day(b.endDate) }) }}</span>
-    </RouterLink>
+      <span class="min-w-0 flex-1 text-sm">
+        <b>{{ t('overview.atCabin', { name: b.guestName }) }}</b> · {{ t('stay.since', { time: checkedInWhen(b) }) }} · {{ t('overview.until', { date: day(b.endDate) }) }}
+      </span>
+      <Button :label="t('stay.checkOut')" icon="pi pi-sign-out" size="small" severity="success" outlined class="!bg-surface" @click="startCheckOut(b)" />
+    </div>
+    <div v-for="b in expected" :key="b.id" class="flex flex-wrap items-center gap-x-3 gap-y-2 rounded-lg border border-sky-200 bg-sky-50 px-4 py-2.5 text-sky-900">
+      <i class="pi pi-calendar text-sm" />
+      <span class="min-w-0 flex-1 text-sm"><b>{{ t('stay.bookedToday', { name: b.guestName }) }}</b> · {{ t('overview.until', { date: day(b.endDate) }) }}</span>
+      <Button :label="t('stay.checkIn')" icon="pi pi-sign-in" size="small" @click="startCheckIn(b)" />
+    </div>
+    <CheckInDialog v-model:visible="checkingIn" :booking="stay" @saved="updated" />
+    <CheckOutDialog v-model:visible="checkingOut" :booking="stay" @saved="updated" />
 
     <!-- About the cabin: description + info buttons; a button slides its content open below -->
     <DashCard :title="t('home.about')" icon="pi pi-home" tint="bg-zinc-100 text-zinc-700">
@@ -181,6 +225,11 @@ function copy(text) {
             <p class="text-sm text-zinc-500">{{ t('booking.noUpcoming') }}</p>
             <RouterLink to="/booking?new=1" class="inline-flex min-h-11 items-center text-sm font-medium underline-offset-4 hover:underline">{{ t('booking.new') }}</RouterLink>
           </div>
+          <!-- At the cabin without a booking (nobody checked in or expected today) -->
+          <button v-if="!here.length && !expected.length" type="button" class="mt-1 inline-flex min-h-11 items-center gap-2 text-sm text-zinc-500 underline-offset-4 hover:text-zinc-900 hover:underline"
+                  @click="checkInUnbooked">
+            <i class="pi pi-sign-in text-xs" />{{ t('stay.hereUnbooked') }}
+          </button>
 
           <template v-if="recent.length">
             <p class="mb-1 mt-3 border-t border-zinc-100 pt-3 text-xs font-medium uppercase tracking-wide text-zinc-500">{{ t('booking.recent') }}</p>

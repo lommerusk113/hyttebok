@@ -13,6 +13,9 @@ class ApiError extends Error {
 async function send(method, url, body, key, cabin = cabinId.value) {
 
   const isForm = body instanceof FormData
+  // Reads carry the cabin in the address too: the service worker caches by address, so one cabin's data can't
+  // answer for another's when offline.
+  if (method === 'GET' && cabin) url += `${url.includes('?') ? '&' : '?'}hytte=${cabin}`
   const res = await fetch('/api' + url, {
     method,
     body: isForm ? body : body && JSON.stringify(body),
@@ -32,6 +35,16 @@ async function send(method, url, body, key, cabin = cabinId.value) {
   }
 
   return text ? JSON.parse(text) : null
+}
+
+// The last server version of each list (per cabin and address), so an edit queued offline knows what it
+// started from (see mergeEdit in offline.js). Only what the server sent: items made offline have no base.
+const lastSeen = new Map()
+
+function baseFor(url, body, cabin) {
+  const seen = lastSeen.get(`${cabin}|${url}`)
+  const base = Array.isArray(seen) ? seen.find(x => x.id === body?.id) : seen
+  return base && plain(base)
 }
 
 // What the UI gets back for a change that is queued instead of sent.
@@ -65,6 +78,8 @@ async function queueChange(method, url, body, key) {
     method,
     url,
     tempId: id,
+    // Whole-item edits (PUT /todos, PUT /cabin ...); edits addressed by id (/forum/3) are of one's own text.
+    base: method === 'PUT' && !/\/\d+/.test(url) ? baseFor(url, body, cabinId.value) : undefined,
     body: body instanceof FormData ? undefined : plain(body),
     form: body instanceof FormData ? [...body.entries()] : undefined,
     optimistic: result,
@@ -76,7 +91,10 @@ async function queueChange(method, url, body, key) {
 async function request(method, url, body) {
 
   if (method === 'GET') {
-    return applyPending(url, await send(method, url), cabinId.value)
+    const cabin = cabinId.value
+    const data = await send(method, url)
+    lastSeen.set(`${cabin}|${url}`, data)
+    return applyPending(url, plain(data), cabin)
   }
 
   // Waiting changes go first, so a new change is queued behind them to keep the order.
@@ -126,7 +144,7 @@ export async function uploadEach(files, uploadedBy, links) {
   return { uploaded, failed: files.length - uploaded.length }
 }
 
-/** Starts background syncing; `onSynced({ sent, dropped })` runs after changes were sent. */
+/** Starts background syncing; `onSynced({ sent, dropped, conflicts })` runs after changes were sent. */
 export function startSync(onSynced) {
   watchConnection(async () => {
     const result = await sync(send)

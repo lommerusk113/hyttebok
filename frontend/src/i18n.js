@@ -9,7 +9,17 @@ export const LOCALES = { nb: { label: 'NO', tag: 'nb-NO' }, en: { label: 'EN', t
 const KEY = 'hyttebok.locale'
 const stored = (() => { try { return localStorage.getItem(KEY) } catch { return null } })()
 
-export const i18n = createI18n({ legacy: false, locale: LOCALES[stored] ? stored : 'nb', fallbackLocale: 'nb', messages: { nb, en } })
+// First visit: the first of the device's languages we have (nb/nn/no count as Norwegian), else English.
+// After that, the one in use is remembered (below), so a choice in the menu sticks.
+const fromDevice = () => {
+  for (const l of navigator.languages || [navigator.language]) {
+    if (/^(nb|nn|no)\b/i.test(l)) return 'nb'
+    if (/^en\b/i.test(l)) return 'en'
+  }
+  return 'en'
+}
+
+export const i18n = createI18n({ legacy: false, locale: LOCALES[stored] ? stored : fromDevice(), fallbackLocale: 'nb', messages: { nb, en } })
 export const { t, locale } = i18n.global
 
 // BCP 47 tag for Intl date formatting; reading locale.value keeps callers reactive.

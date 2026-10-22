@@ -48,14 +48,16 @@ public class PhotoController {
                         @Nullable @Part Long forumPostId,
                         @Nullable @Part Long forumReplyId) throws IOException {
 
-        var contentType = file.getContentType().map(MediaType::toString).orElse("");
-        if (!contentType.startsWith("image/")) {
-            throw new HttpStatusException(HttpStatus.BAD_REQUEST, "Only images can be uploaded");
+        // The type comes from the file itself, never from what the browser says it is.
+        var bytes = file.getBytes();
+        var contentType = ImageType.sniff(bytes);
+        if (contentType == null) {
+            throw new HttpStatusException(HttpStatus.BAD_REQUEST, "Only photos (JPEG, PNG, GIF, WebP, HEIC, AVIF) can be uploaded");
         }
 
         // ponytail: originals only, add thumbnails if the gallery gets slow
         var fileName = UUID.randomUUID().toString();
-        Files.write(uploadDir.resolve(fileName), file.getBytes());
+        Files.write(uploadDir.resolve(fileName), bytes);
 
         return repository.save(new Photo(null, fileName, contentType, caption, uploadedBy, logEntryId, forumPostId, forumReplyId, null, null));
     }
@@ -77,9 +79,18 @@ public class PhotoController {
     public HttpResponse<SystemFile> file(Long id) {
 
         var photo = findOrThrow(id);
-        var file = new SystemFile(uploadDir.resolve(photo.fileName()).toFile(), MediaType.of(photo.contentType()));
+        // Anything stored before uploads were checked, and not a known image, is only offered as a download.
+        var safe = ImageType.SAFE.contains(photo.contentType());
+        var file = new SystemFile(uploadDir.resolve(photo.fileName()).toFile(), safe ? MediaType.of(photo.contentType()) : MediaType.APPLICATION_OCTET_STREAM_TYPE);
 
-        return HttpResponse.ok(file).header("Cache-Control", "public, max-age=31536000, immutable");
+        // nosniff + a sandbox: even a file that slipped through can't run as a page from our address.
+        // private: photos are only for the cabin's members, so shared caches mustn't keep them.
+        var response = HttpResponse.ok(file)
+            .header("Cache-Control", "private, max-age=31536000, immutable")
+            .header("X-Content-Type-Options", "nosniff")
+            .header("Content-Security-Policy", "default-src 'none'; sandbox");
+
+        return safe ? response : response.header("Content-Disposition", "attachment");
     }
 
     @Delete("/{id}")

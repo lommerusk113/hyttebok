@@ -18,7 +18,6 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.Pattern;
 import no.hyttebok.audit.Audit;
 import no.hyttebok.auth.AppUserRepository;
-import no.hyttebok.auth.Profiles;
 import no.hyttebok.cabin.CabinContext;
 import no.hyttebok.cabin.CabinInfoRepository;
 import no.hyttebok.chat.ChatBudget;
@@ -50,21 +49,19 @@ public class AccessController {
     private final MembershipRepository memberships;
     private final InvitationRepository invitations;
     private final CabinInfoRepository cabins;
-    private final Profiles profiles;
     private final Audit audit;
     private final ChatBudget budget;
     private final boolean chatConfigured;
     private final SecureRandom random = new SecureRandom();
 
     public AccessController(AccessService access, AppUserRepository users, MembershipRepository memberships, InvitationRepository invitations,
-                            CabinInfoRepository cabins, Profiles profiles, Audit audit, ChatBudget budget,
+                            CabinInfoRepository cabins, Audit audit, ChatBudget budget,
                             @Value("${hyttebok.chat.api-key:}") String chatKey) {
         this.access = access;
         this.users = users;
         this.memberships = memberships;
         this.invitations = invitations;
         this.cabins = cabins;
-        this.profiles = profiles;
         this.audit = audit;
         this.budget = budget;
         this.chatConfigured = !chatKey.isBlank();
@@ -194,22 +191,6 @@ public class AccessController {
         audit.log(cabin, auth, Audit.CHAT_CHANGED, null, body.enabled() ? "on" : "off");
 
         return new ChatSetting(body.enabled(), chatConfigured, budget.percentUsed(cabin));
-    }
-
-    // ---- new password (no email service: the link is shared by hand) ----
-
-    /** For members of this cabin: a one-time link to set a new password, valid for a day. */
-    @Post("/users/{userId}/password-reset")
-    public Profiles.ResetLink passwordReset(Authentication auth, Long userId) {
-
-        access.requireManager(auth);
-        if (!memberships.existsByUserIdAndCabinId(userId, CabinContext.require())) {
-            throw new HttpStatusException(HttpStatus.NOT_FOUND, "Not a member");
-        }
-
-        audit.log(CabinContext.require(), auth, Audit.RESET_LINK, userId, null);
-
-        return profiles.resetLink(userId, AccessService.userId(auth));
     }
 
     // ---- invitations ----

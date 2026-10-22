@@ -4,6 +4,7 @@ import io.micronaut.core.annotation.Nullable;
 import io.micronaut.json.JsonMapper;
 import io.micronaut.serde.annotation.Serdeable;
 import jakarta.inject.Singleton;
+import no.hyttebok.auth.LoginOffRule;
 import no.hyttebok.booking.Booking;
 import no.hyttebok.cabin.CabinContext;
 import no.hyttebok.forum.ForumPost;
@@ -33,11 +34,13 @@ public class Notifier {
     private final PushSubscriptionRepository subscriptions;
     private final WebPushSender sender;
     private final JsonMapper json;
+    private final LoginOffRule login;
 
-    public Notifier(PushSubscriptionRepository subscriptions, WebPushSender sender, JsonMapper json) {
+    public Notifier(PushSubscriptionRepository subscriptions, WebPushSender sender, JsonMapper json, LoginOffRule login) {
         this.subscriptions = subscriptions;
         this.sender = sender;
         this.json = json;
+        this.login = login;
     }
 
     @Serdeable
@@ -51,7 +54,9 @@ public class Notifier {
     public void notify(Topic topic, Function<PushSubscription, Message> messageFor) {
         var cabinId = CabinContext.require(); // read now: the sending thread below is no longer in the request
         Thread.startVirtualThread(() -> {
-            for (var subscription : subscriptions.findByCabinId(cabinId)) {
+            // Without login there are no members: every device that follows the cabin.
+            var devices = login.loginOn() ? subscriptions.findMembersByCabinId(cabinId) : subscriptions.findByCabinId(cabinId);
+            for (var subscription : devices) {
                 if (!subscription.wants(topic)) {
                     continue;
                 }

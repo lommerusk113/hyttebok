@@ -1,8 +1,11 @@
 import { ref } from 'vue'
 import { get, set } from 'idb-keyval'
+import { mergeEdit } from './merge'
 
 // Offline write queue. Changes made without a connection are stored in IndexedDB (photos included),
-// shown optimistically, and replayed in order once the server is reachable. Last write wins.
+// shown optimistically, and replayed in order once the server is reachable. An edit remembers the version it
+// started from, so only the fields it changed are sent: someone else's change to another field survives, and a
+// field both changed keeps theirs (counted as a conflict).
 // Items created offline get a negative temporary id; when the server returns the real id it is
 // swapped into every later queued request (e.g. photos attached to a post written offline).
 
@@ -95,16 +98,17 @@ let syncing = false
 /**
  * Sends queued changes in order. Stops at the first network/server error (or missing login) and retries later;
  * any other 4xx (e.g. the item was deleted on the server meanwhile) drops that change.
- * Returns { sent, dropped }.
+ * Returns { sent, dropped, conflicts } (conflicts: edits that lost a field to someone else's newer change).
  */
 export async function sync(send) {
 
   await ready
-  if (syncing || !queue.length) return { sent: 0, dropped: 0 }
+  if (syncing || !queue.length) return { sent: 0, dropped: 0, conflicts: 0 }
 
   syncing = true
   let sent = 0
   let dropped = 0
+  let conflicts = 0
   try {
     while (queue.length) {
       const item = queue[0]
@@ -116,6 +120,15 @@ export async function sync(send) {
 
       let result
       try {
+        // An edit: merge it into the server's current version instead of overwriting that.
+        if (item.base) {
+          const current = await send('GET', item.url, undefined, undefined, item.cabin)
+          const theirs = Array.isArray(current) ? current.find(x => x.id === item.body.id) : current
+          if (!theirs) throw Object.assign(new Error('gone'), { status: 404 }) // deleted meanwhile: drop the edit
+          const merge = mergeEdit(item.base, item.body, theirs)
+          if (merge.conflicts.length) conflicts++
+          body = merge.merged
+        }
         result = await send(item.method, item.url, body, item.key, item.cabin)
       } catch (err) {
         // Network/server trouble or not logged in (401): keep it and retry later; never drop a change over a login.
@@ -132,7 +145,7 @@ export async function sync(send) {
     syncing = false
   }
 
-  return { sent, dropped }
+  return { sent, dropped, conflicts }
 }
 
 /** Runs `run` now, whenever the connection comes back, and every 30 s while changes are waiting. */

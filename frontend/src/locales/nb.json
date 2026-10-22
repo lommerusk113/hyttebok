@@ -236,7 +236,8 @@
     "offline": "Frakoblet",
     "pending": "{n} venter | {n} venter",
     "synced": "{n} endring synkronisert | {n} endringer synkronisert",
-    "dropped": "{n} endring kunne ikke lagres (slettet av noen andre?) | {n} endringer kunne ikke lagres (slettet av noen andre?)"
+    "dropped": "{n} endring kunne ikke lagres (slettet av noen andre?) | {n} endringer kunne ikke lagres (slettet av noen andre?)",
+    "conflicts": "En endring du gjorde uten nett ble ikke lagret helt: noen andre hadde endret det samme. | {n} endringer du gjorde uten nett ble ikke lagret helt: noen andre hadde endret det samme."
   },
   "install": {
     "subtitle": "Hytteboka som app på telefonen",
@@ -447,7 +448,7 @@
     "wrongPassword": "Feil e-post eller passord. Etter 5 feil må du vente 15 minutter.",
     "offline": "Får ikke kontakt med serveren. Prøv igjen.",
     "forgot": "Glemt passordet?",
-    "forgotHint": "Har du lagret gjenopprettingskoder på «Min profil», skriv e-posten over og en av kodene her. Ellers: be en eier av hytta om en lenke for nytt passord (under Tilgang), eller en systemadministrator.",
+    "forgotHint": "Har du lagret gjenopprettingskoder på «Min profil», skriv e-posten over og en av kodene her. Ellers kan en systemadministrator lage en lenke for nytt passord til deg.",
     "newPassword": "Velg nytt passord",
     "savePassword": "Lagre passord",
     "passwordSaved": "Passordet er lagret",
@@ -743,5 +744,30 @@
     "splitBetween": "Delt på",
     "all": "Alle",
     "none": "Ingen"
+  },
+  "stay": {
+    "checkIn": "Sjekk inn",
+    "checkOut": "Sjekk ut",
+    "since": "sjekket inn {time}",
+    "bookedToday": "{name} har booket hytta i dag",
+    "hereUnbooked": "På hytta uten booking? Sjekk inn",
+    "welcome": "Velkommen til {cabin}, {name}!",
+    "welcomeText": "Godt å ha deg her. Her er det du trenger for å komme i gang. Sjekk inn, så ser de andre at du er på hytta.",
+    "getStarted": "Kom i gang",
+    "needsDoing": "Dette bør gjøres ({n})",
+    "overdue": "På overtid",
+    "seeTasks": "Se alle oppgaver",
+    "chatHint": "Lurer du på noe? Spør chatten (den runde knappen nederst til høyre), f.eks. «Hvordan slår jeg på vannet?» eller «Legg melk på handlelista».",
+    "checkOutTitle": "Sjekk ut",
+    "didAnything": "Fikk du gjort noe?",
+    "didAnythingHint": "Kryss av det du har gjort, så blir det markert som utført.",
+    "runningOut": "Mangler noe?",
+    "runningOutHint": "Trykk på det som snart er tomt, så havner det på handlelista.",
+    "somethingElse": "Noe annet …",
+    "addToShopping": "Legg på handlelista",
+    "beforeYouGo": "Før du drar",
+    "thanks": "Takk for besøket!",
+    "thanksText": "Du er sjekket ut av {cabin}. Skriv gjerne noen ord i hytteboka om oppholdet.",
+    "writeLog": "Skriv i hytteboka"
   }
 }

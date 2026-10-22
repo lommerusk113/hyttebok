@@ -158,7 +158,7 @@ public class DemoCabin {
 
         return stays.stream().map(s -> {
             var start = today.minusDays(s.daysAgo());
-            var saved = bookings.save(new Booking(null, s.who(), start, start.plusDays(s.nights()), s.guests(), s.note(), null));
+            var saved = bookings.save(new Booking(null, s.who(), start, start.plusDays(s.nights()), s.guests(), s.note(), null, null, null, null));
             return s.daysAgo() > 0 ? saved.id() : null;
         }).filter(id -> id != null).toList();
     }

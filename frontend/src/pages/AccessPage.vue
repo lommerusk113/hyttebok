@@ -60,12 +60,6 @@ async function createInvite() {
   share(invite)
 }
 
-// No email service: the owner sends the link themselves (chat, SMS).
-async function resetLink(person) {
-  const reset = await api.post(`/access/users/${person.id}/password-reset`)
-  await shareUrl(`${location.origin}/nytt-passord/${reset.token}`, t('access.resetShareTitle', { name: person.name }))
-}
-
 const share = invite => shareUrl(inviteUrl(invite.token), t('access.shareTitle'))
 
 async function shareUrl(url, title) {
@@ -89,11 +83,7 @@ async function revoke(invite) {
   await load()
 }
 
-// Making a reset link is logged too.
-async function resetAndReload(person) {
-  await resetLink(person)
-  await load()
-}
+
 
 async function setRole(member, role) {
   await api.put(`/access/members/${member.id}`, { role })
@@ -185,7 +175,6 @@ function deleteCabin() {
               <span class="block truncate font-medium">{{ m.name }}</span>
               <span class="block truncate text-xs text-zinc-500"><span v-if="m.admin" class="mr-1.5 rounded-full bg-zinc-100 px-1.5 py-0.5 text-zinc-600">{{ t('access.admin') }}</span>{{ m.email }}</span>
             </span>
-            <Button icon="pi pi-key" text rounded severity="secondary" :aria-label="t('access.resetLink')" v-tooltip.left="t('access.resetLink')" @click="resetAndReload(m)" />
             <span class="flex items-center gap-3" v-tooltip.left="ownerLock(m) && t(ownerLock(m))">
               <Select :model-value="m.role" :options="ROLES" option-label="label" option-value="value" size="small" :aria-label="t('access.role')"
                       :disabled="!!ownerLock(m)" @update:model-value="setRole(m, $event)" />

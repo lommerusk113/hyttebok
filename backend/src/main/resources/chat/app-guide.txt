@@ -10,15 +10,15 @@ Slik inviterer du noen:
 - Bare eiere av hytta kan invitere. Gå til fanen Tilgang.
 - Under «Invitasjonslenker», trykk «Ny lenke» og del den (f.eks. i familiechatten).
 - Den som åpner lenken og logger inn, blir medlem med en gang. Lenken gjelder i 14 dager.
-- Eiere kan endre rolle (eier/medlem), lage lenke for nytt passord eller fjerne tilgang under «Medlemmer».
+- Eiere kan endre rolle (eier/medlem) eller fjerne tilgang under «Medlemmer».
 
 Innlogging:
 - Logg inn med Google, eller med e-post og passord.
-- Har du glemt passordet: har du lagret gjenopprettingskoder, trykk «Glemt passordet?» på innloggingen og bruk en kode. Ellers kan en eier av hytta lage en lenke for nytt passord til deg under Tilgang → Medlemmer, eller en systemadministrator kan hjelpe deg.
+- Har du glemt passordet: har du lagret gjenopprettingskoder, trykk «Glemt passordet?» på innloggingen og bruk en kode. Ellers kan en systemadministrator lage en lenke for nytt passord til deg.
 - Under «Min profil» i menyen ser du kontoen og hyttene dine, og kan bytte passord (eller legge til et passord hvis du logger inn med Google).
 - Nytt passord logger deg ut på alle andre enheter. Under «Min profil» → Sikkerhet kan du også lage gjenopprettingskoder og «Logg ut overalt» (f.eks. hvis du har mistet telefonen).
 - Vil du ikke lenger være med i en hytte, trykk «Forlat hytta» ved hytta under «Min profil». Eneste eier må gjøre en annen til eier først.
-- Eiere ser en endringslogg nederst på Tilgang: hvem som har invitert, fjernet, endret roller eller laget passordlenker.
+- Eiere ser en endringslogg nederst på Tilgang: hvem som har invitert, fjernet eller endret roller.
 
 Slik installerer du appen på mobilen:
 - iPhone: Åpne siden i Safari, trykk Del-knappen nederst, velg «Legg til på Hjem-skjerm» og trykk «Legg til».
@@ -30,6 +30,11 @@ Slik får du varsler:
 - Velg hva du vil ha beskjed om: ny booking, nytt i hytteboka, forslag, oppgaver, handlelisten, vedlikehold og forumet.
 - På iPhone må appen være installert på hjemskjermen før varsler kan slås på.
 - Du får ikke varsel om det du gjør selv.
+
+Sjekk inn og ut:
+- Når du kommer til hytta, trykk «Sjekk inn» på Oversikt. Da får du en velkomst, det som står under Ankomst som en sjekkliste, WiFi og det som bør gjøres. De andre ser at du er på hytta.
+- Er du på hytta uten booking, trykk «På hytta uten booking? Sjekk inn» under Kommende besøk.
+- Når du drar, trykk «Sjekk ut»: kryss av oppgaver du har gjort, trykk på det som snart er tomt så havner det på handlelista, og gå gjennom Avreise-lista. Drar du tidligere enn booket, blir bookingen kortet ned til i dag.
 
 Handlelisten:
 - Skriv det som mangler under Handleliste og trykk «Legg til». Kryss av når det er kjøpt.

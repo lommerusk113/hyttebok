@@ -108,9 +108,10 @@ app.config.errorHandler = err => {
 // the router knows it's an invitation link (and the invitation would be forgotten).
 router.isReady().then(() => app.mount('#app'))
 
-startSync(({ sent, dropped }) => {
+startSync(({ sent, dropped, conflicts }) => {
   const toast = app.config.globalProperties.$toast
   if (sent) toast.add({ severity: 'success', summary: t('offline.synced', sent), life: 3000 })
   if (dropped) toast.add({ severity: 'warn', summary: t('offline.dropped', dropped), life: 6000 })
+  if (conflicts) toast.add({ severity: 'warn', summary: t('offline.conflicts', conflicts), life: 8000 })
   dataVersion.value++
 })

@@ -30,7 +30,7 @@ menu) and can switch on *Adminmodus* to act as owner in any cabin, for support.
 Sessions last 90 days; the signing key is generated on first start and kept in the database. A new password, or
 *Logg ut overalt* on *Min profil*, logs out every device.
 Forgotten password (there is no email service): a recovery code saved earlier on *Min profil*, or a one-day
-*new password* link made by an owner (on *Tilgang*) or an admin.
+*new password* link made by a system admin (on the user's page in the admin console).
 Admins must log in with Google at least once: a password account doesn't prove the email is theirs.
 
 ## AI chat

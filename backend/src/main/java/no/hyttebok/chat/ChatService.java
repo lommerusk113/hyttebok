@@ -358,7 +358,8 @@ public class ChatService {
 
     private static String booking(Booking b) {
         return "- " + b.guestName() + ", " + b.startDate() + " to " + b.endDate()
-            + (b.guests() == null ? "" : ", " + b.guests() + " people") + (b.note() == null || b.note().isBlank() ? "" : ", note: " + b.note()) + id(b.id());
+            + (b.guests() == null ? "" : ", " + b.guests() + " people") + (b.note() == null || b.note().isBlank() ? "" : ", note: " + b.note())
+            + (b.checkedInAt() == null ? "" : b.checkedOutAt() == null ? ", checked in (at the cabin now)" : ", checked out") + id(b.id());
     }
 
     private static void append(StringBuilder out, String label, @Nullable String value) {
@@ -405,7 +406,7 @@ public class ChatService {
                 }
                 var guest = ChatTools.text(args, "guestName");
                 var overlaps = bookings.list().stream().filter(b -> !b.startDate().isAfter(end) && !b.endDate().isBefore(start)).map(ChatService::booking).toList();
-                var saved = bookings.create(new Booking(null, guest, start, end, ChatTools.optionalInt(args, "guests"), ChatTools.optionalText(args, "note"), null));
+                var saved = bookings.create(new Booking(null, guest, start, end, ChatTools.optionalInt(args, "guests"), ChatTools.optionalText(args, "note"), null, null, null, null));
                 actions.add(english ? "Booked " + start + " – " + end + " for " + guest : "Booket " + start + " – " + end + " for " + guest);
                 return Map.of("ok", true, "id", saved.id(), "overlapsWith", overlaps);
             }

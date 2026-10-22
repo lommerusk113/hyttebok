@@ -236,7 +236,8 @@
     "offline": "Offline",
     "pending": "{n} waiting | {n} waiting",
     "synced": "{n} change synced | {n} changes synced",
-    "dropped": "{n} change couldn't be saved (deleted by someone else?) | {n} changes couldn't be saved (deleted by someone else?)"
+    "dropped": "{n} change couldn't be saved (deleted by someone else?) | {n} changes couldn't be saved (deleted by someone else?)",
+    "conflicts": "A change you made offline wasn't fully saved: someone else had changed the same thing. | {n} changes you made offline weren't fully saved: someone else had changed the same thing."
   },
   "install": {
     "subtitle": "The cabin book as an app on your phone",
@@ -447,7 +448,7 @@
     "wrongPassword": "Wrong email or password. After 5 failures you have to wait 15 minutes.",
     "offline": "Can't reach the server. Try again.",
     "forgot": "Forgot your password?",
-    "forgotHint": "If you saved recovery codes on “My profile”, type your email above and one of the codes here. Otherwise, ask an owner of the cabin for a new-password link (under Access), or a system admin.",
+    "forgotHint": "If you saved recovery codes on “My profile”, type your email above and one of the codes here. Otherwise a system admin can make you a new-password link.",
     "newPassword": "Choose a new password",
     "savePassword": "Save password",
     "passwordSaved": "Your password is saved",
@@ -743,5 +744,30 @@
     "splitBetween": "Split between",
     "all": "All",
     "none": "None"
+  },
+  "stay": {
+    "checkIn": "Check in",
+    "checkOut": "Check out",
+    "since": "checked in {time}",
+    "bookedToday": "{name} has booked the cabin today",
+    "hereUnbooked": "At the cabin without a booking? Check in",
+    "welcome": "Welcome to {cabin}, {name}!",
+    "welcomeText": "Good to have you here. This is what you need to get going. Check in so the others see you're at the cabin.",
+    "getStarted": "Getting started",
+    "needsDoing": "Needs doing ({n})",
+    "overdue": "Overdue",
+    "seeTasks": "See all tasks",
+    "chatHint": "Wondering about something? Ask the chat (the round button at the bottom right), e.g. “How do I turn the water on?” or “Put milk on the shopping list”.",
+    "checkOutTitle": "Check out",
+    "didAnything": "Did you get anything done?",
+    "didAnythingHint": "Tick what you did and it's marked as done.",
+    "runningOut": "Running out of anything?",
+    "runningOutHint": "Tap what's nearly empty and it goes on the shopping list.",
+    "somethingElse": "Something else …",
+    "addToShopping": "Add to the shopping list",
+    "beforeYouGo": "Before you go",
+    "thanks": "Thanks for the visit!",
+    "thanksText": "You've checked out of {cabin}. Do write a few words in the cabin book about the stay.",
+    "writeLog": "Write in the cabin book"
   }
 }
