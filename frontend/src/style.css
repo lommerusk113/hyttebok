@@ -15,6 +15,13 @@ body {
   color: var(--color-zinc-800);
 }
 
+/* Phone photos are often HDR: on an HDR screen they'd shine brighter than the white of the page. Keep them at the
+   page's brightness (browsers without this property show them as before). */
+img,
+video {
+  dynamic-range-limit: standard;
+}
+
 /* While a dialog, drawer or the photo viewer covers the page, the page behind stays put.
    One rule for every overlay instead of a prop on each; the reserved gutter stops the page jumping sideways. */
 html {
